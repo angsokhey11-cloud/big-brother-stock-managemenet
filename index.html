@@ -1,1 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIG BROTHER — Stock Management</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f7fb;color:#1f2937}
+:root{--blue:#174a91;--blue2:#245fae;--line:#dce4ee;--muted:#6b7280;--green:#16855c;--red:#b43a3a;--amber:#a86b00}
+.page{max-width:1600px;margin:auto;padding:22px}
+.top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:16px}
+h1{margin:0;color:var(--blue);font-size:27px}
+.sub{font-size:13px;color:var(--muted);margin-top:5px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 14px #173a6610;padding:17px;margin-bottom:15px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 15px;font-weight:800;cursor:pointer}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.section{display:none} .section.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+label{display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:6px}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 11px;background:#fff;font:inherit}
+textarea{min-height:75px;resize:vertical}
+.actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px}
+button.primary,button.secondary{border-radius:8px;padding:10px 15px;font-weight:800;cursor:pointer}
+button.primary{background:var(--blue);color:#fff;border:0}
+button.secondary{background:#fff;border:1px solid var(--line);color:#334155}
+.status{background:#eef4fb;border:1px solid #d7e5f6;padding:10px 12px;border-radius:9px;color:#435e7d;font-size:12px;margin-bottom:12px}
+.status.success{background:#edf9f3;border-color:#ccebdc;color:#176d4b}
+.status.error{background:#fff1f1;border-color:#f0cece;color:#9d2f2f}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .t{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.kpi .v{font-size:21px;font-weight:900;color:#22354d;margin-top:4px}
+.section-title{font-size:16px;font-weight:900;color:#22354d;margin-bottom:12px}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+th{background:#f8fafc;color:#475569;position:sticky;top:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eaf1fb;color:var(--blue);font-weight:800;font-size:11px}
+.warn{background:#fff7e7;border:1px solid #efd49a;color:#7a5718;padding:10px 12px;border-radius:8px;font-size:12px;margin-top:10px}
+.lot-list{margin-top:12px}
+.lot-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.muted{color:var(--muted)}
+@media(max-width:1000px){.grid,.grid3,.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.grid,.grid3,.grid2,.kpis{grid-template-columns:1fr}.page{padding:12px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div>
+      <h1>Stock Management</h1>
+      <div class="sub">BIG BROTHER — stock receiving, batch issue, stock movement and FIFO lot tracking</div>
+    </div>
+    <button class="secondary" onclick="loadAll()">↻ Refresh Data</button>
+  </div>
 
+  <div class="kpis">
+    <div class="kpi"><div class="t">Products Loaded</div><div class="v" id="kpiProducts">0</div></div>
+    <div class="kpi"><div class="t">Locations Loaded</div><div class="v" id="kpiLocations">0</div></div>
+    <div class="kpi"><div class="t">Inventory Controllers</div><div class="v" id="kpiControllers">0</div></div>
+    <div class="kpi"><div class="t">Active Staff</div><div class="v" id="kpiStaff">0</div></div>
+  </div>
+
+  <div class="card tabs">
+    <button class="tab active" onclick="showTab('stockin',this)">Stock In</button>
+    <button class="tab" onclick="showTab('batch',this)">Create Selling Batch</button>
+    <button class="tab" onclick="showTab('activity',this)">Stock Activity</button>
+    <button class="tab" onclick="showTab('fifo',this)">FIFO Lots</button>
+  </div>
+
+  <section id="tab-stockin" class="section active">
+    <div class="card">
+      <div class="section-title">Receive Stock</div>
+      <div id="stockInStatus" class="status">Receiving stock creates both a Stock Lot and a Stock Activity transaction.</div>
+      <div class="grid">
+        <div><label>Received Date *</label><input id="siDate" type="date"></div>
+        <div><label>Product *</label><select id="siProduct" onchange="syncStockInProduct()"></select></div>
+        <div><label>Product Code</label><input id="siProductCode" readonly></div>
+        <div><label>Unit</label><input id="siUnit" readonly></div>
+
+        <div><label>Received Qty *</label><input id="siQty" type="number" min="0" step="0.01"></div>
+        <div><label>Unit Cost</label><input id="siCost" type="number" min="0" step="0.0001"></div>
+        <div><label>Expiry Date</label><input id="siExpiry" type="date"></div>
+        <div><label>Location *</label><select id="siLocation"></select></div>
+
+        <div><label>Inventory Controller *</label><select id="siController" onchange="syncController('si')"></select></div>
+        <div><label>Staff ID</label><input id="siControllerId" readonly></div>
+        <div><label>Purchase Reference</label><input id="siPurchaseRef"></div>
+        <div><label>Reference No.</label><input id="siReference"></div>
+      </div>
+      <div style="margin-top:12px"><label>Note</label><textarea id="siNote"></textarea></div>
+      <div class="actions"><button class="secondary" onclick="clearStockIn()">Clear</button><button class="primary" onclick="saveStockIn()">Save Stock In</button></div>
+    </div>
+  </section>
+
+  <section id="tab-batch" class="section">
+    <div class="card">
+      <div class="section-title">Create Selling Batch</div>
+      <div id="batchStatus" class="status">One selling/distribution trip = one Batch ID.</div>
+      <div class="grid">
+        <div><label>Batch Date *</label><input id="baDate" type="date"></div>
+        <div><label>Location *</label><select id="baLocation"></select></div>
+        <div><label>Salesman *</label><select id="baSalesman" onchange="syncStaffSelect('baSalesman','baSalesmanId')"></select></div>
+        <div><label>Salesman Staff ID</label><input id="baSalesmanId" readonly></div>
+
+        <div><label>Driver *</label><select id="baDriver" onchange="syncStaffSelect('baDriver','baDriverId')"></select></div>
+        <div><label>Driver Staff ID</label><input id="baDriverId" readonly></div>
+        <div><label>Status</label><select id="baStatus"><option>Open</option><option>In Progress</option></select></div>
+      </div>
+      <div style="margin-top:12px"><label>Note</label><textarea id="baNote"></textarea></div>
+      <div class="actions"><button class="secondary" onclick="clearBatch()">Clear</button><button class="primary" onclick="createBatch()">Create Batch</button></div>
+    </div>
+  </section>
+
+  <section id="tab-activity" class="section">
+    <div class="card">
+      <div class="section-title">Record Stock Activity</div>
+      <div id="activityStatus" class="status">Use this for Stock Out, Back Sale, Damaged Stock, Adjustment, Pending or Transfer.</div>
+      <div class="grid">
+        <div><label>Activity Date *</label><input id="acDate" type="date"></div>
+        <div><label>Activity Type *</label>
+          <select id="acType" onchange="activityTypeChanged()">
+            <option value="">Select type</option>
+            <option>Stock Out</option>
+            <option>Back Sale</option>
+            <option>Damaged Stock</option>
+            <option>Adjustment</option>
+            <option>Pending</option>
+            <option>Transfer</option>
+          </select>
+        </div>
+        <div><label>Batch ID</label><input id="acBatch" placeholder="BAT-000001"></div>
+        <div><label>Lot ID</label><input id="acLot" placeholder="LOT-000001"></div>
+
+        <div><label>Product *</label><select id="acProduct" onchange="syncActivityProduct()"></select></div>
+        <div><label>Product Code</label><input id="acProductCode" readonly></div>
+        <div><label>Qty *</label><input id="acQty" type="number" min="0" step="0.01"></div>
+        <div><label>Unit</label><input id="acUnit" readonly></div>
+
+        <div><label>Location</label><select id="acLocation"></select></div>
+        <div><label>From Location</label><select id="acFrom"></select></div>
+        <div><label>To Location</label><select id="acTo"></select></div>
+        <div><label>Inventory Controller</label><select id="acController" onchange="syncController('ac')"></select></div>
+
+        <div><label>Controller Staff ID</label><input id="acControllerId" readonly></div>
+        <div><label>Salesman</label><select id="acSalesman" onchange="syncStaffSelect('acSalesman','acSalesmanId')"></select></div>
+        <div><label>Salesman Staff ID</label><input id="acSalesmanId" readonly></div>
+        <div><label>Driver</label><select id="acDriver" onchange="syncStaffSelect('acDriver','acDriverId')"></select></div>
+
+        <div><label>Driver Staff ID</label><input id="acDriverId" readonly></div>
+        <div><label>Related Invoice No.</label><input id="acInvoice"></div>
+        <div><label>Related Purchase No.</label><input id="acPurchase"></div>
+        <div><label>Reference No.</label><input id="acReference"></div>
+      </div>
+      <div class="warn">FIFO lot deduction is not automatic in Stock Database V1 yet. For now, select/enter the Lot ID when recording Stock Out. The next backend version will allocate Stock Out automatically from the oldest available lot.</div>
+      <div style="margin-top:12px"><label>Note</label><textarea id="acNote"></textarea></div>
+      <div class="actions"><button class="secondary" onclick="clearActivity()">Clear</button><button class="primary" onclick="saveActivity()">Save Activity</button></div>
+    </div>
+  </section>
+
+  <section id="tab-fifo" class="section">
+    <div class="card">
+      <div class="section-title">FIFO Available Lots</div>
+      <div id="fifoStatus" class="status">Search the available lots for one product and location. Oldest received lot appears first.</div>
+      <div class="grid3">
+        <div><label>Product *</label><select id="fiProduct" onchange="syncFifoProduct()"></select></div>
+        <div><label>Product Code</label><input id="fiProductCode" readonly></div>
+        <div><label>Location</label><select id="fiLocation"></select></div>
+      </div>
+      <div class="actions"><button class="primary" onclick="loadFifoLots()">Load FIFO Lots</button></div>
+      <div id="fifoLots" class="lot-list"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const MASTER_DATABASE_API_URL = "https://script.google.com/macros/s/AKfycbzIjs-cNehMxWTZs3ZPAosseGUu1nqACTPo3S4-onLLEYnEgqP6AUK7p3jwb6MaFr7H0w/exec";
+const STAFF_DATABASE_API_URL = "https://script.google.com/macros/s/AKfycbwKqgTPzesBlWlk5NFelkZR-9HOzDGdukcPc49dTDtADRdLz-Bv2uABMiuajh0mpEOA/exec";
+const STOCK_DATABASE_API_URL = "https://script.google.com/macros/s/AKfycbyVDVD72ed4zCxK32Rkx-kHZLgyG6aZwdnSmFH4S47RjVmm_C9b9v7xfpkCkgO1XVo3/exec";
+
+let products = [];
+let locations = [];
+let staff = [];
+let controllers = [];
+let salesmen = [];
+let drivers = [];
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function showTab(name,btn){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.getElementById("tab-"+name).classList.add("active");btn.classList.add("active");}
+function setStatus(id,msg,type=""){const el=document.getElementById(id);el.textContent=msg;el.className="status"+(type?" "+type:"");}
+
+async function fetchJson(url,params={}){
+  const u=new URL(url); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u); if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function postForm(url,action,data){
+  return new Promise((resolve,reject)=>{
+    const name="bb_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    const iframe=document.createElement("iframe");iframe.name=name;iframe.style.display="none";document.body.appendChild(iframe);
+    const form=document.createElement("form");form.method="POST";form.action=url;form.target=name;form.style.display="none";
+    const a=document.createElement("input");a.type="hidden";a.name="action";a.value=action;form.appendChild(a);
+    const d=document.createElement("input");d.type="hidden";d.name="data";d.value=JSON.stringify(data);form.appendChild(d);
+    document.body.appendChild(form);
+    try{form.submit();}catch(e){form.remove();iframe.remove();reject(e);return;}
+    setTimeout(()=>{form.remove();iframe.remove();resolve({success:true});},1900);
+  });
+}
+
+function unwrapArray(res){
+  if(Array.isArray(res)) return res;
+  if(Array.isArray(res?.data)) return res.data;
+  if(Array.isArray(res?.products)) return res.products;
+  if(Array.isArray(res?.locations)) return res.locations;
+  if(Array.isArray(res?.staff)) return res.staff;
+  return [];
+}
+
+async function tryMaster(actions){
+  for(const action of actions){
+    try{const res=await fetchJson(MASTER_DATABASE_API_URL,{action}); const arr=unwrapArray(res); if(arr.length)return arr;}catch(e){}
+  }
+  return [];
+}
+
+async function loadAll(){
+  try{
+    const [p,l,s] = await Promise.all([
+      tryMaster(["getProducts","products","masterProducts"]),
+      tryMaster(["getLocations","locations","location"]),
+      fetchJson(STAFF_DATABASE_API_URL,{action:"getStaff",includeInactive:"false"}).catch(()=>({data:[]}))
+    ]);
+
+    products=(p||[]).map(x=>({
+      productCode:x.productCode||x["Product Code"]||x.code||"",
+      productName:x.productName||x["Product Name"]||x.name||"",
+      unit:x.unit||x["Unit"]||""
+    })).filter(x=>x.productCode||x.productName);
+
+    locations=(l||[]).map(x=>({
+      locationCode:x.locationCode||x["Location Code"]||x.code||"",
+      locationName:x.locationName||x.location||x["Location Name"]||x.name||x.locationCode||""
+    })).filter(x=>x.locationCode||x.locationName);
+
+    staff=unwrapArray(s).map(x=>({
+      staffId:x.staffId||x["Staff ID"]||"",
+      staffName:x.staffName||x["Staff Name"]||"",
+      department:x.department||x["Department"]||"",
+      position:x.position||x["Position"]||"",
+      status:x.status||x["Status"]||"Active"
+    }));
+
+    controllers=staff.filter(x=>x.position.toLowerCase().includes("inventory"));
+    salesmen=staff.filter(x=>x.position.toLowerCase().includes("sales"));
+    drivers=staff.filter(x=>x.position.toLowerCase().includes("driver"));
+
+    fillSelectors();
+    document.getElementById("kpiProducts").textContent=products.length;
+    document.getElementById("kpiLocations").textContent=locations.length;
+    document.getElementById("kpiControllers").textContent=controllers.length;
+    document.getElementById("kpiStaff").textContent=staff.length;
+  }catch(e){console.error(e);}
+}
+
+function optionProducts(){
+  return '<option value="">Select product</option>'+products.map((x,i)=>`<option value="${i}">${esc(x.productName||x.productCode)}${x.productCode?` — ${esc(x.productCode)}`:""}</option>`).join("");
+}
+function optionLocations(){
+  return '<option value="">Select location</option>'+locations.map(x=>`<option value="${esc(x.locationCode)}">${esc(x.locationName||x.locationCode)}${x.locationCode?` — ${esc(x.locationCode)}`:""}</option>`).join("");
+}
+function optionStaff(list){
+  return '<option value="">Select staff</option>'+list.map(x=>`<option value="${esc(x.staffId)}" data-name="${esc(x.staffName)}">${esc(x.staffName)} — ${esc(x.staffId)}</option>`).join("");
+}
+function fillSelectors(){
+  ["siProduct","acProduct","fiProduct"].forEach(id=>document.getElementById(id).innerHTML=optionProducts());
+  ["siLocation","baLocation","acLocation","acFrom","acTo","fiLocation"].forEach(id=>document.getElementById(id).innerHTML=optionLocations());
+  document.getElementById("siController").innerHTML=optionStaff(controllers);
+  document.getElementById("acController").innerHTML=optionStaff(controllers);
+  document.getElementById("baSalesman").innerHTML=optionStaff(salesmen);
+  document.getElementById("acSalesman").innerHTML=optionStaff(salesmen);
+  document.getElementById("baDriver").innerHTML=optionStaff(drivers);
+  document.getElementById("acDriver").innerHTML=optionStaff(drivers);
+}
+
+function selectedProduct(id){const i=Number(document.getElementById(id).value);return Number.isInteger(i)&&products[i]?products[i]:null;}
+function syncStockInProduct(){const p=selectedProduct("siProduct");document.getElementById("siProductCode").value=p?.productCode||"";document.getElementById("siUnit").value=p?.unit||"";}
+function syncActivityProduct(){const p=selectedProduct("acProduct");document.getElementById("acProductCode").value=p?.productCode||"";document.getElementById("acUnit").value=p?.unit||"";}
+function syncFifoProduct(){const p=selectedProduct("fiProduct");document.getElementById("fiProductCode").value=p?.productCode||"";}
+function syncController(prefix){const s=document.getElementById(prefix+"Controller");document.getElementById(prefix+"ControllerId").value=s.value||"";}
+function syncStaffSelect(selectId,targetId){document.getElementById(targetId).value=document.getElementById(selectId).value||"";}
+
+function staffName(selectId){const s=document.getElementById(selectId);const o=s.options[s.selectedIndex];return o?.dataset?.name||"";}
+
+async function saveStockIn(){
+  const p=selectedProduct("siProduct");
+  const data={
+    receivedDate:document.getElementById("siDate").value,
+    productCode:p?.productCode||"",
+    productName:p?.productName||"",
+    qty:Number(document.getElementById("siQty").value)||0,
+    unit:p?.unit||"",
+    unitCost:Number(document.getElementById("siCost").value)||0,
+    expiryDate:document.getElementById("siExpiry").value,
+    locationCode:document.getElementById("siLocation").value,
+    inventoryControllerStaffId:document.getElementById("siController").value,
+    inventoryControllerName:staffName("siController"),
+    purchaseReference:document.getElementById("siPurchaseRef").value.trim(),
+    referenceNo:document.getElementById("siReference").value.trim(),
+    note:document.getElementById("siNote").value.trim()
+  };
+  if(!data.receivedDate||!data.productCode||!data.qty||!data.locationCode||!data.inventoryControllerStaffId)return alert("Received Date, Product, Qty, Location and Inventory Controller are required.");
+  setStatus("stockInStatus","Saving Stock In...");
+  await postForm(STOCK_DATABASE_API_URL,"saveStockIn",data);
+  setStatus("stockInStatus","Stock In sent successfully. Lot ID and Transaction ID will be generated by Stock Database.","success");
+  clearStockIn();
+}
+
+async function createBatch(){
+  const data={
+    batchDate:document.getElementById("baDate").value,
+    locationCode:document.getElementById("baLocation").value,
+    salesmanStaffId:document.getElementById("baSalesman").value,
+    salesmanName:staffName("baSalesman"),
+    driverStaffId:document.getElementById("baDriver").value,
+    driverName:staffName("baDriver"),
+    status:document.getElementById("baStatus").value,
+    note:document.getElementById("baNote").value.trim()
+  };
+  if(!data.batchDate||!data.locationCode||!data.salesmanStaffId||!data.driverStaffId)return alert("Batch Date, Location, Salesman and Driver are required.");
+  setStatus("batchStatus","Creating Batch...");
+  await postForm(STOCK_DATABASE_API_URL,"createStockBatch",data);
+  setStatus("batchStatus","Selling Batch sent successfully. Batch ID will be generated by Stock Database.","success");
+  clearBatch();
+}
+
+function activityTypeChanged(){
+  const t=document.getElementById("acType").value;
+  const isTransfer=t==="Transfer";
+  document.getElementById("acFrom").disabled=!isTransfer;
+  document.getElementById("acTo").disabled=!isTransfer;
+}
+
+async function saveActivity(){
+  const p=selectedProduct("acProduct");
+  const data={
+    activityDate:document.getElementById("acDate").value,
+    activityType:document.getElementById("acType").value,
+    batchId:document.getElementById("acBatch").value.trim(),
+    lotId:document.getElementById("acLot").value.trim(),
+    productCode:p?.productCode||"",
+    productName:p?.productName||"",
+    qty:Number(document.getElementById("acQty").value)||0,
+    unit:p?.unit||"",
+    locationCode:document.getElementById("acLocation").value,
+    fromLocationCode:document.getElementById("acFrom").value,
+    toLocationCode:document.getElementById("acTo").value,
+    inventoryControllerStaffId:document.getElementById("acController").value,
+    inventoryControllerName:staffName("acController"),
+    salesmanStaffId:document.getElementById("acSalesman").value,
+    salesmanName:staffName("acSalesman"),
+    driverStaffId:document.getElementById("acDriver").value,
+    driverName:staffName("acDriver"),
+    relatedInvoiceNo:document.getElementById("acInvoice").value.trim(),
+    relatedPurchaseNo:document.getElementById("acPurchase").value.trim(),
+    referenceNo:document.getElementById("acReference").value.trim(),
+    note:document.getElementById("acNote").value.trim()
+  };
+  if(!data.activityDate||!data.activityType||!data.productCode||!data.qty)return alert("Activity Date, Activity Type, Product and Qty are required.");
+  if(data.activityType==="Transfer" && (!data.fromLocationCode||!data.toLocationCode))return alert("From Location and To Location are required for Transfer.");
+  setStatus("activityStatus","Saving Stock Activity...");
+  await postForm(STOCK_DATABASE_API_URL,"saveStockActivity",data);
+  setStatus("activityStatus","Stock Activity sent successfully.","success");
+  clearActivity();
+}
+
+async function loadFifoLots(){
+  const productCode=document.getElementById("fiProductCode").value;
+  const locationCode=document.getElementById("fiLocation").value;
+  if(!productCode)return alert("Select a Product.");
+  setStatus("fifoStatus","Loading FIFO lots...");
+  try{
+    const res=await fetchJson(STOCK_DATABASE_API_URL,{action:"getAvailableLotsFIFO",productCode,locationCode});
+    const list=unwrapArray(res);
+    document.getElementById("fifoLots").innerHTML=list.length?
+      '<div class="lot-row" style="font-weight:900;background:#f8fafc"><div>Lot ID</div><div>Received</div><div>Expiry</div><div>Available Qty</div></div>'+
+      list.map(x=>`<div class="lot-row"><div><strong>${esc(x.lotId)}</strong></div><div>${esc(x.receivedDate)}</div><div>${esc(x.expiryDate||"-")}</div><div>${Number(x.availableQty||0).toLocaleString()} ${esc(x.unit||"")}</div></div>`).join("")
+      :'<div class="status">No available FIFO lots found.</div>';
+    setStatus("fifoStatus",list.length+" available lot(s) loaded. Oldest received lot is first.","success");
+  }catch(e){setStatus("fifoStatus","Could not load FIFO lots: "+e.message,"error");}
+}
+
+function clearStockIn(){["siQty","siCost","siExpiry","siPurchaseRef","siReference","siNote","siProductCode","siUnit","siControllerId"].forEach(id=>document.getElementById(id).value="");document.getElementById("siProduct").value="";document.getElementById("siLocation").value="";document.getElementById("siController").value="";document.getElementById("siDate").value=today();}
+function clearBatch(){["baSalesmanId","baDriverId","baNote"].forEach(id=>document.getElementById(id).value="");document.getElementById("baLocation").value="";document.getElementById("baSalesman").value="";document.getElementById("baDriver").value="";document.getElementById("baStatus").value="Open";document.getElementById("baDate").value=today();}
+function clearActivity(){["acBatch","acLot","acProductCode","acQty","acUnit","acControllerId","acSalesmanId","acDriverId","acInvoice","acPurchase","acReference","acNote"].forEach(id=>document.getElementById(id).value="");["acType","acProduct","acLocation","acFrom","acTo","acController","acSalesman","acDriver"].forEach(id=>document.getElementById(id).value="");document.getElementById("acDate").value=today();activityTypeChanged();}
+
+document.getElementById("siDate").value=today();
+document.getElementById("baDate").value=today();
+document.getElementById("acDate").value=today();
+activityTypeChanged();
+loadAll();
+</script>
+</body>
+</html>

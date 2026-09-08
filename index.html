@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.6 Simple Batch Reference</title>
+<title>BIG BROTHER — Stock In-Out V2.7 Zero Batch Filter</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -501,32 +501,110 @@ async function confirmTimedOutSave(requestId){
 }
 
 
-function applySimpleBatchLocalResult(r){
-  if(!r || !r.batch) return;
+function applySimpleBatchLocalResult(r,d){
+  if(!r)return;
 
-  const batch=r.batch;
-  const id=clean(batch.batchId);
+  const id=
+    clean(
+      r.batchId ||
+      (r.batch && r.batch.batchId) ||
+      (d && d.batchId)
+    );
 
-  if(!id) return;
+  if(!id)return;
 
   const existingIndex=
     openBatches.findIndex(
       item=>clean(item.batchId)===id
     );
 
-  if(existingIndex>=0){
+  /*
+   * New Batch create:
+   * seed local physical remaining from the issued Qty.
+   */
+  if(
+    clean(r.movementType)==="BATCH_STOCK" &&
+    r.batch
+  ){
+    const issued=(d && Array.isArray(d.items))
+      ? d.items.reduce(
+          (sum,item)=>sum+num(item.qty),
+          0
+        )
+      : 0;
+
+    const batch={
+      ...r.batch,
+      totalPhysicalRemainingQty:issued
+    };
+
+    if(existingIndex>=0){
+      openBatches[existingIndex]={
+        ...openBatches[existingIndex],
+        ...batch
+      };
+    }else if(issued>0.000001){
+      openBatches.unshift(batch);
+    }
+
+    fillBatchSelect();
+    return;
+  }
+
+  if(existingIndex<0){
+    if(r.batch){
+      openBatches.unshift(r.batch);
+      fillBatchSelect();
+    }
+    return;
+  }
+
+  const movementType=clean(r.movementType).toUpperCase();
+
+  if(
+    movementType==="BACK_SALE" ||
+    (
+      movementType==="STOCK_DAMAGE" &&
+      clean(r.damageSource).toUpperCase()==="BATCH"
+    )
+  ){
+    const moved=(d && Array.isArray(d.items))
+      ? d.items.reduce(
+          (sum,item)=>sum+num(item.qty),
+          0
+        )
+      : 0;
+
+    const current=num(
+      openBatches[existingIndex].totalPhysicalRemainingQty
+    );
+
+    if(current>0){
+      const next=Math.max(0,current-moved);
+
+      openBatches[existingIndex]={
+        ...openBatches[existingIndex],
+        ...(r.batch || {}),
+        totalPhysicalRemainingQty:next
+      };
+
+      /*
+       * If physical Batch remaining reaches zero, remove it immediately.
+       */
+      if(next<=0.000001){
+        openBatches.splice(existingIndex,1);
+      }
+    }else if(r.batch){
+      openBatches[existingIndex]={
+        ...openBatches[existingIndex],
+        ...r.batch
+      };
+    }
+  }else if(r.batch){
     openBatches[existingIndex]={
       ...openBatches[existingIndex],
-      ...batch
+      ...r.batch
     };
-  }else if(
-    !["CLOSED","CANCELLED","CANCELED"]
-      .includes(
-        clean(batch.status)
-          .toUpperCase()
-      )
-  ){
-    openBatches.unshift(batch);
   }
 
   fillBatchSelect();
@@ -541,7 +619,7 @@ function showSaveSuccess(r,d){
     stockSnapshot=r.snapshot;
   }
 
-  applySimpleBatchLocalResult(r);
+  applySimpleBatchLocalResult(r,d);
 
   stockRevision=
     clean(r.revision)||

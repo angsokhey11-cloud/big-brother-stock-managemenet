@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.4 Fast Smart Sync + Storage</title>
+<title>BIG BROTHER — Stock In-Out V2.5 Fast Save Confirm</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -287,6 +287,9 @@ const CACHE_MAX_AGE=86400000;
 const SMART_SYNC_MS=30000;
 let smartSyncTimer=null,revisionBusy=false,stockSyncBusy=false,lastRevisionCheckAt=0;
 
+let currentSaveRequestId="";
+let currentSaveFingerprint="";
+
 const $=id=>document.getElementById(id),clean=v=>String(v==null?"":v).trim(),num=v=>Number(v)||0;
 let flow="INFLOW",movementType="PURCHASE",damageSource="WAREHOUSE";
 let products=[],locations=[],staff=[],controllers=[],salesmen=[],drivers=[],clients=[],customers=[];
@@ -314,6 +317,247 @@ function jsonp(url,params={},timeout=16000){
     script.src=url+"?"+new URLSearchParams({...params,callback:cb,t:Date.now()}).toString();document.head.appendChild(script);
     const timer=setTimeout(()=>{if(!done){finish();reject(new Error("Database request timed out."))}},timeout);
   });
+}
+
+
+function createSaveRequestId(){
+  return (
+    "KEYIN-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2,10)
+      .toUpperCase()
+  );
+}
+
+function buildSaveFingerprint(data){
+  const copy={
+    activityDate:clean(data?.activityDate),
+    flow:clean(data?.flow),
+    movementType:clean(data?.movementType),
+    damageSource:clean(data?.damageSource),
+    batchId:clean(data?.batchId),
+    referenceNo:clean(data?.referenceNo),
+    warehouseLocationCode:clean(data?.warehouseLocationCode),
+    inventoryControllerStaffId:clean(data?.inventoryControllerStaffId),
+    clientId:clean(data?.clientId),
+    staffId:clean(data?.staffId),
+    items:(data?.items||[]).map(item=>({
+      productCode:clean(item.productCode),
+      qty:num(item.qty),
+      expiryDate:clean(item.expiryDate),
+      purchaseItemId:clean(item.purchaseItemId)
+    }))
+  };
+
+  return JSON.stringify(copy);
+}
+
+function attachSaveRequestId(data){
+  const fingerprint=
+    buildSaveFingerprint(data);
+
+  if(
+    !currentSaveRequestId ||
+    currentSaveFingerprint!==fingerprint
+  ){
+    currentSaveRequestId=
+      createSaveRequestId();
+
+    currentSaveFingerprint=
+      fingerprint;
+  }
+
+  data.requestId=
+    currentSaveRequestId;
+
+  return data;
+}
+
+function clearSaveRequestState(){
+  currentSaveRequestId="";
+  currentSaveFingerprint="";
+}
+
+function applyMovementDeltas(deltas){
+  if(!Array.isArray(deltas))return;
+
+  deltas.forEach(delta=>{
+    const code=clean(delta.productCode);
+    if(!code)return;
+
+    let row=
+      stockSnapshot.find(
+        item=>clean(item.productCode)===code
+      );
+
+    if(!row){
+      row={
+        productCode:code,
+        productName:clean(delta.productName)||code,
+        unit:"",
+        warehouseGood:0,
+        batchPending:0,
+        damaged:0,
+        totalGood:0
+      };
+
+      stockSnapshot.push(row);
+    }
+
+    row.warehouseGood=
+      num(row.warehouseGood)+
+      num(delta.warehouseDelta);
+
+    row.batchPending=
+      num(row.batchPending)+
+      num(delta.batchPendingDelta);
+
+    row.damaged=
+      num(row.damaged)+
+      num(delta.damagedDelta);
+
+    row.totalGood=
+      num(row.warehouseGood)+
+      num(row.batchPending);
+
+    const batchId=clean(delta.batchId);
+
+    if(batchId){
+      const batch=
+        openBatches.find(
+          b=>clean(b.batchId)===batchId
+        );
+
+      const batchItem=
+        batch?.items?.find(
+          item=>
+            clean(item.productCode)===code
+        );
+
+      if(batchItem){
+        batchItem.pendingQty=
+          delta.batchPendingAfter!==undefined
+            ? num(delta.batchPendingAfter)
+            : num(batchItem.pendingQty)+
+              num(delta.batchPendingDelta);
+      }
+    }
+  });
+
+  stockSnapshot.sort(
+    (a,b)=>
+      clean(a.productName)
+        .localeCompare(clean(b.productName))
+  );
+
+  updateProductAvailability();
+  renderItems();
+  writeCache();
+}
+
+async function confirmTimedOutSave(requestId){
+  const id=clean(requestId);
+  if(!id)return null;
+
+  for(let attempt=0;attempt<3;attempt++){
+    if(attempt>0){
+      await new Promise(
+        resolve=>setTimeout(resolve,900)
+      );
+    }
+
+    try{
+      const result=
+        await jsonp(
+          STOCK_API,
+          {
+            action:"movementByRequestId",
+            requestId:id
+          },
+          7000
+        );
+
+      if(
+        result &&
+        (
+          result.duplicate ||
+          result.found ||
+          result.movementId
+        )
+      ){
+        return result;
+      }
+    }catch(_){}
+  }
+
+  return null;
+}
+
+function showSaveSuccess(r,d){
+  if(Array.isArray(r.deltas)){
+    applyMovementDeltas(r.deltas);
+  }
+
+  if(Array.isArray(r.snapshot)){
+    stockSnapshot=r.snapshot;
+  }
+
+  stockRevision=
+    clean(r.revision)||
+    stockRevision;
+
+  $("successMovement").textContent=
+    clean(r.movementId)||"-";
+
+  $("successBatch").textContent=
+    clean(r.batchId)||"-";
+
+  $("successDate").textContent=
+    formatDate(
+      r.activityDate||
+      d.activityDate
+    );
+
+  $("successLines").textContent=
+    Array.isArray(r.lines)
+      ? r.lines.length
+      : (
+          Number(r.lineCount) ||
+          d.items.length
+        );
+
+  $("successPanel").hidden=false;
+
+  setStatus(
+    (r.duplicate
+      ? "Already saved · "
+      : "Saved successfully · ") +
+    clean(r.movementId) +
+    (
+      r.batchId
+        ? " · Batch "+r.batchId
+        : ""
+    ),
+    "success"
+  );
+
+  clearSaveRequestState();
+
+  items=[];
+  renderItems();
+  updatePreview();
+  updateProductAvailability();
+
+  /*
+   * Do NOT block the Save button waiting for a full reload.
+   * Optimistic deltas already updated the screen.
+   */
+  loadStockFast(true,false);
+
+  writeCache();
 }
 
 async function apiPost(action,data,timeout=25000){
@@ -1277,32 +1521,107 @@ async function refreshStockOnly(silent=false){
 }
 
 async function saveMovement(){
-  const d=buildPayload(),err=validate(d);if(err)return setStatus(err,"error");
-  const btn=$("saveBtn"),old=btn.textContent;btn.disabled=true;btn.textContent="Saving...";$("successPanel").hidden=true;
-  setStatus("Saving "+movementLabel()+" to Stock Database...");
+  let d=buildPayload();
+  const err=validate(d);
+
+  if(err){
+    return setStatus(
+      err,
+      "error"
+    );
+  }
+
+  d=attachSaveRequestId(d);
+
+  const btn=$("saveBtn");
+  const old=btn.textContent;
+
+  btn.disabled=true;
+  btn.textContent="Saving...";
+  $("successPanel").hidden=true;
+
+  setStatus(
+    "Saving "+
+    movementLabel()+
+    "..."
+  );
+
   try{
-    const r=await apiPost("saveStockMovement",d);
-    if(Array.isArray(r.snapshot))stockSnapshot=r.snapshot;stockRevision=clean(r.revision)||stockRevision;
-    $("successMovement").textContent=clean(r.movementId)||"-";$("successBatch").textContent=clean(r.batchId)||"-";
-    $("successDate").textContent=formatDate(r.activityDate||d.activityDate);$("successLines").textContent=Array.isArray(r.lines)?r.lines.length:d.items.length;
-    $("successPanel").hidden=false;setStatus("Saved successfully · "+clean(r.movementId)+(r.batchId?" · Batch "+r.batchId:""),"success");
-    items=[];
-    renderItems();
-    updatePreview();
-    updateProductAvailability();
-    await loadStockFast(true,false);
+    const r=
+      await apiPost(
+        "saveStockMovement",
+        d,
+        18000
+      );
+
+    showSaveSuccess(
+      r,
+      d
+    );
 
     if(movementType==="PURCHASE"){
-      await loadPurchaseList(true);
-      await purchaseChanged();
+      loadPurchaseList(true)
+        .then(()=>purchaseChanged());
     }
 
-    writeCache();
-  }catch(e){setStatus(clean(e?.message)||"Could not save Stock Movement.","error")}
-  finally{btn.disabled=false;btn.textContent=old}
+  }catch(e){
+    const message=
+      clean(e?.message)||
+      "Could not save Stock Movement.";
+
+    /*
+     * If browser confirmation timed out, DO NOT tell staff to retry
+     * immediately. First ask the server whether this Request ID
+     * actually finished. This prevents duplicate Back Sale.
+     */
+    if(
+      /timed out/i.test(message) &&
+      d.requestId
+    ){
+      setStatus(
+        "Save confirmation is slow · checking whether Stock already saved...",
+        "warn"
+      );
+
+      const confirmed=
+        await confirmTimedOutSave(
+          d.requestId
+        );
+
+      if(confirmed){
+        showSaveSuccess(
+          confirmed,
+          d
+        );
+
+        setStatus(
+          "Saved successfully · server confirmed after slow response · "+
+          clean(confirmed.movementId),
+          "success"
+        );
+
+      }else{
+        setStatus(
+          "Save confirmation timed out. Do NOT press Save again yet. Refresh Stock first to verify the Batch.",
+          "error"
+        );
+      }
+
+    }else{
+      setStatus(
+        message,
+        "error"
+      );
+    }
+
+  }finally{
+    btn.disabled=false;
+    btn.textContent=old;
+  }
 }
 
 function clearForm(){
+  clearSaveRequestState();
   items=[];
   purchaseDetail=null;
   purchaseLines=[];

@@ -1,1958 +1,492 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BIG BROTHER — Dashboard V3.36 Stock Menu + Keyin</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    :root {
-      --navy: #17457a;
-      --navy-dark: #123861;
-      --blue: #2f6fed;
-      --bg: #eef3f8;
-      --card: #ffffff;
-      --text: #172b4d;
-      --muted: #667085;
-      --border: #d9e2ef;
-      --green: #18864b;
-      --orange: #d97706;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .app {
-      min-height: 100vh;
-      display: flex;
-    }
-
-    .sidebar {
-      width: 250px;
-      background: var(--navy-dark);
-      color: white;
-      padding: 24px 16px;
-      position: fixed;
-      inset: 0 auto 0 0;
-      overflow-y: auto;
-    }
-
-    .brand {
-      padding: 4px 12px 28px;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-      margin-bottom: 18px;
-    }
-
-    .brand-title {
-      font-size: 25px;
-      font-weight: 800;
-      letter-spacing: 1px;
-    }
-
-    .brand-subtitle {
-      margin-top: 5px;
-      color: #b8c9df;
-      font-size: 12px;
-    }
-
-    .nav-title {
-      padding: 10px 12px 7px;
-      color: #91a9c6;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .8px;
-    }
-
-    .nav {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .nav a {
-      color: #e8f0fa;
-      text-decoration: none;
-      padding: 12px;
-      border-radius: 9px;
-      font-size: 14px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav a:hover,
-    .nav a.active {
-      background: rgba(255,255,255,.12);
-    }
-
-    .nav-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .nav-toggle {
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: #e8f0fa;
-      padding: 12px;
-      border-radius: 9px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      text-align: left;
-    }
-
-    .nav-toggle:hover,
-    .nav-toggle.open {
-      background: rgba(255,255,255,.12);
-    }
-
-    .nav-toggle-main {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-arrow {
-      font-size: 11px;
-      transition: transform .18s ease;
-    }
-
-    .nav-toggle.open .nav-arrow {
-      transform: rotate(180deg);
-    }
-
-    .nav-submenu {
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-      margin: 0 0 4px 18px;
-      padding-left: 10px;
-      border-left: 1px solid rgba(255,255,255,.16);
-    }
-
-    .nav-submenu.open {
-      display: flex;
-    }
-
-    .nav-submenu a {
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #d8e6f7;
-      background: rgba(255,255,255,.04);
-    }
-
-    .nav-submenu a:hover {
-      background: rgba(255,255,255,.13);
-      color: #fff;
-    }
-
-    .main {
-      margin-left: 250px;
-      width: calc(100% - 250px);
-      padding: 28px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 26px;
-    }
-
-    .page-title {
-      margin: 0;
-      font-size: 28px;
-      color: var(--navy);
-    }
-
-    .page-subtitle {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .system-pill {
-      background: #e5effc;
-      color: var(--navy);
-      border-radius: 999px;
-      padding: 9px 13px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .welcome {
-      background: linear-gradient(135deg, #17457a, #2f6fed);
-      color: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 8px 22px rgba(23,69,122,.16);
-      margin-bottom: 24px;
-    }
-
-    .welcome h2 {
-      margin: 0 0 7px;
-      font-size: 22px;
-    }
-
-    .welcome p {
-      margin: 0;
-      color: #dbe9fb;
-      font-size: 14px;
-    }
-
-    .section-title {
-      margin: 25px 0 12px;
-      font-size: 17px;
-      color: var(--navy);
-    }
-
-    .modules {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 15px;
-    }
-
-    .module {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-top: 4px solid var(--blue);
-      border-radius: 13px;
-      padding: 18px;
-      min-height: 150px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 3px 10px rgba(16,42,67,.05);
-    }
-
-    .module.disabled {
-      border-top-color: #b8c3d1;
-      opacity: .82;
-    }
-
-    .module-icon {
-      font-size: 27px;
-      margin-bottom: 10px;
-    }
-
-    .module h3 {
-      margin: 0;
-      font-size: 17px;
-    }
-
-    .module p {
-      margin: 7px 0 15px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      flex: 1;
-    }
-
-    .module a,
-    .module button {
-      border: 0;
-      background: var(--navy);
-      color: white;
-      text-decoration: none;
-      text-align: center;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .module button {
-      background: #cbd5e1;
-      color: #64748b;
-      cursor: not-allowed;
-    }
-
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 15px;
-    }
-
-    .quick-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .quick-label {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .quick-value {
-      margin-top: 7px;
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--navy);
-    }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      color: var(--green);
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    .footer {
-      margin-top: 30px;
-      color: #98a2b3;
-      text-align: center;
-      font-size: 11px;
-    }
-
-    .mobile-header {
-      display: none;
-    }
-
-    /*
-     * Sales section has four modules:
-     * Invoice Generator
-     * Invoice Reversal
-     * Invoice History
-     * Payments
-     */
-    @media (min-width: 1051px) {
-      #sales + .modules {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 1050px) {
-      .modules {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .quick-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 720px) {
-      .sidebar {
-        position: static;
-        width: 100%;
-        min-height: auto;
-        padding: 16px 12px;
-      }
-
-      .app {
-        display: block;
-      }
-
-      .main {
-        margin-left: 0;
-        width: 100%;
-        padding: 18px;
-      }
-
-      .topbar {
-        align-items: flex-start;
-      }
-
-      .page-title {
-        font-size: 23px;
-      }
-
-      .modules,
-      .quick-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        padding: 16px 12px;
-      }
-
-      .brand {
-        padding-bottom: 16px;
-      }
-
-      .nav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .nav-group {
-        min-width: 0;
-      }
-
-      .nav-submenu {
-        margin-left: 8px;
-      }
-
-      .nav-title {
-        display: none;
-      }
-    }
-  
-    /* =====================================================
-       BIG BROTHER PERMANENT SHELL V3.11 — PURCHASE MENU
-       LEFT = fixed navigation, RIGHT = changing workspace
-       ===================================================== */
-    html, body { height:100%; }
-    body { overflow:hidden; }
-
-    .brand-home {
-      width:100%; border:0; padding:4px; margin:-4px;
-      background:transparent; color:inherit; text-align:left;
-      cursor:pointer; border-radius:10px; font:inherit;
-    }
-    .brand-home:hover { background:rgba(255,255,255,.08); }
-
-    .shell-nav-link,
-    .nav-submenu button {
-      width:100%; border:0; cursor:pointer; font:inherit;
-    }
-    .shell-nav-link {
-      color:#e8f0fa; background:transparent; text-align:left;
-      padding:12px; border-radius:9px; font-size:14px; font-weight:700;
-      display:flex; align-items:center; gap:10px;
-    }
-    .shell-nav-link:hover,
-    .shell-nav-link.active { background:rgba(255,255,255,.12); }
-
-    .nav-submenu button {
-      color:#dce8f7; background:transparent; text-align:left;
-      padding:10px 12px 10px 34px; border-radius:8px;
-      font-size:13px; font-weight:700; display:block;
-    }
-    .nav-submenu button:hover,
-    .nav-submenu button.active { background:rgba(255,255,255,.12); color:#fff; }
-
-    /* =====================================================
-       V3.22 — NESTED MASTER DATA EDITORS
-       Master Data
-         -> Customers Editor
-              -> Add Customer
-              -> Customer Map
-              -> All Customer Details
-         -> Clients Editor
-              -> Add Client
-              -> All Clients Details
-         -> Products
-              -> Add Product
-              -> Product Details and Price
-       ===================================================== */
-    .nested-nav-group {
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      width:100%;
-    }
-
-    .nested-nav-toggle {
-      width:100%;
-      border:0;
-      background:transparent;
-      color:#dce8f7;
-      padding:10px 12px 10px 34px;
-      border-radius:8px;
-      font-size:13px;
-      font-weight:700;
-      cursor:pointer;
-      display:flex !important;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-      text-align:left;
-    }
-
-    .nested-nav-toggle:hover,
-    .nested-nav-toggle.open {
-      background:rgba(255,255,255,.12);
-      color:#fff;
-    }
-
-    .nested-nav-toggle .nested-nav-main {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-
-    .nested-nav-toggle .nav-arrow {
-      flex:0 0 auto;
-      font-size:10px;
-    }
-
-    .nav-submenu-level2 {
-      margin:0 0 4px 17px;
-      padding-left:8px;
-      border-left:1px solid rgba(255,255,255,.13);
-    }
-
-    .nav-submenu-level2 button {
-      padding:9px 10px 9px 26px;
-      font-size:12px;
-      font-weight:700;
-      background:rgba(255,255,255,.025);
-    }
-
-    .shell-main {
-      height:100vh;
-      overflow:hidden;
-      padding:0 !important;
-    }
-    .dashboard-home {
-      height:100vh;
-      overflow-y:auto;
-      padding:28px;
-      scroll-behavior:smooth;
-    }
-    .module-workspace {
-      width:100%;
-      height:100vh;
-      background:#eef3f8;
-    }
-    .module-frame {
-      display:block;
-      width:100%;
-      height:100%;
-      border:0;
-      background:#eef3f8;
-    }
-
-    @media (max-width:720px) {
-      body { overflow:auto; }
-      .sidebar { position:relative !important; width:100% !important; min-height:auto !important; }
-      .shell-main { margin-left:0 !important; width:100% !important; height:calc(100vh - 260px); min-height:640px; }
-      .dashboard-home { height:100%; padding:18px; }
-      .module-workspace { height:100%; }
-    }
-
-  
-    /* =====================================================
-       V3.25 — TEMPORARILY FROZEN SALES SUPPORT ITEMS
-       ===================================================== */
-    .nav-submenu button.frozen-module,
-    .nav-submenu button:disabled {
-      opacity:.42;
-      cursor:not-allowed;
-      pointer-events:none;
-      filter:grayscale(.35);
-    }
-
-    .nav-submenu button.frozen-module:hover,
-    .nav-submenu button:disabled:hover {
-      background:transparent;
-      color:#dce8f7;
-    }
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIG BROTHER — Stock In-Out V2.0</title>
+<style>
+*{box-sizing:border-box}
+:root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
+html,body{margin:0;min-height:100%;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body.embed .page{max-width:none;padding:14px}
+.page{max-width:1500px;margin:auto;padding:22px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:15px}
+h1{margin:0;color:var(--navy);font-size:26px}.subtitle{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.5}
+.db-pill{border:1px solid #cfe0f3;border-radius:999px;background:#f7fbff;color:var(--blue);padding:8px 11px;font-size:10px;font-weight:900;white-space:nowrap}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px rgba(27,61,96,.06);padding:16px;margin-bottom:14px}
+.section-title{font-size:15px;font-weight:1000;color:var(--navy);margin-bottom:11px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field label{display:block;margin-bottom:5px;color:#53677d;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.field input,.field select,.field textarea{width:100%;min-height:42px;border:1px solid #cbd8e7;border-radius:9px;background:#fff;padding:9px 10px;color:var(--text);font:inherit;font-size:12px}
+.field textarea{min-height:76px;resize:vertical}.helper{margin-top:4px;color:#8797a8;font-size:9px}
+.status{border:1px solid #d7e5f6;background:#eef4fb;border-radius:9px;padding:9px 11px;color:#435e7d;font-size:11px;margin-bottom:11px}
+.status.success{background:#edf9f3;border-color:#ccebdc;color:#176d4b}.status.error{background:#fff1f1;border-color:#f0cece;color:#9d2f2f}.status.warn{background:#fff7e7;border-color:#efd49a;color:#7a5718}
+.flow-toggle{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.flow-btn{border:1px solid var(--line);border-radius:11px;background:#fff;min-height:52px;padding:8px 12px;font-size:13px;font-weight:1000;color:#5a6d80;cursor:pointer}
+.flow-btn.active.in{background:#edf9f3;border-color:#a9ddc3;color:#126844}.flow-btn.active.out{background:#eef5ff;border-color:#b8d1ee;color:var(--navy)}
+.type-buttons{display:flex;gap:7px;flex-wrap:wrap}.type-btn{border:1px solid #cbd8e7;border-radius:9px;background:#fff;color:#53677d;padding:9px 11px;font-size:10px;font-weight:1000;cursor:pointer}
+.type-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}.dynamic[hidden]{display:none!important}
+.product-entry{display:grid;grid-template-columns:minmax(240px,2fr) 1fr 1fr 1fr auto;gap:8px;align-items:end}
+.product-entry.purchase{grid-template-columns:minmax(240px,2fr) 1fr 1fr 1fr 1fr auto}
+.btn,.add-btn{border:0;border-radius:9px;min-height:42px;padding:9px 13px;font-weight:1000;cursor:pointer}.btn.primary,.add-btn{background:var(--navy);color:#fff}
+.btn.secondary{background:#fff;color:#425b75;border:1px solid var(--line)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:850px}
+th,td{padding:9px 10px;border-bottom:1px solid #edf1f5;text-align:left;font-size:11px}th{background:#f7f9fc;color:#53677d;font-size:9px;text-transform:uppercase;position:sticky;top:0}
+td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:center!important;color:#8090a1!important}
+.remove{border:0;background:#fff1f1;color:#a93636;border-radius:7px;padding:6px 8px;font-size:10px;font-weight:900;cursor:pointer}
+.badge{display:inline-block;border-radius:999px;background:#eaf4ff;color:var(--blue);padding:4px 7px;font-size:9px;font-weight:900}
+.preview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.preview-kpi{border:1px solid var(--line);border-radius:10px;background:#fbfcfe;padding:10px}
+.preview-kpi small{display:block;font-size:8px;color:#7b8da0;font-weight:900;text-transform:uppercase}.preview-kpi strong{display:block;margin-top:4px;font-size:15px;color:var(--navy)}
+.pos{color:var(--green)!important}.neg{color:var(--red)!important}.zero{color:#8291a1!important}
+.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:13px}
+.success-panel{border:1px solid #ccebdc;border-radius:12px;background:#edf9f3;padding:13px;margin-top:12px}.success-panel[hidden]{display:none}.success-panel strong{color:#176d4b}
+.success-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:9px}.success-item{background:#fff;border:1px solid #d9eee3;border-radius:8px;padding:8px}
+.success-item small{display:block;color:#759080;font-size:8px;text-transform:uppercase;font-weight:900}.success-item div{margin-top:3px;font-size:11px;font-weight:900;color:#315744}
+@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.product-entry,.product-entry.purchase{grid-template-columns:1fr 1fr}.preview-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.page{padding:12px}.topbar{display:block}.db-pill{display:inline-block;margin-top:9px}.grid,.grid2,.flow-toggle,.product-entry,.product-entry.purchase,.success-grid{grid-template-columns:1fr}.actions .btn{width:100%}}
 </style>
 </head>
-
 <body>
+<div class="page">
+  <div class="topbar">
+    <div>
+      <h1>📦 Stock In-Out Keyin</h1>
+      <div class="subtitle">One keyin tool for Purchase, Receive from Client, Back Sale, Batch Stock, Direct Sale, Damage and Staff Allowance.</div>
+    </div>
+    <div class="db-pill" id="dbPill">STOCK DATABASE</div>
+  </div>
 
-<div class="app" id="top">
+  <div id="status" class="status">Loading Stock Database and master data...</div>
 
-  <!-- =====================================================
-       SIDEBAR
-       ===================================================== -->
-
-  <aside class="sidebar">
-
-    <div class="brand">
-      <button type="button" class="brand-home" onclick="showDashboardHome()" title="Dashboard">
-        <div class="brand-title">BIG BROTHER</div>
-        <div class="brand-subtitle">Sales & Accounting System</div>
-      </button>
+  <div class="card">
+    <div class="section-title">1. Transaction</div>
+    <div class="grid">
+      <div class="field"><label>Transaction Date</label><input id="activityDate" type="date"><div id="dateDisplay" class="helper">DD-Sep-YYYY</div></div>
+      <div class="field"><label>Inventory Controller</label><select id="controllerSelect"><option value="">Loading Staff...</option></select></div>
+      <div class="field"><label>Reference No.</label><input id="referenceNo" placeholder="Optional"></div>
+      <div class="field"><label>Warehouse Location (Optional)</label><select id="locationSelect"><option value="">Loading Locations...</option></select></div>
     </div>
 
-    <div class="nav-title">
-      Main Menu
+    <div style="height:12px"></div>
+    <div class="flow-toggle">
+      <button type="button" id="flowInBtn" class="flow-btn active in">📥 INFLOW</button>
+      <button type="button" id="flowOutBtn" class="flow-btn">📤 OUTFLOW / TRANSFER</button>
     </div>
 
-    <nav class="nav">
+    <div style="height:11px"></div>
+    <div id="inflowTypes" class="type-buttons">
+      <button type="button" class="type-btn active" data-type="PURCHASE">Purchase</button>
+      <button type="button" class="type-btn" data-type="RECEIVE_FROM_CLIENT">Receive from Client</button>
+      <button type="button" class="type-btn" data-type="BACK_SALE">Back Sale</button>
+    </div>
+    <div id="outflowTypes" class="type-buttons" hidden>
+      <button type="button" class="type-btn" data-type="BATCH_STOCK">Batch Stock to Salesman</button>
+      <button type="button" class="type-btn" data-type="DIRECT_SALE">Direct Sale to Customer</button>
+      <button type="button" class="type-btn" data-type="STOCK_DAMAGE">Stock Damage</button>
+      <button type="button" class="type-btn" data-type="STAFF_ALLOWANCE">Stock Allowance to Staff</button>
+    </div>
+  </div>
 
-      <button type="button" class="shell-nav-link active" id="navDashboard" onclick="showDashboardHome()">
-        🏠 Dashboard
-      </button>
+  <div class="card">
+    <div class="section-title">2. Movement Details</div>
 
-      <div class="nav-group" id="salesNavGroup">
-        <button
-          type="button"
-          id="salesMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="salesSubmenu"
-          onclick="toggleSalesMenu()"
-        >
-          <span class="nav-toggle-main"><span>🧾</span><span>Sales</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="salesSubmenu" class="nav-submenu">
-          <button type="button" id="navNewInvoice" onclick="loadWorkspace('invoice')">➕ New Invoice</button>
-          <button type="button" id="navInvoiceHistory" onclick="loadWorkspace('history')">📋 Invoice History</button>
-          <button type="button" id="navSaleReturn" onclick="loadWorkspace('sale-return')">↩️ Invoice Reversal</button>
-          <button type="button" id="navPaymentHistory" onclick="loadWorkspace('payment-history')">💵 Payment History</button>
-          <button type="button" id="navDailySaleSummary" onclick="loadWorkspace('daily-sale-summary')">📊 Daily Sale Summary</button>
-          <button type="button" id="navDailyCashCollection" onclick="loadWorkspace('daily-cash-collection')">💵 Daily Cash Collection</button>
-        </div>
+    <div id="purchaseFields" class="dynamic">
+      <div class="grid">
+        <div class="field"><label>Supplier / Client</label><select id="purchaseClient"><option value="">Optional</option></select></div>
+        <div class="field"><label>Related Purchase No.</label><input id="relatedPurchaseNo" placeholder="Optional"></div>
       </div>
-
-
-      <div class="nav-group" id="salesSupportNavGroup">
-        <button
-          type="button"
-          id="salesSupportMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="salesSupportSubmenu"
-          onclick="toggleSalesSupportMenu()"
-        >
-          <span class="nav-toggle-main"><span>🛠️</span><span>Sales Support</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="salesSupportSubmenu" class="nav-submenu">
-          <button type="button" id="navSalesSupportCalculator" onclick="loadWorkspace('sales-support-calculator')">🧮 Calculator</button>
-          <button type="button" class="frozen-module" id="navSalesSupportRequestDelivery" disabled aria-disabled="true" title="Temporarily unavailable">🚚 Request Delivery</button>
-          <button type="button" id="navSalesSupportYourCustomer" onclick="loadWorkspace('sales-support-your-customer')">👥 Your Customer</button>
-          <button type="button" class="frozen-module" id="navSalesSupportSuccessfulDelivery" disabled aria-disabled="true" title="Temporarily unavailable">✅ Successful Delivery</button>
-        </div>
-      </div>
-
-      <div class="nav-group" id="purchaseNavGroup">
-        <button
-          type="button"
-          id="purchaseMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="purchaseSubmenu"
-          onclick="togglePurchaseMenu()"
-        >
-          <span class="nav-toggle-main"><span>🛒</span><span>Purchase</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="purchaseSubmenu" class="nav-submenu">
-          <button type="button" id="navCreatePurchase" onclick="loadWorkspace('purchase-create')">➕ Create Purchase</button>
-          <button type="button" id="navPurchaseHistory" onclick="loadWorkspace('purchase-history')">📋 Purchase History</button>
-          <button type="button" id="navPurchasePayable" onclick="loadWorkspace('purchase-payable')">💰 Payable Invoice</button>
-          <button type="button" id="navPurchasePaymentHistory" onclick="loadWorkspace('purchase-payment-history')">💳 Payment History</button>
-        </div>
-      </div>
-
-      <div class="nav-group" id="expensesNavGroup">
-        <button
-          type="button"
-          id="expensesMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="expensesSubmenu"
-          onclick="toggleExpensesMenu()"
-        >
-          <span class="nav-toggle-main"><span>💸</span><span>Expenses</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="expensesSubmenu" class="nav-submenu">
-          <button type="button" id="navExpenseAdd" onclick="loadWorkspace('expense-add')">➕ Add Expense</button>
-          <button type="button" id="navExpenseAccrued" onclick="loadWorkspace('expense-accrued')">⏳ Accrued Expenses</button>
-          <button type="button" id="navExpenseHistory" onclick="loadWorkspace('expense-history')">📜 Expense History</button>
-          <button type="button" class="frozen-module" id="navExpenseMonthlyReport" disabled aria-disabled="true" title="Coming later">📊 Monthly Expense Report</button>
-        </div>
-      </div>
-
-      <div class="nav-group" id="stockNavGroup">
-        <button
-          type="button"
-          id="stockMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="stockSubmenu"
-          onclick="toggleStockMenu()"
-        >
-          <span class="nav-toggle-main"><span>📦</span><span>Stock</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="stockSubmenu" class="nav-submenu">
-          <button type="button" id="navStockKeyin" onclick="loadWorkspace('stock-keyin')">⌨️ Stock In-Out (Keyin)</button>
-          <button type="button" class="frozen-module" id="navStockReport" disabled aria-disabled="true" title="Next Stock release">📊 Stock Report</button>
-          <button type="button" class="frozen-module" id="navStockDamaged" disabled aria-disabled="true" title="Next Stock release">⚠️ Damaged Stock</button>
-          <button type="button" class="frozen-module" id="navStockTransactions" disabled aria-disabled="true" title="Next Stock release">📜 Stock In-Out Transaction</button>
-        </div>
-      </div>
-
-      <div class="nav-group" id="arNavGroup">
-        <button type="button" id="arMenuButton" class="nav-toggle" aria-expanded="false" aria-controls="arSubmenu" onclick="toggleARMenu()">
-          <span class="nav-toggle-main"><span>💰</span><span>Account Receivable</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-        <div id="arSubmenu" class="nav-submenu">
-          <button type="button" id="navARAll" onclick="loadWorkspace('ar-all')">📋 All Receivable</button>
-          <button type="button" id="navARYour" onclick="loadWorkspace('ar-your')">👤 Your Receivable</button>
-          <button type="button" id="navARPaymentHistory" onclick="loadWorkspace('ar-payment-history')">🧾 Receivable Payment History</button>
-          <button type="button" id="navARDailyReceivableCash" onclick="loadWorkspace('ar-daily-receivable-cash')">💵 Daily Receivable Cash Summary</button>
-        </div>
-      </div>
-
-      <div class="nav-group" id="adminWorkNavGroup">
-        <button
-          type="button"
-          id="adminWorkMenuButton"
-          class="nav-toggle"
-          aria-expanded="false"
-          aria-controls="adminWorkSubmenu"
-          onclick="toggleAdminWorkMenu()"
-        >
-          <span class="nav-toggle-main"><span>🛠️</span><span>Admin Work</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-
-        <div id="adminWorkSubmenu" class="nav-submenu">
-          <button type="button" id="navAdminPendingReceivable" onclick="loadWorkspace('admin-pending-receivable')">💰 Pending Receivable Request</button>
-          <button type="button" id="navAdminPendingDeposit" onclick="loadWorkspace('admin-pending-daily-cash')">💵 Pending Daily Cash Request</button>
-          <button type="button" id="navAdminPendingDepositStage" onclick="loadWorkspace('admin-pending-deposit')">🏦 Pending Deposit</button>
-          <button type="button" id="navAdminDepositHistory" onclick="loadWorkspace('admin-deposit-history')">📚 Deposit History</button>
-          <button type="button" id="navAdminStaffRequest" onclick="loadWorkspace('admin-staff-request')">👥 Staff Request</button>
-          <button type="button" id="navAdminRequest" onclick="loadWorkspace('admin-request')">🛠️ Admin Request</button>
-        </div>
-      </div>
-
-      <button type="button" class="shell-nav-link" onclick="showDashboardSection('reports')">📊 Reports</button>
-      <div class="nav-group" id="masterNavGroup">
-        <button type="button" id="masterMenuButton" class="nav-toggle" aria-expanded="false" aria-controls="masterSubmenu" onclick="toggleMasterMenu()">
-          <span class="nav-toggle-main"><span>🗂️</span><span>Master Data</span></span>
-          <span class="nav-arrow">▼</span>
-        </button>
-        <div id="masterSubmenu" class="nav-submenu">
-
-          <div class="nested-nav-group" id="customersEditorNavGroup">
-            <button
-              type="button"
-              id="customersEditorMenuButton"
-              class="nested-nav-toggle"
-              aria-expanded="false"
-              aria-controls="customersEditorSubmenu"
-              onclick="toggleCustomersEditorMenu()"
-            >
-              <span class="nested-nav-main"><span>👥</span><span>Customers Editor</span></span>
-              <span class="nav-arrow">▼</span>
-            </button>
-
-            <div id="customersEditorSubmenu" class="nav-submenu nav-submenu-level2">
-              <button type="button" id="navCustomerAdd" onclick="loadWorkspace('customers-add')">＋ Add Customer</button>
-              <button type="button" id="navCustomerMap" onclick="loadWorkspace('customers-map')">📍 Customer Map</button>
-              <button type="button" id="navCustomerDetails" onclick="loadWorkspace('customers-details')">👥 All Customer Details</button>
-            </div>
-          </div>
-
-          <div class="nested-nav-group" id="clientsEditorNavGroup">
-            <button
-              type="button"
-              id="clientsEditorMenuButton"
-              class="nested-nav-toggle"
-              aria-expanded="false"
-              aria-controls="clientsEditorSubmenu"
-              onclick="toggleClientsEditorMenu()"
-            >
-              <span class="nested-nav-main"><span>🏢</span><span>Clients Editor</span></span>
-              <span class="nav-arrow">▼</span>
-            </button>
-
-            <div id="clientsEditorSubmenu" class="nav-submenu nav-submenu-level2">
-              <button type="button" id="navClientAdd" onclick="loadWorkspace('clients-add')">＋ Add Client</button>
-              <button type="button" id="navClientDetails" onclick="loadWorkspace('clients-details')">🏢 All Clients Details</button>
-            </div>
-          </div>
-
-          <div class="nested-nav-group" id="productsEditorNavGroup">
-            <button
-              type="button"
-              id="productsEditorMenuButton"
-              class="nested-nav-toggle"
-              aria-expanded="false"
-              aria-controls="productsEditorSubmenu"
-              onclick="toggleProductsEditorMenu()"
-            >
-              <span class="nested-nav-main"><span>📦</span><span>Products</span></span>
-              <span class="nav-arrow">▼</span>
-            </button>
-
-            <div id="productsEditorSubmenu" class="nav-submenu nav-submenu-level2">
-              <button type="button" id="navProductAdd" onclick="loadWorkspace('products-add')">＋ Add Product</button>
-              <button type="button" id="navProductDetails" onclick="loadWorkspace('products-details')">📋 Product Details and Price</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </nav>
-
-  </aside>
-
-
-  <!-- =====================================================
-       MAIN
-       ===================================================== -->
-
-  <main class="main shell-main">
-    <div id="dashboardHome" class="dashboard-home">
-
-    <!-- TOP BAR -->
-
-    <div class="topbar">
-
-      <div>
-
-        <h1 class="page-title">
-          Dashboard
-        </h1>
-
-        <p class="page-subtitle">
-          Central control panel for BIG BROTHER.
-        </p>
-
-      </div>
-
-      <div class="system-pill">
-        SYSTEM ONLINE
-      </div>
-
     </div>
 
-
-    <!-- WELCOME -->
-
-    <section class="welcome">
-
-      <h2>
-        Welcome to BIG BROTHER 👋
-      </h2>
-
-      <p>
-        One dashboard for Sales, Purchase, Stock, A/R and Reports.
-        We will build each module step by step.
-      </p>
-
-    </section>
-
-
-    <!-- =====================================================
-         SALES
-         ===================================================== -->
-
-    <h2 class="section-title" id="sales">
-      Sales
-    </h2>
-
-    <section class="modules">
-
-
-      <!-- INVOICE GENERATOR -->
-
-      <article class="module">
-
-        <div class="module-icon">
-          🧾
-        </div>
-
-        <h3>
-          Invoice Generator
-        </h3>
-
-        <p>
-          Create sales invoices, calculate totals
-          and record initial payments.
-        </p>
-
-        <a href="#" onclick="loadWorkspace('invoice'); return false;">
-          Open Invoice Generator
-        </a>
-
-      </article>
-
-
-      <!-- INVOICE REVERSAL -->
-
-      <article class="module">
-
-        <div class="module-icon">
-          🔄
-        </div>
-
-        <h3>
-          Invoice Reversal
-        </h3>
-
-        <p>
-          Return products from an existing sales invoice
-          without changing the original sale.
-        </p>
-
-        <a href="https://angsokhey11-cloud.github.io/big-brother-invoice-reversal/">
-          Open Invoice Reversal
-        </a>
-
-      </article>
-
-
-      <!-- INVOICE HISTORY -->
-
-      <article class="module">
-
-        <div class="module-icon">
-          📋
-        </div>
-
-        <h3>
-          Invoice History
-        </h3>
-
-        <p>
-          Search saved invoices, review original products,
-          prices, payments and outstanding balances.
-        </p>
-
-        <a href="#" onclick="loadWorkspace('history'); return false;">
-          Open Invoice History
-        </a>
-
-      </article>
-
-
-      <!-- PAYMENTS -->
-
-      <article class="module disabled">
-
-        <div class="module-icon">
-          💳
-        </div>
-
-        <h3>
-          Payments
-        </h3>
-
-        <p>
-          Payment records will be managed through
-          the sales workflow and A/R.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-    </section>
-
-
-    <!-- =====================================================
-         PURCHASE
-         ===================================================== -->
-
-    <h2 class="section-title" id="purchase">
-      Purchase
-    </h2>
-
-    <section class="modules">
-
-      <article class="module">
-        <div class="module-icon">🛒</div>
-        <h3>Create Purchase</h3>
-        <p>Create supplier purchases using Client Products and current purchase prices.</p>
-        <a href="#" onclick="loadWorkspace('purchase-create'); return false;">Open Create Purchase</a>
-      </article>
-
-      <article class="module">
-        <div class="module-icon">📋</div>
-        <h3>Purchase History</h3>
-        <p>Review Purchase IDs, supplier details, products, totals and outstanding balances.</p>
-        <a href="#" onclick="loadWorkspace('purchase-history'); return false;">Open Purchase History</a>
-      </article>
-
-      <article class="module">
-        <div class="module-icon">💰</div>
-        <h3>Payable Invoice</h3>
-        <p>Review outstanding supplier invoices and prepare Client Payable summaries.</p>
-        <a href="#" onclick="loadWorkspace('purchase-payable'); return false;">Open Payable Invoice</a>
-      </article>
-
-      <article class="module">
-        <div class="module-icon">💳</div>
-        <h3>Purchase Payment History</h3>
-        <p>Review supplier payment records, payment methods and transaction references.</p>
-        <a href="#" onclick="loadWorkspace('purchase-payment-history'); return false;">Open Payment History</a>
-      </article>
-
-    </section>
-
-
-    <!-- =====================================================
-         STOCK
-         ===================================================== -->
-
-    <h2 class="section-title" id="stock">
-      Stock
-    </h2>
-
-    <section class="modules">
-
-
-      <!-- STOCK FLOW -->
-
-      <article class="module disabled">
-
-        <div class="module-icon">
-          📦
-        </div>
-
-        <h3>
-          Stock Flow
-        </h3>
-
-        <p>
-          Purchase, receiving, stock movement
-          and inventory control.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-      <!-- PURCHASING -->
-
-      <article class="module disabled">
-
-        <div class="module-icon">
-          🚚
-        </div>
-
-        <h3>
-          Purchasing
-        </h3>
-
-        <p>
-          Supplier purchases and purchase transactions.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-      <!-- PURCHASE RETURN -->
-
-      <article class="module disabled">
-
-        <div class="module-icon">
-          ↩️
-        </div>
-
-        <h3>
-          Purchase Return
-        </h3>
-
-        <p>
-          Purchase returns will belong to
-          the Stock/Purchasing side.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-    </section>
-
-
-    <!-- =====================================================
-         A/R & REPORTS
-         ===================================================== -->
-
-    <h2 class="section-title" id="ar">
-      A/R & Reports
-    </h2>
-
-    <section class="modules">
-
-
-      <!-- ACCOUNTS RECEIVABLE -->
-
-      <article class="module disabled">
-
-        <div class="module-icon">
-          💰
-        </div>
-
-        <h3>
-          Accounts Receivable
-        </h3>
-
-        <p>
-          Invoice total − Invoice Reversals − Payments
-          = Outstanding A/R.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-      <!-- REPORTS -->
-
-      <article class="module disabled" id="reports">
-
-        <div class="module-icon">
-          📊
-        </div>
-
-        <h3>
-          Reports
-        </h3>
-
-        <p>
-          Sales, payments, returns, A/R
-          and operational reports.
-        </p>
-
-        <button type="button">
-          Coming Soon
-        </button>
-
-      </article>
-
-
-      <!-- MASTER DATA -->
-
-      <article class="module" id="master">
-        <div class="module-icon">🗂️</div>
-        <h3>Master Data</h3>
-        <p>Manage Sales Customers, Purchase Clients/Suppliers, locations and product pricing.</p>
-        <a href="#" onclick="loadWorkspace('customers-details'); return false;">Open Customers Editor</a>
-      </article>   </section>
-
-
-    <!-- =====================================================
-         SYSTEM STATUS
-         ===================================================== -->
-
-    <h2 class="section-title">
-      System Status
-    </h2>
-
-    <section class="quick-grid">
-
-
-      <!-- MASTER DATABASE -->
-
-      <div class="quick-card">
-
-        <div class="quick-label">
-          Master Database
-        </div>
-
-        <div class="quick-value">
-          Connected
-        </div>
-
-        <div class="status">
-          <span class="dot"></span>
-          Ready
-        </div>
-
+    <div id="receiveClientFields" class="dynamic" hidden>
+      <div class="grid">
+        <div class="field"><label>Client</label><select id="receiveClient"><option value="">Select Client</option></select></div>
       </div>
-
-
-      <!-- SALES DATABASE -->
-
-      <div class="quick-card">
-
-        <div class="quick-label">
-          Sales Database
-        </div>
-
-        <div class="quick-value">
-          Connected
-        </div>
-
-        <div class="status">
-          <span class="dot"></span>
-          Ready
-        </div>
-
-      </div>
-
-
-      <!-- INVOICE SYSTEM -->
-
-      <div class="quick-card">
-
-        <div class="quick-label">
-          Invoice System
-        </div>
-
-        <div class="quick-value">
-          Active
-        </div>
-
-        <div class="status">
-          <span class="dot"></span>
-          Ready
-        </div>
-
-      </div>
-
-
-      <!-- INVOICE REVERSAL -->
-
-      <div class="quick-card">
-
-        <div class="quick-label">
-          Invoice Reversal
-        </div>
-
-        <div class="quick-value">
-          Active
-        </div>
-
-        <div class="status">
-          <span class="dot"></span>
-          Ready
-        </div>
-
-      </div>
-
-
-    </section>
-
-
-    <!-- FOOTER -->
-
-    <div class="footer">
-      BIG BROTHER • Sales & Accounting System
     </div>
 
-
-  
+    <div id="newBatchFields" class="dynamic" hidden>
+      <div class="grid">
+        <div class="field"><label>Salesman</label><select id="salesmanSelect"><option value="">Select Salesman</option></select></div>
+        <div class="field"><label>Driver</label><select id="driverSelect"><option value="">Select Driver</option></select></div>
+        <div class="field"><label>Batch Location</label><select id="batchLocationSelect"><option value="">Select Location</option></select></div>
+        <div class="field"><label>Batch ID</label><input value="Automatic on Save" readonly><div class="helper">1 Batch = 1 working day</div></div>
+      </div>
     </div>
 
-    <div id="moduleWorkspace" class="module-workspace" hidden>
-      <iframe
-        id="moduleFrame"
-        class="module-frame"
-        title="BIG BROTHER Workspace"
-        loading="eager"
-        referrerpolicy="strict-origin-when-cross-origin"
-      ></iframe>
+    <div id="existingBatchFields" class="dynamic" hidden>
+      <div class="grid">
+        <div class="field"><label>Open Batch</label><select id="batchSelect"><option value="">Select Batch</option></select></div>
+        <div class="field"><label>Salesman</label><input id="batchSalesman" readonly></div>
+        <div class="field"><label>Driver</label><input id="batchDriver" readonly></div>
+        <div class="field"><label>Location</label><input id="batchLocation" readonly></div>
+      </div>
     </div>
-  </main>
 
+    <div id="directSaleFields" class="dynamic" hidden>
+      <div class="grid">
+        <div class="field"><label>Customer</label><select id="customerSelect"><option value="">Select Customer</option></select></div>
+        <div class="field"><label>Related Invoice No.</label><input id="relatedInvoiceNo" placeholder="Optional"></div>
+      </div>
+    </div>
+
+    <div id="damageFields" class="dynamic" hidden>
+      <div class="flow-toggle">
+        <button type="button" id="damageWarehouseBtn" class="flow-btn active out">🏬 Warehouse Damage</button>
+        <button type="button" id="damageBatchBtn" class="flow-btn">🚚 Batch Damage</button>
+      </div>
+      <div class="helper" style="margin-top:7px">Damage moves Good Stock into the Damaged Stock bucket. It is not deleted from our stock records.</div>
+    </div>
+
+    <div id="allowanceFields" class="dynamic" hidden>
+      <div class="grid">
+        <div class="field"><label>Staff</label><select id="staffAllowanceSelect"><option value="">Select Staff</option></select></div>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+    <div class="field"><label>Note</label><textarea id="note" placeholder="Optional movement note"></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">3. Products</div>
+    <div id="productEntry" class="product-entry purchase">
+      <div class="field"><label>Product</label><select id="productSelect"><option value="">Loading Products...</option></select></div>
+      <div class="field"><label>Product Code</label><input id="productCode" readonly></div>
+      <div class="field"><label id="availableLabel">Warehouse Good</label><input id="availableQty" readonly value="0"></div>
+      <div class="field"><label>Qty</label><input id="qty" type="number" min="0" step="0.01" inputmode="decimal"></div>
+      <div class="field" id="unitCostWrap"><label>Unit Cost</label><input id="unitCost" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="Optional"></div>
+      <button type="button" id="addProductBtn" class="add-btn">+ Add</button>
+    </div>
+
+    <div style="height:11px"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Product</th><th>Code</th><th>Available Before</th><th class="amount">Qty</th><th class="amount">Unit Cost</th><th>Movement</th><th></th></tr></thead>
+        <tbody id="itemRows"><tr><td colspan="7" class="empty">No products added yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">4. Movement Preview</div>
+    <div class="preview-grid">
+      <div class="preview-kpi"><small>Warehouse Good</small><strong id="previewWarehouse" class="zero">No change</strong></div>
+      <div class="preview-kpi"><small>Batch Pending</small><strong id="previewPending" class="zero">No change</strong></div>
+      <div class="preview-kpi"><small>Damaged Stock</small><strong id="previewDamaged" class="zero">No change</strong></div>
+      <div class="preview-kpi"><small>Company Good Stock</small><strong id="previewCompany" class="zero">No change</strong></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Product</th><th class="amount">Warehouse Δ</th><th class="amount">Batch Pending Δ</th><th class="amount">Damaged Δ</th><th class="amount">Company Good Δ</th></tr></thead>
+        <tbody id="previewRows"><tr><td colspan="5" class="empty">Add products to preview the stock movement.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="successPanel" class="success-panel" hidden>
+      <strong>✅ Stock movement saved</strong>
+      <div class="success-grid">
+        <div class="success-item"><small>Movement ID</small><div id="successMovement">-</div></div>
+        <div class="success-item"><small>Batch ID</small><div id="successBatch">-</div></div>
+        <div class="success-item"><small>Date</small><div id="successDate">-</div></div>
+        <div class="success-item"><small>Lines</small><div id="successLines">0</div></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="clearBtn" class="btn secondary">Clear</button>
+      <button type="button" id="refreshBtn" class="btn secondary">↻ Refresh Stock</button>
+      <button type="button" id="saveBtn" class="btn primary">Save Stock Movement</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  function toggleSalesMenu(forceOpen) {
-    const button = document.getElementById("salesMenuButton");
-    const submenu = document.getElementById("salesSubmenu");
-    if (!button || !submenu) return;
+const MASTER_API="https://script.google.com/macros/s/AKfycbzIjs-cNehMxWTZs3ZPAosseGUu1nqACTPo3S4-onLLEYnEgqP6AUK7p3jwb6MaFr7H0w/exec";
+const STAFF_API="https://script.google.com/macros/s/AKfycbwKqgTPzesBlWlk5NFelkZR-9HOzDGdukcPc49dTDtADRdLz-Bv2uABMiuajh0mpEOA/exec";
+const STOCK_API="https://script.google.com/macros/s/AKfycbyVDVD72ed4zCxK32Rkx-kHZLgyG6aZwdnSmFH4S47RjVmm_C9b9v7xfpkCkgO1XVo3/exec";
+const CACHE_KEY="bb_stock_keyin_v20_cache",CACHE_MAX_AGE=86400000;
 
-    const shouldOpen = typeof forceOpen === "boolean"
-      ? forceOpen
-      : !submenu.classList.contains("open");
+const $=id=>document.getElementById(id),clean=v=>String(v==null?"":v).trim(),num=v=>Number(v)||0;
+let flow="INFLOW",movementType="PURCHASE",damageSource="WAREHOUSE";
+let products=[],locations=[],staff=[],controllers=[],salesmen=[],drivers=[],clients=[],customers=[];
+let stockSnapshot=[],openBatches=[],items=[],stockRevision="0";
 
-    submenu.classList.toggle("open", shouldOpen);
-    button.classList.toggle("open", shouldOpen);
-    button.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-  }
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function todayValue(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function formatDate(v){
+  const s=clean(v);if(!s)return "-";
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return String(m[3]).padStart(2,"0")+"-"+months[Number(m[2])-1]+"-"+m[1];
+  const d=new Date(s);if(isNaN(d))return s;
+  return String(d.getDate()).padStart(2,"0")+"-"+months[d.getMonth()]+"-"+d.getFullYear();
+}
+function setStatus(msg,type=""){$("status").textContent=msg||"";$("status").className="status"+(type?" "+type:"");}
 
-  // Make all same-page Main Menu links scroll cleanly to their sections.
-  document.querySelectorAll('.nav a[href^="#"]').forEach(link => {
-    link.addEventListener("click", function(event) {
-      const targetId = this.getAttribute("href");
-      if (!targetId || targetId === "#") return;
-      const target = document.querySelector(targetId);
-      if (!target) return;
-
-      event.preventDefault();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // Keep Sales submenu open only when the Sales area itself is selected.
-      if (targetId !== "#sales") {
-        toggleSalesMenu(false);
-      }
-    });
+function jsonp(url,params={},timeout=16000){
+  return new Promise((resolve,reject)=>{
+    const cb="bbStock_"+Date.now()+"_"+Math.floor(Math.random()*999999),script=document.createElement("script");let done=false;
+    const finish=()=>{if(done)return;done=true;delete window[cb];script.remove();clearTimeout(timer)};
+    window[cb]=d=>{finish();if(d&&d.success===false)reject(new Error(d.error||"Database request failed."));else resolve(d)};
+    script.onerror=()=>{finish();reject(new Error("Could not connect to database."))};
+    script.src=url+"?"+new URLSearchParams({...params,callback:cb,t:Date.now()}).toString();document.head.appendChild(script);
+    const timer=setTimeout(()=>{if(!done){finish();reject(new Error("Database request timed out."))}},timeout);
   });
+}
+
+async function apiPost(action,data,timeout=25000){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const body=new URLSearchParams({action,data:JSON.stringify(data)});
+    const r=await fetch(STOCK_API,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:body.toString(),redirect:"follow",signal:controller.signal});
+    if(!r.ok)throw new Error("Stock Database returned HTTP "+r.status);
+    const d=await r.json();if(!d||d.success===false)throw new Error(d?.error||"Stock Database save failed.");return d;
+  }catch(e){if(e?.name==="AbortError")throw new Error("Stock Database save timed out.");throw e}
+  finally{clearTimeout(timer)}
+}
+
+function arrayOf(r){if(Array.isArray(r))return r;if(Array.isArray(r?.data))return r.data;if(Array.isArray(r?.products))return r.products;if(Array.isArray(r?.locations))return r.locations;if(Array.isArray(r?.staff))return r.staff;if(Array.isArray(r?.clients))return r.clients;if(Array.isArray(r?.customers))return r.customers;return []}
+async function tryMaster(actions){for(const action of actions){try{const r=await jsonp(MASTER_API,{action},12000),a=arrayOf(r);if(a.length)return a}catch(_){}}return []}
+
+function readCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const d=JSON.parse(raw);if(!d||Date.now()-Number(d.savedAt||0)>CACHE_MAX_AGE){localStorage.removeItem(CACHE_KEY);return null}return d}catch(_){return null}}
+function writeCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),products,locations,staff,clients,customers,stockSnapshot,openBatches,stockRevision}))}catch(_){}}
+
+function mapProducts(a){return(a||[]).map(x=>({productCode:clean(x.productCode||x["Product Code"]||x.code),productName:clean(x.productName||x["Product Name"]||x.name),unit:clean(x.unit||x["Unit"])})).filter(x=>x.productCode&&x.productName)}
+function mapLocations(a){return(a||[]).map(x=>({locationCode:clean(x.locationCode||x["Location Code"]||x.code),locationName:clean(x.locationName||x.location||x["Location Name"]||x.name||x.locationCode)})).filter(x=>x.locationCode)}
+function mapStaff(a){return(a||[]).map(x=>({staffId:clean(x.staffId||x["Staff ID"]),staffName:clean(x.staffName||x["Staff Name"]),department:clean(x.department||x["Department"]),position:clean(x.position||x["Position"]),status:clean(x.status||x["Status"]||"Active")})).filter(x=>x.staffId&&x.staffName)}
+function mapClients(a){return(a||[]).map(x=>({clientId:clean(x.clientId||x["Client ID"]||x.clientCode||x["Client Code"]),clientName:clean(x.clientName||x["Client Name"]||x.name)})).filter(x=>x.clientName)}
+function mapCustomers(a){return(a||[]).map(x=>({customerId:clean(x.customerId||x["Customer ID"]),customerName:clean(x.customerName||x["Customer Name"]||x.name)})).filter(x=>x.customerName)}
+
+function splitStaff(){
+  controllers=staff.filter(x=>x.position.toLowerCase().includes("inventory")||x.department.toLowerCase().includes("inventory"));
+  salesmen=staff.filter(x=>x.position.toLowerCase().includes("sales"));
+  drivers=staff.filter(x=>x.position.toLowerCase().includes("driver")||x.position.toLowerCase().includes("delivery"));
+  if(!controllers.length)controllers=staff;
+}
+
+function applyCache(){
+  const c=readCache();if(!c)return false;
+  products=Array.isArray(c.products)?c.products:[];locations=Array.isArray(c.locations)?c.locations:[];staff=Array.isArray(c.staff)?c.staff:[];
+  clients=Array.isArray(c.clients)?c.clients:[];customers=Array.isArray(c.customers)?c.customers:[];
+  stockSnapshot=Array.isArray(c.stockSnapshot)?c.stockSnapshot:[];openBatches=Array.isArray(c.openBatches)?c.openBatches:[];stockRevision=clean(c.stockRevision)||"0";
+  splitStaff();fillSelectors();renderItems();updateProductAvailability();return true;
+}
+
+async function loadLiveData(silent=false){
+  if(!silent)setStatus("Syncing Products, Locations, Staff and Stock Database...");
+  try{
+    const [p,l,s,cust,cli,stock]=await Promise.all([
+      tryMaster(["getProducts","products","masterProducts"]),
+      tryMaster(["getLocations","locations","location"]),
+      jsonp(STAFF_API,{action:"getStaff",includeInactive:"false"},14000).catch(()=>({data:[]})),
+      tryMaster(["getCustomers","customers"]),
+      tryMaster(["getClients","clients"]),
+      jsonp(STOCK_API,{action:"getStockKeyinBootstrap"},20000)
+    ]);
+    products=mapProducts(p);locations=mapLocations(l);staff=mapStaff(arrayOf(s));customers=mapCustomers(cust);clients=mapClients(cli);
+    stockSnapshot=Array.isArray(stock?.snapshot)?stock.snapshot:[];openBatches=Array.isArray(stock?.openBatches)?stock.openBatches:[];stockRevision=clean(stock?.revision)||stockRevision||"0";
+    splitStaff();fillSelectors();renderItems();updateProductAvailability();writeCache();
+    $("dbPill").textContent="STOCK DATABASE · "+clean(stock?.version||"V3");
+    setStatus("Ready · "+products.length+" products · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+".","success");
+  }catch(e){
+    if(products.length||stockSnapshot.length){fillSelectors();setStatus("Saved device data ready · live sync will retry. "+clean(e?.message),"warn")}
+    else setStatus(clean(e?.message)||"Could not load Stock Database.","error");
+  }
+}
+
+function selectOptions(list,label,placeholder){return'<option value="">'+esc(placeholder)+'</option>'+list.map((x,i)=>'<option value="'+i+'">'+esc(label(x))+'</option>').join("")}
+function fillSelectors(){
+  $("productSelect").innerHTML=selectOptions(products,x=>x.productName+" — "+x.productCode,"Select Product");
+  const loc=selectOptions(locations,x=>x.locationName+" — "+x.locationCode,"Select Location");
+  $("locationSelect").innerHTML=loc;$("batchLocationSelect").innerHTML=loc;
+  $("controllerSelect").innerHTML=selectOptions(controllers,x=>x.staffName+" — "+x.staffId,"Select Inventory Controller");
+  $("salesmanSelect").innerHTML=selectOptions(salesmen,x=>x.staffName+" — "+x.staffId,"Select Salesman");
+  $("driverSelect").innerHTML=selectOptions(drivers,x=>x.staffName+" — "+x.staffId,"Select Driver");
+  $("staffAllowanceSelect").innerHTML=selectOptions(staff,x=>x.staffName+" — "+x.staffId,"Select Staff");
+  $("purchaseClient").innerHTML=selectOptions(clients,x=>x.clientName+(x.clientId?" — "+x.clientId:""),"Optional Supplier / Client");
+  $("receiveClient").innerHTML=selectOptions(clients,x=>x.clientName+(x.clientId?" — "+x.clientId:""),"Select Client");
+  $("customerSelect").innerHTML=selectOptions(customers,x=>x.customerName+(x.customerId?" — "+x.customerId:""),"Select Customer");
+  fillBatchSelect();
+}
+function fillBatchSelect(){
+  $("batchSelect").innerHTML='<option value="">Select Open Batch</option>'+openBatches.map((x,i)=>{
+    const count=Array.isArray(x.items)?x.items.filter(y=>num(y.pendingQty)>0).length:0;
+    return'<option value="'+i+'">'+esc(x.batchId+" · "+formatDate(x.batchDate)+" · "+(x.salesmanName||"-")+" · "+count+" product(s)")+'</option>'
+  }).join("");
+}
+function pick(list,id){const i=Number($(id).value);return Number.isInteger(i)&&i>=0&&list[i]?list[i]:null}
+function selectedBatch(){return pick(openBatches,"batchSelect")}
+function stockFor(code){return stockSnapshot.find(x=>clean(x.productCode)===clean(code))||{warehouseGood:0,batchPending:0,damaged:0,totalGood:0}}
+function batchPending(code){const b=selectedBatch();if(!b||!Array.isArray(b.items))return 0;const x=b.items.find(y=>clean(y.productCode)===clean(code));return x?num(x.pendingQty):0}
+function currentAvailable(code){
+  if(movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"))return batchPending(code);
+  return num(stockFor(code).warehouseGood);
+}
+function availableLabel(){return movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")?"Batch Pending":"Warehouse Good"}
+function updateProductAvailability(){const p=pick(products,"productSelect");$("productCode").value=p?p.productCode:"";$("availableLabel").textContent=availableLabel();$("availableQty").value=p?currentAvailable(p.productCode):0}
+
+function setFlow(f){
+  flow=f==="OUTFLOW"?"OUTFLOW":"INFLOW";
+  $("flowInBtn").className="flow-btn"+(flow==="INFLOW"?" active in":"");
+  $("flowOutBtn").className="flow-btn"+(flow==="OUTFLOW"?" active out":"");
+  $("inflowTypes").hidden=flow!=="INFLOW";$("outflowTypes").hidden=flow!=="OUTFLOW";
+  setMovementType(flow==="INFLOW"?"PURCHASE":"BATCH_STOCK");
+}
+function setMovementType(t){
+  movementType=t;document.querySelectorAll(".type-btn").forEach(b=>b.classList.toggle("active",b.dataset.type===t));
+  ["purchaseFields","receiveClientFields","newBatchFields","existingBatchFields","directSaleFields","damageFields","allowanceFields"].forEach(id=>$(id).hidden=true);
+  if(t==="PURCHASE")$("purchaseFields").hidden=false;
+  if(t==="RECEIVE_FROM_CLIENT")$("receiveClientFields").hidden=false;
+  if(t==="BACK_SALE")$("existingBatchFields").hidden=false;
+  if(t==="BATCH_STOCK")$("newBatchFields").hidden=false;
+  if(t==="DIRECT_SALE")$("directSaleFields").hidden=false;
+  if(t==="STOCK_DAMAGE"){$("damageFields").hidden=false;if(damageSource==="BATCH")$("existingBatchFields").hidden=false}
+  if(t==="STAFF_ALLOWANCE")$("allowanceFields").hidden=false;
+  $("unitCostWrap").hidden=t!=="PURCHASE";$("productEntry").classList.toggle("purchase",t==="PURCHASE");
+  items=[];renderItems();updateProductAvailability();updatePreview();$("successPanel").hidden=true;
+}
+function setDamageSource(s){
+  damageSource=s==="BATCH"?"BATCH":"WAREHOUSE";
+  $("damageWarehouseBtn").className="flow-btn"+(damageSource==="WAREHOUSE"?" active out":"");
+  $("damageBatchBtn").className="flow-btn"+(damageSource==="BATCH"?" active out":"");
+  $("existingBatchFields").hidden=!(movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"));
+  items=[];renderItems();updateProductAvailability();updatePreview();
+}
+function movementLabel(){
+  const x={PURCHASE:"Purchase → Warehouse",RECEIVE_FROM_CLIENT:"Client → Warehouse",BACK_SALE:"Batch Pending → Warehouse",
+    BATCH_STOCK:"Warehouse → Batch Pending",DIRECT_SALE:"Warehouse → Customer",
+    STAFF_ALLOWANCE:"Warehouse → Staff"};
+  if(movementType==="STOCK_DAMAGE")return damageSource==="BATCH"?"Batch Pending → Damaged":"Warehouse → Damaged";
+  return x[movementType]||movementType;
+}
+
+function addProduct(){
+  const p=pick(products,"productSelect"),qty=num($("qty").value);
+  if(!p)return setStatus("Select a Product first.","error");
+  if(!(qty>0))return setStatus("Qty must be greater than 0.","error");
+  if(items.some(x=>x.productCode===p.productCode))return setStatus(p.productName+" is already in this movement.","error");
+
+  const available=currentAvailable(p.productCode);
+  if(["BACK_SALE","BATCH_STOCK","DIRECT_SALE","STOCK_DAMAGE","STAFF_ALLOWANCE"].includes(movementType)&&qty>available+0.000001)
+    return setStatus(p.productName+": Qty "+qty+" is greater than "+availableLabel()+" "+available+".","error");
+
+  items.push({productCode:p.productCode,productName:p.productName,unit:p.unit,qty,unitCost:movementType==="PURCHASE"?num($("unitCost").value):0,availableBefore:available});
+  $("productSelect").value="";$("productCode").value="";$("availableQty").value=0;$("qty").value="";$("unitCost").value="";
+  renderItems();updatePreview();setStatus(items.length+" product line"+(items.length===1?"":"s")+" ready.","success");
+}
+function removeProduct(i){items.splice(i,1);renderItems();updatePreview()}
+window.removeProduct=removeProduct;
+
+function renderItems(){
+  if(!items.length){$("itemRows").innerHTML='<tr><td colspan="7" class="empty">No products added yet.</td></tr>';updatePreview();return}
+  $("itemRows").innerHTML=items.map((x,i)=>`<tr>
+    <td><strong>${esc(x.productName)}</strong></td><td>${esc(x.productCode)}</td><td>${num(x.availableBefore).toLocaleString()}</td>
+    <td class="amount"><strong>${num(x.qty).toLocaleString()}</strong> ${esc(x.unit)}</td>
+    <td class="amount">${x.unitCost?"$"+num(x.unitCost).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4}):"-"}</td>
+    <td><span class="badge">${esc(movementLabel())}</span></td><td><button class="remove" onclick="removeProduct(${i})">Remove</button></td></tr>`).join("");
+}
+function delta(x){
+  const q=num(x.qty),d={warehouse:0,pending:0,damaged:0,company:0};
+  if(["PURCHASE","RECEIVE_FROM_CLIENT"].includes(movementType)){d.warehouse+=q;d.company+=q}
+  if(movementType==="BACK_SALE"){d.pending-=q;d.warehouse+=q}
+  if(movementType==="BATCH_STOCK"){d.warehouse-=q;d.pending+=q}
+  if(["DIRECT_SALE","STAFF_ALLOWANCE"].includes(movementType)){d.warehouse-=q;d.company-=q}
+  if(movementType==="STOCK_DAMAGE"){if(damageSource==="BATCH")d.pending-=q;else d.warehouse-=q;d.damaged+=q;d.company-=q}
+  return d;
+}
+function signed(v){const n=num(v);return Math.abs(n)<1e-9?"0":(n>0?"+":"")+n.toLocaleString(undefined,{maximumFractionDigits:2})}
+function dclass(v){return num(v)>0?"pos":num(v)<0?"neg":"zero"}
+function updatePreview(){
+  if(!items.length){$("previewRows").innerHTML='<tr><td colspan="5" class="empty">Add products to preview the stock movement.</td></tr>';
+    ["previewWarehouse","previewPending","previewDamaged","previewCompany"].forEach(id=>{$(id).textContent="No change";$(id).className="zero"});return}
+  const t={warehouse:0,pending:0,damaged:0,company:0};
+  $("previewRows").innerHTML=items.map(x=>{const d=delta(x);Object.keys(t).forEach(k=>t[k]+=d[k]);return`<tr><td><strong>${esc(x.productName)}</strong></td>
+    <td class="amount ${dclass(d.warehouse)}">${signed(d.warehouse)}</td><td class="amount ${dclass(d.pending)}">${signed(d.pending)}</td>
+    <td class="amount ${dclass(d.damaged)}">${signed(d.damaged)}</td><td class="amount ${dclass(d.company)}">${signed(d.company)}</td></tr>`}).join("");
+  [["previewWarehouse","warehouse"],["previewPending","pending"],["previewDamaged","damaged"],["previewCompany","company"]].forEach(([id,k])=>{
+    $(id).textContent=t[k]===0?"No change":signed(t[k])+" unit(s)";$(id).className=dclass(t[k]);
+  });
+}
+
+function buildPayload(){
+  const controller=pick(controllers,"controllerSelect"),warehouse=pick(locations,"locationSelect");
+  const d={activityDate:$("activityDate").value,flow,movementType,damageSource:movementType==="STOCK_DAMAGE"?damageSource:"",
+    locationCode:warehouse?.locationCode||"",locationName:warehouse?.locationName||"",
+    inventoryControllerStaffId:controller?.staffId||"",inventoryControllerName:controller?.staffName||"",
+    referenceNo:clean($("referenceNo").value),relatedPurchaseNo:clean($("relatedPurchaseNo").value),
+    relatedInvoiceNo:clean($("relatedInvoiceNo").value),note:clean($("note").value),
+    items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost)}))};
+
+  if(movementType==="PURCHASE"){const c=pick(clients,"purchaseClient");d.clientId=c?.clientId||"";d.clientName=c?.clientName||""}
+  if(movementType==="RECEIVE_FROM_CLIENT"){const c=pick(clients,"receiveClient");d.clientId=c?.clientId||"";d.clientName=c?.clientName||""}
+  if(movementType==="BATCH_STOCK"){
+    const s=pick(salesmen,"salesmanSelect"),dr=pick(drivers,"driverSelect"),l=pick(locations,"batchLocationSelect");
+    d.salesmanStaffId=s?.staffId||"";d.salesmanName=s?.staffName||"";d.driverStaffId=dr?.staffId||"";d.driverName=dr?.staffName||"";
+    d.locationCode=l?.locationCode||"";d.locationName=l?.locationName||"";
+  }
+  if(movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")){
+    const b=selectedBatch();d.batchId=b?.batchId||"";d.salesmanStaffId=b?.salesmanStaffId||"";d.salesmanName=b?.salesmanName||"";
+    d.driverStaffId=b?.driverStaffId||"";d.driverName=b?.driverName||"";d.locationCode=b?.locationCode||"";d.locationName=b?.locationName||b?.locationCode||"";
+  }
+  if(movementType==="DIRECT_SALE"){const c=pick(customers,"customerSelect");d.customerId=c?.customerId||"";d.customerName=c?.customerName||""}
+  if(movementType==="STAFF_ALLOWANCE"){const s=pick(staff,"staffAllowanceSelect");d.staffId=s?.staffId||"";d.staffName=s?.staffName||""}
+  return d;
+}
+function validate(d){
+  if(!d.activityDate)return"Transaction Date is required.";if(!d.items.length)return"Add at least one Product.";
+  if(movementType==="RECEIVE_FROM_CLIENT"&&!d.clientName)return"Client is required.";
+  if(movementType==="BATCH_STOCK"){if(!d.salesmanStaffId)return"Salesman is required.";if(!d.driverStaffId)return"Driver is required.";if(!d.locationCode)return"Batch Location is required."}
+  if((movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"))&&!d.batchId)return"Open Batch is required.";
+  if(movementType==="DIRECT_SALE"&&!d.customerName)return"Customer is required.";
+  if(movementType==="STAFF_ALLOWANCE"&&!d.staffName)return"Staff is required.";
+  return"";
+}
+
+async function refreshStockOnly(silent=false){
+  if(!silent)setStatus("Refreshing Stock Database...");
+  try{
+    const r=await jsonp(STOCK_API,{action:"getStockKeyinBootstrap"},18000);
+    stockSnapshot=Array.isArray(r.snapshot)?r.snapshot:[];openBatches=Array.isArray(r.openBatches)?r.openBatches:[];stockRevision=clean(r.revision)||stockRevision;
+    fillBatchSelect();updateProductAvailability();renderItems();writeCache();
+    if(!silent)setStatus("Stock refreshed · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+".","success");
+  }catch(e){if(!silent)setStatus(clean(e?.message)||"Could not refresh Stock.","error")}
+}
+
+async function saveMovement(){
+  const d=buildPayload(),err=validate(d);if(err)return setStatus(err,"error");
+  const btn=$("saveBtn"),old=btn.textContent;btn.disabled=true;btn.textContent="Saving...";$("successPanel").hidden=true;
+  setStatus("Saving "+movementLabel()+" to Stock Database...");
+  try{
+    const r=await apiPost("saveStockMovement",d);
+    if(Array.isArray(r.snapshot))stockSnapshot=r.snapshot;stockRevision=clean(r.revision)||stockRevision;
+    $("successMovement").textContent=clean(r.movementId)||"-";$("successBatch").textContent=clean(r.batchId)||"-";
+    $("successDate").textContent=formatDate(r.activityDate||d.activityDate);$("successLines").textContent=Array.isArray(r.lines)?r.lines.length:d.items.length;
+    $("successPanel").hidden=false;setStatus("Saved successfully · "+clean(r.movementId)+(r.batchId?" · Batch "+r.batchId:""),"success");
+    items=[];renderItems();updatePreview();updateProductAvailability();await refreshStockOnly(true);writeCache();
+  }catch(e){setStatus(clean(e?.message)||"Could not save Stock Movement.","error")}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+
+function clearForm(){
+  items=[];["referenceNo","relatedPurchaseNo","relatedInvoiceNo","note","qty","unitCost"].forEach(id=>$(id).value="");
+  ["purchaseClient","receiveClient","customerSelect","salesmanSelect","driverSelect","batchSelect","staffAllowanceSelect","productSelect"].forEach(id=>$(id).value="");
+  $("productCode").value="";$("availableQty").value=0;$("successPanel").hidden=true;
+  batchChanged();renderItems();updatePreview();updateProductAvailability();setStatus("Form cleared.","success");
+}
+function batchChanged(){const b=selectedBatch();$("batchSalesman").value=b?.salesmanName||"";$("batchDriver").value=b?.driverName||"";$("batchLocation").value=b?(b.locationName||b.locationCode||""):"";items=[];renderItems();updateProductAvailability();updatePreview()}
+function updateDateDisplay(){$("dateDisplay").textContent=formatDate($("activityDate").value)}
+
+$("flowInBtn").onclick=()=>setFlow("INFLOW");$("flowOutBtn").onclick=()=>setFlow("OUTFLOW");
+document.querySelectorAll(".type-btn").forEach(b=>b.onclick=()=>setMovementType(b.dataset.type));
+$("damageWarehouseBtn").onclick=()=>setDamageSource("WAREHOUSE");$("damageBatchBtn").onclick=()=>setDamageSource("BATCH");
+$("batchSelect").onchange=batchChanged;$("productSelect").onchange=updateProductAvailability;$("activityDate").onchange=updateDateDisplay;
+$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;
+
+(function init(){
+  if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("embed");
+  $("activityDate").value=todayValue();updateDateDisplay();
+  const cached=applyCache();if(cached)setStatus("Saved device data ready · syncing live Stock Database...","success");
+  loadLiveData(cached);
+})();
 </script>
-
-
-<script>
-  const MODULE_URLS = {
-    // Legacy route is preserved for old bookmarks / dashboard URLs.
-    "customers-editor": "https://angsokhey11-cloud.github.io/big-brother-customers-editor/?embed=1&view=details&v=21",
-    "customers-add": "https://angsokhey11-cloud.github.io/big-brother-customers-editor/?embed=1&view=add&v=21",
-    "customers-map": "https://angsokhey11-cloud.github.io/big-brother-customers-editor/?embed=1&view=map&v=21",
-    "customers-details": "https://angsokhey11-cloud.github.io/big-brother-customers-editor/?embed=1&view=details&v=21",
-    // Purchase-side Clients/Suppliers Editor.
-    "clients-editor": "https://angsokhey11-cloud.github.io/big-brother-clients-editor/?embed=1&view=details&v=10",
-    "clients-add": "https://angsokhey11-cloud.github.io/big-brother-clients-editor/?embed=1&view=add&v=10",
-    "clients-details": "https://angsokhey11-cloud.github.io/big-brother-clients-editor/?embed=1&view=details&v=10",
-    // Master Product Editor.
-    "products-editor": "https://angsokhey11-cloud.github.io/big-brother-products-editor/?embed=1&view=details&v=10",
-    "products-add": "https://angsokhey11-cloud.github.io/big-brother-products-editor/?embed=1&view=add&v=10",
-    "products-details": "https://angsokhey11-cloud.github.io/big-brother-products-editor/?embed=1&view=details&v=10",
-    // Salesman support workspace. No Sales Invoice write connection.
-    "sales-support-calculator": "https://angsokhey11-cloud.github.io/big-brother-sales-support/?embed=1&view=calculator&v=110",
-    "sales-support-request-delivery": "https://angsokhey11-cloud.github.io/big-brother-sales-support/?embed=1&view=request-delivery&v=110",
-    "sales-support-your-customer": "https://angsokhey11-cloud.github.io/big-brother-sales-support/?embed=1&view=your-customer&v=110",
-    "sales-support-successful-delivery": "https://angsokhey11-cloud.github.io/big-brother-sales-support/?embed=1&view=successful-delivery&v=110",
-    invoice: "https://angsokhey11-cloud.github.io/big-brother-invoice-generator/",
-    history: "https://angsokhey11-cloud.github.io/invoice-history/?embed=1&v=471",
-    "sale-return": "https://angsokhey11-cloud.github.io/big-brother-invoice-reversal/?embed=1&v=1",
-    "payment-history": "https://angsokhey11-cloud.github.io/big-brother-payment-history/?embed=1&type=invoice&v=1",
-    "daily-sale-summary": "https://angsokhey11-cloud.github.io/big-brother-daily-sale-summary/?embed=1&v=1",
-    "daily-cash-collection": "https://angsokhey11-cloud.github.io/big-brother-daily-cash-collection/?embed=1&v=1",
-    "purchase-create": "https://angsokhey11-cloud.github.io/big-brother-purchase-recorder/?embed=1&v=1",
-    "purchase-history": "https://angsokhey11-cloud.github.io/big-brother-puchase-history/?embed=1&v=1",
-    "purchase-payable": "https://angsokhey11-cloud.github.io/big-brother-purchase-payable-invoice/?embed=1&v=1",
-    "purchase-payment-history": "https://angsokhey11-cloud.github.io/big-brother-purchase-payment-history/?embed=1&v=1",
-    // Expenses workspace
-    "expense-add": "https://angsokhey11-cloud.github.io/big-brother-expenses/?embed=1&view=add-expense&v=17",
-    "expense-accrued": "https://angsokhey11-cloud.github.io/big-brother-expenses/?embed=1&view=accrued-expenses&v=17",
-    "expense-history": "https://angsokhey11-cloud.github.io/big-brother-expenses/?embed=1&view=expense-history&v=17",
-    "expense-monthly-report": "https://angsokhey11-cloud.github.io/big-brother-expenses/?embed=1&view=monthly-report&v=17",
-    // Stock V2.0 Simple Flow frontend.
-    "stock-keyin": "https://angsokhey11-cloud.github.io/big-brother-stock-managemenet/?embed=1&view=keyin&v=20",
-    "stock-report": "https://angsokhey11-cloud.github.io/big-brother-stock-managemenet/?embed=1&view=report&v=20",
-    "stock-damaged": "https://angsokhey11-cloud.github.io/big-brother-stock-managemenet/?embed=1&view=damaged&v=20",
-    "stock-transactions": "https://angsokhey11-cloud.github.io/big-brother-stock-managemenet/?embed=1&view=transactions&v=20",
-    "ar-all": "https://angsokhey11-cloud.github.io/big-brother-ar/?embed=1&view=all&v=2",
-    "ar-your": "https://angsokhey11-cloud.github.io/big-brother-ar/?embed=1&view=your&v=3",
-    "ar-payment-history": "https://angsokhey11-cloud.github.io/big-brother-payment-history/?embed=1&type=receivable&v=1",
-    "ar-daily-receivable-cash": "https://angsokhey11-cloud.github.io/big-brother-daily-receivable-cash-summary/?embed=1",
-    "admin-pending-receivable": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=pending-receivable",
-    "admin-pending-daily-cash": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=pending-daily-cash",
-    "admin-pending-deposit": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=pending-deposit",
-    "admin-deposit-history": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=deposit-history",
-    "admin-staff-request": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=staff-request",
-    "admin-request": "https://angsokhey11-cloud.github.io/big-brother-admin-work/?embed=1&view=admin-request"
-  };
-
-  function setShellActive(moduleName) {
-    document
-      .querySelectorAll('.shell-nav-link, .nav-submenu button')
-      .forEach(el => el.classList.remove('active'));
-
-    const salesSub = document.getElementById('salesSubmenu');
-    const salesBtn = document.getElementById('salesMenuButton');
-
-    const salesSupportSub = document.getElementById('salesSupportSubmenu');
-    const salesSupportBtn = document.getElementById('salesSupportMenuButton');
-
-    const purchaseSub = document.getElementById('purchaseSubmenu');
-    const purchaseBtn = document.getElementById('purchaseMenuButton');
-
-    const expensesSub = document.getElementById('expensesSubmenu');
-    const expensesBtn = document.getElementById('expensesMenuButton');
-
-    const stockSub = document.getElementById('stockSubmenu');
-    const stockBtn = document.getElementById('stockMenuButton');
-
-    const arSub = document.getElementById('arSubmenu');
-    const arBtn = document.getElementById('arMenuButton');
-
-    const adminSub = document.getElementById('adminWorkSubmenu');
-    const adminBtn = document.getElementById('adminWorkMenuButton');
-
-    const masterSub = document.getElementById('masterSubmenu');
-    const masterBtn = document.getElementById('masterMenuButton');
-
-    const customersSub = document.getElementById('customersEditorSubmenu');
-    const customersBtn = document.getElementById('customersEditorMenuButton');
-
-    const clientsSub = document.getElementById('clientsEditorSubmenu');
-    const clientsBtn = document.getElementById('clientsEditorMenuButton');
-
-    const productsSub = document.getElementById('productsEditorSubmenu');
-    const productsBtn = document.getElementById('productsEditorMenuButton');
-
-    const customerModules = [
-      'customers-editor',
-      'customers-add',
-      'customers-map',
-      'customers-details'
-    ];
-
-    const clientModules = [
-      'clients-editor',
-      'clients-add',
-      'clients-details'
-    ];
-
-    const productModules = [
-      'products-editor',
-      'products-add',
-      'products-details'
-    ];
-
-    const salesSupportModules = [
-      'sales-support-calculator',
-      'sales-support-request-delivery',
-      'sales-support-your-customer',
-      'sales-support-successful-delivery'
-    ];
-
-    const expenseModules = [
-      'expense-add',
-      'expense-accrued',
-      'expense-history',
-      'expense-monthly-report'
-    ];
-
-    const stockModules = [
-      'stock-keyin',
-      'stock-report',
-      'stock-damaged',
-      'stock-transactions'
-    ];
-
-    const isCustomerModule = customerModules.includes(moduleName);
-    const isClientModule = clientModules.includes(moduleName);
-    const isProductModule = productModules.includes(moduleName);
-    const isSalesSupportModule = salesSupportModules.includes(moduleName);
-    const isExpensesModule = expenseModules.includes(moduleName);
-    const isStockModule = stockModules.includes(moduleName);
-
-    const isMasterModule =
-      isCustomerModule ||
-      isClientModule ||
-      isProductModule;
-
-    const setOpen = (sub, btn, open) => {
-      sub?.classList.toggle('open', open);
-      btn?.classList.toggle('open', open);
-      btn?.setAttribute('aria-expanded', String(open));
-
-      const arrow = btn?.querySelector('.nav-arrow');
-      if (arrow) arrow.textContent = open ? '▲' : '▼';
-    };
-
-    setOpen(masterSub, masterBtn, isMasterModule);
-    setOpen(customersSub, customersBtn, isCustomerModule);
-    setOpen(clientsSub, clientsBtn, isClientModule);
-    setOpen(productsSub, productsBtn, isProductModule);
-    setOpen(salesSupportSub, salesSupportBtn, isSalesSupportModule);
-    setOpen(expensesSub, expensesBtn, isExpensesModule);
-    setOpen(stockSub, stockBtn, isStockModule);
-
-    if (isMasterModule) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-
-      if (isCustomerModule) {
-        const customerNavId =
-          moduleName === 'customers-add'
-            ? 'navCustomerAdd'
-            : moduleName === 'customers-map'
-              ? 'navCustomerMap'
-              : 'navCustomerDetails';
-
-        document.getElementById(customerNavId)?.classList.add('active');
-      }
-
-      if (isClientModule) {
-        const clientNavId =
-          moduleName === 'clients-add'
-            ? 'navClientAdd'
-            : 'navClientDetails';
-
-        document.getElementById(clientNavId)?.classList.add('active');
-      }
-
-      if (isProductModule) {
-        const productNavId =
-          moduleName === 'products-add'
-            ? 'navProductAdd'
-            : 'navProductDetails';
-
-        document.getElementById(productNavId)?.classList.add('active');
-      }
-
-    } else if (
-      moduleName === 'invoice' ||
-      moduleName === 'history' ||
-      moduleName === 'sale-return' ||
-      moduleName === 'payment-history' ||
-      moduleName === 'daily-sale-summary' ||
-      moduleName === 'daily-cash-collection'
-    ) {
-      setOpen(salesSub, salesBtn, true);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-
-      const salesId = moduleName === 'invoice'
-        ? 'navNewInvoice'
-        : moduleName === 'history'
-          ? 'navInvoiceHistory'
-          : moduleName === 'sale-return'
-            ? 'navSaleReturn'
-            : moduleName === 'payment-history'
-              ? 'navPaymentHistory'
-              : moduleName === 'daily-sale-summary'
-                ? 'navDailySaleSummary'
-                : 'navDailyCashCollection';
-
-      document.getElementById(salesId)?.classList.add('active');
-
-    } else if (isSalesSupportModule) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, true);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-      setOpen(masterSub, masterBtn, false);
-      setOpen(customersSub, customersBtn, false);
-      setOpen(clientsSub, clientsBtn, false);
-      setOpen(productsSub, productsBtn, false);
-
-      const salesSupportId =
-        moduleName === 'sales-support-calculator'
-          ? 'navSalesSupportCalculator'
-          : moduleName === 'sales-support-request-delivery'
-            ? 'navSalesSupportRequestDelivery'
-            : moduleName === 'sales-support-your-customer'
-              ? 'navSalesSupportYourCustomer'
-              : 'navSalesSupportSuccessfulDelivery';
-
-      document.getElementById(salesSupportId)?.classList.add('active');
-
-    } else if (
-      moduleName === 'purchase-create' ||
-      moduleName === 'purchase-history' ||
-      moduleName === 'purchase-payable' ||
-      moduleName === 'purchase-payment-history'
-    ) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, true);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-
-      const purchaseId = moduleName === 'purchase-create'
-        ? 'navCreatePurchase'
-        : moduleName === 'purchase-history'
-          ? 'navPurchaseHistory'
-          : moduleName === 'purchase-payable'
-            ? 'navPurchasePayable'
-            : 'navPurchasePaymentHistory';
-
-      document.getElementById(purchaseId)?.classList.add('active');
-
-    } else if (isExpensesModule) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, true);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-      setOpen(masterSub, masterBtn, false);
-      setOpen(customersSub, customersBtn, false);
-      setOpen(clientsSub, clientsBtn, false);
-      setOpen(productsSub, productsBtn, false);
-
-      const expenseId =
-        moduleName === 'expense-add'
-          ? 'navExpenseAdd'
-          : moduleName === 'expense-accrued'
-            ? 'navExpenseAccrued'
-            : moduleName === 'expense-history'
-              ? 'navExpenseHistory'
-              : 'navExpenseMonthlyReport';
-
-      document.getElementById(expenseId)?.classList.add('active');
-
-    } else if (isStockModule) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(stockSub, stockBtn, true);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-      setOpen(masterSub, masterBtn, false);
-      setOpen(customersSub, customersBtn, false);
-      setOpen(clientsSub, clientsBtn, false);
-      setOpen(productsSub, productsBtn, false);
-
-      const stockId =
-        moduleName === 'stock-keyin'
-          ? 'navStockKeyin'
-          : moduleName === 'stock-report'
-            ? 'navStockReport'
-            : moduleName === 'stock-damaged'
-              ? 'navStockDamaged'
-              : 'navStockTransactions';
-
-      document.getElementById(stockId)?.classList.add('active');
-
-    } else if (
-      moduleName === 'ar-all' ||
-      moduleName === 'ar-your' ||
-      moduleName === 'ar-payment-history' ||
-      moduleName === 'ar-daily-receivable-cash'
-    ) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, true);
-      setOpen(adminSub, adminBtn, false);
-
-      const arId =
-        moduleName === 'ar-all'
-          ? 'navARAll'
-          : moduleName === 'ar-your'
-            ? 'navARYour'
-            : moduleName === 'ar-payment-history'
-              ? 'navARPaymentHistory'
-              : 'navARDailyReceivableCash';
-
-      document.getElementById(arId)?.classList.add('active');
-
-    } else if (
-      moduleName === 'admin-pending-receivable' ||
-      moduleName === 'admin-pending-daily-cash' ||
-      moduleName === 'admin-pending-deposit' ||
-      moduleName === 'admin-deposit-history' ||
-      moduleName === 'admin-staff-request' ||
-      moduleName === 'admin-request'
-    ) {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, true);
-
-      const adminId =
-        moduleName === 'admin-pending-receivable'
-          ? 'navAdminPendingReceivable'
-          : moduleName === 'admin-pending-daily-cash'
-            ? 'navAdminPendingDeposit'
-            : moduleName === 'admin-pending-deposit'
-              ? 'navAdminPendingDepositStage'
-              : moduleName === 'admin-deposit-history'
-                ? 'navAdminDepositHistory'
-                : moduleName === 'admin-staff-request'
-                  ? 'navAdminStaffRequest'
-                  : 'navAdminRequest';
-
-      document.getElementById(adminId)?.classList.add('active');
-
-    } else {
-      setOpen(salesSub, salesBtn, false);
-      setOpen(salesSupportSub, salesSupportBtn, false);
-      setOpen(purchaseSub, purchaseBtn, false);
-      setOpen(expensesSub, expensesBtn, false);
-      setOpen(arSub, arBtn, false);
-      setOpen(adminSub, adminBtn, false);
-      setOpen(masterSub, masterBtn, false);
-      setOpen(customersSub, customersBtn, false);
-      setOpen(clientsSub, clientsBtn, false);
-      setOpen(productsSub, productsBtn, false);
-
-      document.getElementById('navDashboard')?.classList.add('active');
-    }
-  }
-
-  function toggleSalesMenu() {
-    const submenu = document.getElementById('salesSubmenu');
-    const button = document.getElementById('salesMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleSalesSupportMenu() {
-    const submenu = document.getElementById('salesSupportSubmenu');
-    const button = document.getElementById('salesSupportMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleMasterMenu() {
-    const submenu = document.getElementById('masterSubmenu');
-    const button = document.getElementById('masterMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleCustomersEditorMenu() {
-    const submenu = document.getElementById('customersEditorSubmenu');
-    const button = document.getElementById('customersEditorMenuButton');
-    if (!submenu || !button) return;
-
-    const open = !submenu.classList.contains('open');
-
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleClientsEditorMenu() {
-    const submenu = document.getElementById('clientsEditorSubmenu');
-    const button = document.getElementById('clientsEditorMenuButton');
-    if (!submenu || !button) return;
-
-    const open = !submenu.classList.contains('open');
-
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleProductsEditorMenu() {
-    const submenu = document.getElementById('productsEditorSubmenu');
-    const button = document.getElementById('productsEditorMenuButton');
-    if (!submenu || !button) return;
-
-    const open = !submenu.classList.contains('open');
-
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function togglePurchaseMenu() {
-    const submenu = document.getElementById('purchaseSubmenu');
-    const button = document.getElementById('purchaseMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleExpensesMenu() {
-    const submenu = document.getElementById('expensesSubmenu');
-    const button = document.getElementById('expensesMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleStockMenu() {
-    const submenu = document.getElementById('stockSubmenu');
-    const button = document.getElementById('stockMenuButton');
-    if (!submenu || !button) return;
-
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function toggleARMenu() {
-    const submenu = document.getElementById('arSubmenu');
-    const button = document.getElementById('arMenuButton');
-    if (!submenu || !button) return;
-    const open = !submenu.classList.contains('open');
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  function showDashboardHome(updateUrl = true) {
-    document.getElementById('dashboardHome').hidden = false;
-    document.getElementById('moduleWorkspace').hidden = true;
-    setShellActive('dashboard');
-    if (updateUrl) history.replaceState(null, '', location.pathname);
-  }
-
-  function showDashboardSection(sectionId) {
-    showDashboardHome();
-    requestAnimationFrame(() => {
-      document.getElementById(sectionId)?.scrollIntoView({behavior:'smooth', block:'start'});
-    });
-  }
-
-
-  function toggleAdminWorkMenu() {
-    const submenu = document.getElementById('adminWorkSubmenu');
-    const button = document.getElementById('adminWorkMenuButton');
-    if (!submenu || !button) return;
-
-    const open = !submenu.classList.contains('open');
-
-    submenu.classList.toggle('open', open);
-    button.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-
-    const arrow = button.querySelector('.nav-arrow');
-    if (arrow) arrow.textContent = open ? '▲' : '▼';
-  }
-
-  const FROZEN_SALES_SUPPORT_MODULES = new Set([
-    'sales-support-request-delivery',
-    'sales-support-successful-delivery'
-  ]);
-
-  const FROZEN_EXPENSE_MODULES = new Set([
-    'expense-monthly-report'
-  ]);
-
-  const FROZEN_STOCK_MODULES = new Set([
-    'stock-report',
-    'stock-damaged',
-    'stock-transactions'
-  ]);
-
-  function expenseViewForModule(moduleName) {
-    if (moduleName === 'expense-history') return 'expense-history';
-    if (moduleName === 'expense-accrued') return 'accrued-expenses';
-    if (moduleName === 'expense-add') return 'add-expense';
-    return '';
-  }
-
-  function loadWorkspace(moduleName, updateUrl = true) {
-    if (FROZEN_SALES_SUPPORT_MODULES.has(moduleName)) {
-      moduleName = 'sales-support-calculator';
-    }
-
-    if (FROZEN_EXPENSE_MODULES.has(moduleName)) {
-      moduleName = 'expense-add';
-    }
-    if (FROZEN_STOCK_MODULES.has(moduleName)) {
-      moduleName = 'stock-keyin';
-    }
-    const url = MODULE_URLS[moduleName];
-    if (!url) return;
-    const home = document.getElementById('dashboardHome');
-    const workspace = document.getElementById('moduleWorkspace');
-    const frame = document.getElementById('moduleFrame');
-
-    const expenseView = expenseViewForModule(moduleName);
-
-    // If the Expenses iframe is already open, switch its internal view instantly.
-    // We still reload the URL below to keep browser/back-link state authoritative.
-    if (
-      expenseView &&
-      frame?.contentWindow &&
-      String(frame.src || '').includes('big-brother-expenses')
-    ) {
-      try {
-        frame.contentWindow.postMessage(
-          {
-            type: 'bb-expenses-view',
-            view: expenseView
-          },
-          '*'
-        );
-      } catch (_) {}
-    }
-
-    home.hidden = true;
-    workspace.hidden = false;
-    // Always force the requested module/view into the iframe.
-    // This prevents the A/R iframe from keeping the previous All/Your mode.
-    frame.dataset.module = moduleName;
-    const separator = url.includes('?') ? '&' : '?';
-    frame.src = url + separator + 'shellModule=' + encodeURIComponent(moduleName) + '&t=' + Date.now();
-    setShellActive(moduleName);
-    if (updateUrl) history.replaceState(null, '', '?module=' + encodeURIComponent(moduleName));
-  }
-
-  function openInitialWorkspace() {
-    const params = new URLSearchParams(location.search);
-    const moduleName = params.get('module');
-    if (['customers-editor','customers-add','customers-map','customers-details','clients-editor','clients-add','clients-details','products-editor','products-add','products-details','sales-support-calculator','sales-support-request-delivery','sales-support-your-customer','sales-support-successful-delivery','invoice','history','sale-return','payment-history','daily-sale-summary','daily-cash-collection','purchase-create','purchase-history','purchase-payable','purchase-payment-history','expense-add','expense-accrued','expense-history','expense-monthly-report','stock-keyin','stock-report','stock-damaged','stock-transactions','ar-all','ar-your','ar-payment-history','ar-daily-receivable-cash','admin-pending-receivable','admin-pending-daily-cash','admin-pending-deposit','admin-deposit-history','admin-staff-request','admin-request'].includes(moduleName)) loadWorkspace(moduleName, false);
-    else showDashboardHome(false);
-  }
-
-  window.addEventListener('DOMContentLoaded', openInitialWorkspace);
-</script>
-
 </body>
 </html>

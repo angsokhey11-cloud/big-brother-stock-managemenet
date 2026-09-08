@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.5 Fast Save Confirm</title>
+<title>BIG BROTHER — Stock In-Out V2.6 Simple Batch Reference</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -74,7 +74,7 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
   <div class="topbar">
     <div>
       <h1>📦 Stock In-Out Keyin</h1>
-      <div class="subtitle">One keyin tool for Purchase, Receive from Client, Back Sale, Batch Stock, Direct Sale, Damage and Staff Allowance.</div>
+      <div class="subtitle">Physical Stock keyin only. Batch is a reference for Back Sale / Damage — no live Batch Pending check.</div>
     </div>
     <div class="db-pill" id="dbPill">STOCK DATABASE</div>
   </div>
@@ -157,7 +157,11 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
 
     <div id="existingBatchFields" class="dynamic" hidden>
       <div class="grid">
-        <div class="field"><label>Open Batch</label><select id="batchSelect"><option value="">Select Batch</option></select></div>
+        <div class="field">
+          <label>Open Batch</label>
+          <select id="batchSelect"><option value="">Select Batch</option></select>
+          <div class="helper">Batch is used as a reference only. Back Sale / Batch Damage do not check live Batch Pending.</div>
+        </div>
         <div class="field"><label>Salesman</label><input id="batchSalesman" readonly></div>
         <div class="field"><label>Driver 1</label><input id="batchDriver" readonly></div>
         <div class="field"><label>Driver 2</label><input id="batchDriver2" readonly></div>
@@ -496,6 +500,38 @@ async function confirmTimedOutSave(requestId){
   return null;
 }
 
+
+function applySimpleBatchLocalResult(r){
+  if(!r || !r.batch) return;
+
+  const batch=r.batch;
+  const id=clean(batch.batchId);
+
+  if(!id) return;
+
+  const existingIndex=
+    openBatches.findIndex(
+      item=>clean(item.batchId)===id
+    );
+
+  if(existingIndex>=0){
+    openBatches[existingIndex]={
+      ...openBatches[existingIndex],
+      ...batch
+    };
+  }else if(
+    !["CLOSED","CANCELLED","CANCELED"]
+      .includes(
+        clean(batch.status)
+          .toUpperCase()
+      )
+  ){
+    openBatches.unshift(batch);
+  }
+
+  fillBatchSelect();
+}
+
 function showSaveSuccess(r,d){
   if(Array.isArray(r.deltas)){
     applyMovementDeltas(r.deltas);
@@ -504,6 +540,8 @@ function showSaveSuccess(r,d){
   if(Array.isArray(r.snapshot)){
     stockSnapshot=r.snapshot;
   }
+
+  applySimpleBatchLocalResult(r);
 
   stockRevision=
     clean(r.revision)||
@@ -552,11 +590,11 @@ function showSaveSuccess(r,d){
   updateProductAvailability();
 
   /*
-   * Do NOT block the Save button waiting for a full reload.
-   * Optimistic deltas already updated the screen.
+   * V2.6:
+   * No automatic background Stock reload after every save.
+   * Local deltas update the screen immediately.
+   * Smart Sync / manual Refresh can reconcile later.
    */
-  loadStockFast(true,false);
-
   writeCache();
 }
 
@@ -831,7 +869,7 @@ async function loadAllFast(cached=false){
 
   if(stockResult){
     setStatus(
-      "Ready · Warehouse Stock synced · "+
+      "Ready · Physical Stock synced · "+
       openBatches.length+
       " open batch"+
       (openBatches.length===1?"":"es")+
@@ -937,20 +975,11 @@ function receiveClientChanged(){
 }
 
 function manualProductPool(){
-  if(movementType==="BACK_SALE" ||
-     (movementType==="STOCK_DAMAGE" && damageSource==="BATCH")){
-    const batch=selectedBatch();
-    if(!batch || !Array.isArray(batch.items)) return [];
-
-    const pendingCodes=new Set(
-      batch.items
-        .filter(x=>num(x.pendingQty)>0)
-        .map(x=>clean(x.productCode))
-    );
-
-    return products.filter(p=>pendingCodes.has(clean(p.productCode)));
-  }
-
+  /*
+   * V2.6:
+   * For Back Sale / Batch Damage, accountant keys the real physical
+   * product brought back/damaged. We do not ask Batch Pending first.
+   */
   return products;
 }
 
@@ -962,7 +991,10 @@ function clearProductSearch(){
     $("productSearchResults").classList.remove("open");
   }
   $("productCode").value="";
-  $("availableQty").value=0;
+  $("availableQty").value=
+    isSimpleBatchReferenceMovement()
+      ? ""
+      : 0;
 }
 
 function productSearchInputChanged(){
@@ -971,7 +1003,10 @@ function productSearchInputChanged(){
 
   selectedProduct=null;
   $("productCode").value="";
-  $("availableQty").value=0;
+  $("availableQty").value=
+    isSimpleBatchReferenceMovement()
+      ? ""
+      : 0;
 
   if(!q){
     box.innerHTML="";
@@ -1266,25 +1301,75 @@ window.purchaseReceiveQtyChanged=purchaseReceiveQtyChanged;
 window.purchaseExpiryChanged=purchaseExpiryChanged;
 
 function fillBatchSelect(){
-  $("batchSelect").innerHTML='<option value="">Select Open Batch</option>'+openBatches.map((x,i)=>{
-    const count=Array.isArray(x.items)?x.items.filter(y=>num(y.pendingQty)>0).length:0;
-    return'<option value="'+i+'">'+esc(x.batchId+" · "+formatDate(x.batchDate)+" · "+(x.salesmanName||"-")+" · "+count+" product(s)")+'</option>'
-  }).join("");
+  const current=$("batchSelect").value;
+
+  $("batchSelect").innerHTML=
+    '<option value="">Select Open Batch</option>'+
+    openBatches.map((x,i)=>
+      '<option value="'+i+'">'+
+      esc(
+        x.batchId+
+        " · "+
+        formatDate(x.batchDate)+
+        " · "+
+        (x.salesmanName||"-")+
+        " · "+
+        (x.locationName||x.locationCode||"-")
+      )+
+      '</option>'
+    ).join("");
+
+  if(
+    current &&
+    Number.isInteger(Number(current)) &&
+    openBatches[Number(current)]
+  ){
+    $("batchSelect").value=current;
+  }
 }
 function pick(list,id){const i=Number($(id).value);return Number.isInteger(i)&&i>=0&&list[i]?list[i]:null}
 function selectedBatch(){return pick(openBatches,"batchSelect")}
 function stockFor(code){return stockSnapshot.find(x=>clean(x.productCode)===clean(code))||{warehouseGood:0,batchPending:0,damaged:0,totalGood:0}}
-function batchPending(code){const b=selectedBatch();if(!b||!Array.isArray(b.items))return 0;const x=b.items.find(y=>clean(y.productCode)===clean(code));return x?num(x.pendingQty):0}
+function isSimpleBatchReferenceMovement(){
+  return (
+    movementType==="BACK_SALE" ||
+    (
+      movementType==="STOCK_DAMAGE" &&
+      damageSource==="BATCH"
+    )
+  );
+}
+
 function currentAvailable(code){
-  if(movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"))return batchPending(code);
+  if(isSimpleBatchReferenceMovement()){
+    return null;
+  }
+
   return num(stockFor(code).warehouseGood);
 }
-function availableLabel(){return movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")?"Batch Pending":"Warehouse Good"}
+
+function availableLabel(){
+  return isSimpleBatchReferenceMovement()
+    ? "Live Batch Check"
+    : "Warehouse Good";
+}
+
 function updateProductAvailability(){
   const p=selectedProduct;
-  $("productCode").value=p?p.productCode:"";
-  $("availableLabel").textContent=availableLabel();
-  $("availableQty").value=p?currentAvailable(p.productCode):0;
+
+  $("productCode").value=
+    p ? p.productCode : "";
+
+  $("availableLabel").textContent=
+    availableLabel();
+
+  if(isSimpleBatchReferenceMovement()){
+    $("availableQty").value=
+      p ? "Not Checked" : "";
+  }else{
+    $("availableQty").value=
+      p ? currentAvailable(p.productCode) : 0;
+  }
 }
 
 const FLOW_CATEGORIES={
@@ -1373,10 +1458,10 @@ function setDamageSource(s){
   items=[];renderItems();updateProductAvailability();updatePreview();
 }
 function movementLabel(){
-  const x={PURCHASE:"Purchase → Warehouse",RECEIVE_FROM_CLIENT:"Client → Warehouse",BACK_SALE:"Batch Pending → Warehouse",
-    BATCH_STOCK:"Warehouse → Batch Pending",DIRECT_SALE:"Warehouse → Customer",
+  const x={PURCHASE:"Purchase → Warehouse",RECEIVE_FROM_CLIENT:"Client → Warehouse",BACK_SALE:"Batch Return → Warehouse",
+    BATCH_STOCK:"Warehouse → Batch",DIRECT_SALE:"Warehouse → Customer",
     STAFF_ALLOWANCE:"Warehouse → Staff"};
-  if(movementType==="STOCK_DAMAGE")return damageSource==="BATCH"?"Batch Pending → Damaged":"Warehouse → Damaged";
+  if(movementType==="STOCK_DAMAGE")return damageSource==="BATCH"?"Batch Damage → Damaged":"Warehouse → Damaged";
   return x[movementType]||movementType;
 }
 
@@ -1391,10 +1476,41 @@ function addProduct(){
   if(items.some(x=>x.productCode===p.productCode))return setStatus(p.productName+" is already in this movement.","error");
 
   const available=currentAvailable(p.productCode);
-  if(["BACK_SALE","BATCH_STOCK","DIRECT_SALE","STOCK_DAMAGE","STAFF_ALLOWANCE"].includes(movementType)&&qty>available+0.000001)
-    return setStatus(p.productName+": Qty "+qty+" is greater than "+availableLabel()+" "+available+".","error");
 
-  items.push({productCode:p.productCode,productName:p.productName,unit:p.unit,qty,unitCost:movementType==="PURCHASE"?num($("unitCost").value):0,availableBefore:available});
+  /*
+   * Back Sale / Batch Damage:
+   * Save what staff physically counted.
+   * Batch Report will reconcile any mismatch later.
+   */
+  if(
+    !isSimpleBatchReferenceMovement() &&
+    ["BATCH_STOCK","DIRECT_SALE","STOCK_DAMAGE","STAFF_ALLOWANCE"]
+      .includes(movementType) &&
+    qty>num(available)+0.000001
+  ){
+    return setStatus(
+      p.productName+
+      ": Qty "+qty+
+      " is greater than "+
+      availableLabel()+
+      " "+num(available)+".",
+      "error"
+    );
+  }
+
+  items.push({
+    productCode:p.productCode,
+    productName:p.productName,
+    unit:p.unit,
+    qty,
+    unitCost:movementType==="PURCHASE"
+      ? num($("unitCost").value)
+      : 0,
+    availableBefore:
+      isSimpleBatchReferenceMovement()
+        ? null
+        : available
+  });
   clearProductSearch();$("qty").value="";$("unitCost").value="";
   renderItems();updatePreview();setStatus(items.length+" product line"+(items.length===1?"":"s")+" ready.","success");
 }
@@ -1404,7 +1520,7 @@ window.removeProduct=removeProduct;
 function renderItems(){
   if(!items.length){$("itemRows").innerHTML='<tr><td colspan="7" class="empty">No products added yet.</td></tr>';updatePreview();return}
   $("itemRows").innerHTML=items.map((x,i)=>`<tr>
-    <td><strong>${esc(x.productName)}</strong></td><td>${esc(x.productCode)}</td><td>${num(x.availableBefore).toLocaleString()}</td>
+    <td><strong>${esc(x.productName)}</strong></td><td>${esc(x.productCode)}</td><td>${x.availableBefore===null?"Not checked":num(x.availableBefore).toLocaleString()}</td>
     <td class="amount"><strong>${num(x.qty).toLocaleString()}</strong> ${esc(x.unit)}</td>
     <td class="amount">${x.unitCost?"$"+num(x.unitCost).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4}):"-"}</td>
     <td><span class="badge">${esc(movementLabel())}</span></td><td><button class="remove" onclick="removeProduct(${i})">Remove</button></td></tr>`).join("");
@@ -1646,16 +1762,26 @@ function clearForm(){
   setStatus("Form cleared.","success");
 }
 function batchChanged(){
-  const b=selectedBatch();
-  $("batchSalesman").value=b?.salesmanName||"";
-  $("batchDriver").value=b?.driverName||"";
-  $("batchDriver2").value=b?.driver2Name||"";
-  $("batchLocation").value=b?(b.locationName||b.locationCode||""):"";
   items=[];
   clearProductSearch();
   renderItems();
   updateProductAvailability();
   updatePreview();
+
+  const b=selectedBatch();
+
+  if(b){
+    setStatus(
+      "Batch reference selected · "+
+      b.batchId+
+      " · "+
+      (b.salesmanName||"-")+
+      " · "+
+      (b.locationName||b.locationCode||"-")+
+      ". Enter the physical Back Sale / Damage quantity.",
+      "success"
+    );
+  }
 }
 function updateDateDisplay(){$("dateDisplay").textContent=formatDate($("activityDate").value)}
 

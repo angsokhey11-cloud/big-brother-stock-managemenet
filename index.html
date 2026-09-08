@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.3 Flow Polish</title>
+<title>BIG BROTHER — Stock In-Out V2.4 Fast Smart Sync + Storage</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -280,7 +280,12 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
 const MASTER_API="https://script.google.com/macros/s/AKfycbzIjs-cNehMxWTZs3ZPAosseGUu1nqACTPo3S4-onLLEYnEgqP6AUK7p3jwb6MaFr7H0w/exec";
 const STAFF_API="https://script.google.com/macros/s/AKfycbwKqgTPzesBlWlk5NFelkZR-9HOzDGdukcPc49dTDtADRdLz-Bv2uABMiuajh0mpEOA/exec";
 const STOCK_API="https://script.google.com/macros/s/AKfycbyVDVD72ed4zCxK32Rkx-kHZLgyG6aZwdnSmFH4S47RjVmm_C9b9v7xfpkCkgO1XVo3/exec";
-const CACHE_KEY="bb_stock_keyin_v20_cache",CACHE_MAX_AGE=86400000;
+const CACHE_KEY="bb_stock_keyin_v24_cache";
+const LEGACY_CACHE_KEY="bb_stock_keyin_v20_cache";
+const SHARED_REPORT_CACHE_KEY="bb_stock_report_smart_cache_v15";
+const CACHE_MAX_AGE=86400000;
+const SMART_SYNC_MS=30000;
+let smartSyncTimer=null,revisionBusy=false,stockSyncBusy=false,lastRevisionCheckAt=0;
 
 const $=id=>document.getElementById(id),clean=v=>String(v==null?"":v).trim(),num=v=>Number(v)||0;
 let flow="INFLOW",movementType="PURCHASE",damageSource="WAREHOUSE";
@@ -325,8 +330,101 @@ async function apiPost(action,data,timeout=25000){
 function arrayOf(r){if(Array.isArray(r))return r;if(Array.isArray(r?.data))return r.data;if(Array.isArray(r?.products))return r.products;if(Array.isArray(r?.locations))return r.locations;if(Array.isArray(r?.staff))return r.staff;if(Array.isArray(r?.clients))return r.clients;if(Array.isArray(r?.customers))return r.customers;return []}
 async function tryMaster(actions){for(const action of actions){try{const r=await jsonp(MASTER_API,{action},12000),a=arrayOf(r);if(a.length)return a}catch(_){}}return []}
 
-function readCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const d=JSON.parse(raw);if(!d||Date.now()-Number(d.savedAt||0)>CACHE_MAX_AGE){localStorage.removeItem(CACHE_KEY);return null}return d}catch(_){return null}}
-function writeCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),products,locations,staff,clients,customers,stockSnapshot,openBatches,stockRevision,purchaseList}))}catch(_){}}
+function storageRead(key){
+  try{
+    const raw=localStorage.getItem(key);
+    return raw?JSON.parse(raw):null;
+  }catch(_){
+    return null;
+  }
+}
+function readCache(){
+  const candidates=[
+    storageRead(CACHE_KEY),
+    storageRead(LEGACY_CACHE_KEY)
+  ].filter(Boolean);
+
+  if(!candidates.length)return null;
+
+  candidates.sort(
+    (a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0)
+  );
+
+  const d=candidates[0];
+
+  if(
+    !d ||
+    Date.now()-Number(d.savedAt||0)>CACHE_MAX_AGE
+  ){
+    try{localStorage.removeItem(CACHE_KEY)}catch(_){}
+    return null;
+  }
+
+  return d;
+}
+function writeCache(){
+  try{
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        savedAt:Date.now(),
+        products,
+        locations,
+        staff,
+        clients,
+        customers,
+        stockSnapshot,
+        openBatches,
+        stockRevision,
+        purchaseList
+      })
+    );
+  }catch(_){}
+}
+
+function applySharedReportStockCache(){
+  const cached=storageRead(SHARED_REPORT_CACHE_KEY);
+  if(!cached||!cached.report)return false;
+
+  const report=cached.report;
+  const rows=Array.isArray(report.products)?report.products:[];
+  if(!rows.length)return false;
+
+  const reportRevision=clean(cached.revision||report.revision);
+  const reportSavedAt=Number(cached.savedAt||0);
+
+  const local=readCache();
+  const localSavedAt=Number(local?.savedAt||0);
+
+  if(
+    reportRevision &&
+    stockRevision &&
+    reportRevision===stockRevision &&
+    reportSavedAt<=localSavedAt
+  ){
+    return false;
+  }
+
+  stockSnapshot=rows.map(x=>({
+    productCode:clean(x.productCode),
+    productName:clean(x.productName),
+    unit:clean(x.unit),
+    warehouseGood:num(x.warehouseGood),
+    batchPending:num(x.batchPending),
+    damaged:num(x.damaged),
+    totalGood:num(x.totalGood)
+  }));
+
+  if(reportRevision){
+    stockRevision=reportRevision;
+  }
+
+  updateProductAvailability();
+  renderItems();
+  writeCache();
+
+  return true;
+}
 
 function mapProducts(a){return(a||[]).map(x=>({
   productCode:clean(x.productCode||x["Product Code"]||x.code),
@@ -365,37 +463,187 @@ function applyCache(){
   splitStaff();fillSelectors();renderItems();updateProductAvailability();return true;
 }
 
-async function loadLiveData(silent=false){
-  if(!silent)setStatus("Syncing Products, Locations, Staff and Stock Database...");
+async function loadReferenceData(silent=false){
   try{
-    const [p,l,s,cust,cli,stock]=await Promise.all([
+    const [p,l,s,cust,cli]=await Promise.all([
       tryMaster(["getProducts","products","masterProducts"]),
       tryMaster(["getLocations","locations","location"]),
       jsonp(STAFF_API,{action:"getStaff",includeInactive:"false"},14000).catch(()=>({data:[]})),
       tryMaster(["getCustomers","customers"]),
-      tryMaster(["getClients","clients"]),
-      jsonp(STOCK_API,{action:"getStockKeyinBootstrap"},20000)
+      tryMaster(["getClients","clients"])
     ]);
-    products=mapProducts(p);locations=mapLocations(l);staff=mapStaff(arrayOf(s));customers=mapCustomers(cust);clients=mapClients(cli);
-    stockSnapshot=Array.isArray(stock?.snapshot)?stock.snapshot:[];openBatches=Array.isArray(stock?.openBatches)?stock.openBatches:[];stockRevision=clean(stock?.revision)||stockRevision||"0";
-    splitStaff();fillSelectors();renderItems();updateProductAvailability();writeCache();
-    $("dbPill").textContent="STOCK DATABASE · "+clean(stock?.version||"V3");
-    const sync=stock?.salesSync||{};
-    const syncText=sync.synced ? " · "+sync.synced+" new Sales invoice synced" : "";
-    const errorText=sync.errors ? " · "+sync.errors+" Sales sync error" : "";
 
-    setStatus(
-      "Ready · "+products.length+" products · "+openBatches.length+
-      " open batch"+(openBatches.length===1?"":"es")+
-      syncText+errorText+".",
-      sync.errors ? "warn" : "success"
+    const newProducts=mapProducts(p);
+    const newLocations=mapLocations(l);
+    const newStaff=mapStaff(arrayOf(s));
+    const newCustomers=mapCustomers(cust);
+    const newClients=mapClients(cli);
+
+    if(newProducts.length)products=newProducts;
+    if(newLocations.length)locations=newLocations;
+    if(newStaff.length)staff=newStaff;
+    if(newCustomers.length)customers=newCustomers;
+    if(newClients.length)clients=newClients;
+
+    splitStaff();
+    fillSelectors();
+    renderItems();
+    updateProductAvailability();
+    writeCache();
+
+    return true;
+  }catch(e){
+    if(!silent){
+      setStatus(
+        "Reference data using saved device cache · "+clean(e?.message),
+        "warn"
+      );
+    }
+    return false;
+  }
+}
+
+async function loadStockFast(silent=false,forceSync=false){
+  if(stockSyncBusy)return null;
+  stockSyncBusy=true;
+
+  try{
+    if(!silent){
+      setStatus(
+        forceSync
+          ?"Refreshing Stock + reconciling Sales..."
+          :"Syncing Stock Database..."
+      );
+    }
+
+    const r=await jsonp(
+      STOCK_API,
+      {
+        action:"stockKeyinFast",
+        forceSync:forceSync?"1":"0"
+      },
+      forceSync?30000:12000
     );
 
-    loadPurchaseList(true);
+    stockSnapshot=Array.isArray(r.snapshot)?r.snapshot:[];
+    openBatches=Array.isArray(r.openBatches)?r.openBatches:[];
+    stockRevision=clean(r.revision)||stockRevision||"0";
+
+    fillBatchSelect();
+    updateProductAvailability();
+    renderItems();
+    writeCache();
+
+    $("dbPill").textContent=
+      "STOCK DATABASE · "+clean(r.version||"V3.6");
+
+    if(!silent){
+      const sync=r.salesSync||{};
+      const extra=sync.synced
+        ?" · "+sync.synced+" Sales invoice synced"
+        :"";
+
+      const cacheText=r.serverCache
+        ?" · Fast Cache"
+        :"";
+
+      setStatus(
+        "Stock ready · "+
+        openBatches.length+
+        " open batch"+
+        (openBatches.length===1?"":"es")+
+        extra+
+        cacheText+
+        ".",
+        sync.errors?"warn":"success"
+      );
+    }
+
+    return r;
   }catch(e){
-    if(products.length||stockSnapshot.length){fillSelectors();setStatus("Saved device data ready · live sync will retry. "+clean(e?.message),"warn")}
-    else setStatus(clean(e?.message)||"Could not load Stock Database.","error");
+    if(!silent){
+      setStatus(
+        stockSnapshot.length
+          ?"Saved device Stock ready · live sync will retry. "+clean(e?.message)
+          :clean(e?.message)||"Could not load Stock Database.",
+        stockSnapshot.length?"warn":"error"
+      );
+    }
+    return null;
+  }finally{
+    stockSyncBusy=false;
   }
+}
+
+async function loadAllFast(cached=false){
+  if(!cached){
+    setStatus("Loading Stock and reference data...");
+  }
+
+  const stockPromise=loadStockFast(true,false);
+  const referencePromise=loadReferenceData(true);
+
+  const stockResult=await stockPromise;
+
+  if(stockResult){
+    setStatus(
+      "Ready · Warehouse Stock synced · "+
+      openBatches.length+
+      " open batch"+
+      (openBatches.length===1?"":"es")+
+      ".",
+      "success"
+    );
+  }else if(cached||stockSnapshot.length){
+    setStatus(
+      "Saved device data ready · Smart Sync active.",
+      "warn"
+    );
+  }
+
+  await referencePromise;
+}
+
+async function checkStockRevision(){
+  if(revisionBusy||stockSyncBusy||document.hidden)return;
+  revisionBusy=true;
+
+  try{
+    const r=await jsonp(
+      STOCK_API,
+      {action:"revision"},
+      8000
+    );
+
+    const next=clean(r?.revision)||"0";
+    lastRevisionCheckAt=Date.now();
+
+    if(
+      next!=="0" &&
+      stockRevision!=="0" &&
+      next!==stockRevision
+    ){
+      await loadStockFast(true,false);
+      return;
+    }
+
+    if(stockRevision==="0"&&next!=="0"){
+      stockRevision=next;
+      writeCache();
+    }
+  }catch(_){
+    // Keep cached data silently.
+  }finally{
+    revisionBusy=false;
+  }
+}
+
+function startSmartStockSync(){
+  clearInterval(smartSyncTimer);
+  smartSyncTimer=setInterval(
+    checkStockRevision,
+    SMART_SYNC_MS
+  );
 }
 
 function selectOptions(list,label,placeholder){return'<option value="">'+esc(placeholder)+'</option>'+list.map((x,i)=>'<option value="'+i+'">'+esc(label(x))+'</option>').join("")}
@@ -1025,18 +1273,7 @@ function validate(d){
 }
 
 async function refreshStockOnly(silent=false){
-  if(!silent)setStatus("Refreshing Stock Database...");
-  try{
-    const r=await jsonp(STOCK_API,{action:"getStockKeyinBootstrap"},18000);
-    stockSnapshot=Array.isArray(r.snapshot)?r.snapshot:[];openBatches=Array.isArray(r.openBatches)?r.openBatches:[];stockRevision=clean(r.revision)||stockRevision;
-    fillBatchSelect();updateProductAvailability();renderItems();writeCache();
-
-    if(!silent){
-      const sync=r.salesSync||{};
-      const extra=sync.synced ? " · "+sync.synced+" Sales invoice synced" : "";
-      setStatus("Stock refreshed · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+extra+".","success");
-    }
-  }catch(e){if(!silent)setStatus(clean(e?.message)||"Could not refresh Stock.","error")}
+  return loadStockFast(silent,!silent);
 }
 
 async function saveMovement(){
@@ -1049,7 +1286,11 @@ async function saveMovement(){
     $("successMovement").textContent=clean(r.movementId)||"-";$("successBatch").textContent=clean(r.batchId)||"-";
     $("successDate").textContent=formatDate(r.activityDate||d.activityDate);$("successLines").textContent=Array.isArray(r.lines)?r.lines.length:d.items.length;
     $("successPanel").hidden=false;setStatus("Saved successfully · "+clean(r.movementId)+(r.batchId?" · Batch "+r.batchId:""),"success");
-    items=[];renderItems();updatePreview();updateProductAvailability();await refreshStockOnly(true);
+    items=[];
+    renderItems();
+    updatePreview();
+    updateProductAvailability();
+    await loadStockFast(true,false);
 
     if(movementType==="PURCHASE"){
       await loadPurchaseList(true);
@@ -1118,13 +1359,66 @@ document.addEventListener("click",event=>{
 $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;
 
 (function init(){
-  if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("embed");
-  $("activityDate").value=todayValue();updateDateDisplay();
+  if(new URLSearchParams(location.search).get("embed")==="1"){
+    document.body.classList.add("embed");
+  }
+
+  $("activityDate").value=todayValue();
+  updateDateDisplay();
   fillMovementCategorySelect();
-  const cached=applyCache();if(cached)setStatus("Saved device data ready · syncing live Stock Database...","success");
+
+  const cached=applyCache();
+
+  /*
+   * Stock Report and Stock Keyin are on the same GitHub Pages origin.
+   * Reuse the newer Stock Report device cache immediately when available.
+   * This prevents the Keyin screen from showing stale Warehouse Good = 0.
+   */
+  const sharedStock=applySharedReportStockCache();
+
+  if(cached||sharedStock){
+    setStatus(
+      "Saved device data ready · Smart Sync checking changes...",
+      "success"
+    );
+  }
+
   fillPurchaseSelect();
-  loadLiveData(cached);
+  loadAllFast(cached||sharedStock);
   loadPurchaseList(true);
+  startSmartStockSync();
+
+  document.addEventListener(
+    "visibilitychange",
+    ()=>{
+      if(!document.hidden){
+        checkStockRevision();
+      }
+    }
+  );
+
+  window.addEventListener(
+    "focus",
+    ()=>{
+      if(
+        Date.now()-lastRevisionCheckAt>1000
+      ){
+        checkStockRevision();
+      }
+    }
+  );
+
+  window.addEventListener(
+    "storage",
+    event=>{
+      if(
+        event.key===SHARED_REPORT_CACHE_KEY &&
+        event.newValue
+      ){
+        applySharedReportStockCache();
+      }
+    }
+  );
 })();
 </script>
 </body>

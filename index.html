@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.0</title>
+<title>BIG BROTHER — Stock In-Out V2.1</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -26,6 +26,7 @@ h1{margin:0;color:var(--navy);font-size:26px}.subtitle{margin-top:5px;color:var(
 .flow-btn.active.in{background:#edf9f3;border-color:#a9ddc3;color:#126844}.flow-btn.active.out{background:#eef5ff;border-color:#b8d1ee;color:var(--navy)}
 .type-buttons{display:flex;gap:7px;flex-wrap:wrap}.type-btn{border:1px solid #cbd8e7;border-radius:9px;background:#fff;color:#53677d;padding:9px 11px;font-size:10px;font-weight:1000;cursor:pointer}
 .type-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}.dynamic[hidden]{display:none!important}
+#movementCategorySelect{font-weight:900;color:var(--navy)}
 .product-entry{display:grid;grid-template-columns:minmax(240px,2fr) 1fr 1fr 1fr auto;gap:8px;align-items:end}
 .product-entry.purchase{grid-template-columns:minmax(240px,2fr) 1fr 1fr 1fr 1fr auto}
 .btn,.add-btn{border:0;border-radius:9px;min-height:42px;padding:9px 13px;font-weight:1000;cursor:pointer}.btn.primary,.add-btn{background:var(--navy);color:#fff}
@@ -74,16 +75,12 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
     </div>
 
     <div style="height:11px"></div>
-    <div id="inflowTypes" class="type-buttons">
-      <button type="button" class="type-btn active" data-type="PURCHASE">Purchase</button>
-      <button type="button" class="type-btn" data-type="RECEIVE_FROM_CLIENT">Receive from Client</button>
-      <button type="button" class="type-btn" data-type="BACK_SALE">Back Sale</button>
-    </div>
-    <div id="outflowTypes" class="type-buttons" hidden>
-      <button type="button" class="type-btn" data-type="BATCH_STOCK">Batch Stock to Salesman</button>
-      <button type="button" class="type-btn" data-type="DIRECT_SALE">Direct Sale to Customer</button>
-      <button type="button" class="type-btn" data-type="STOCK_DAMAGE">Stock Damage</button>
-      <button type="button" class="type-btn" data-type="STAFF_ALLOWANCE">Stock Allowance to Staff</button>
+    <div class="grid">
+      <div class="field">
+        <label id="movementCategoryLabel">Inflow Category</label>
+        <select id="movementCategorySelect"></select>
+        <div class="helper">Only categories related to the selected flow are shown.</div>
+      </div>
     </div>
   </div>
 
@@ -324,15 +321,57 @@ function currentAvailable(code){
 function availableLabel(){return movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")?"Batch Pending":"Warehouse Good"}
 function updateProductAvailability(){const p=pick(products,"productSelect");$("productCode").value=p?p.productCode:"";$("availableLabel").textContent=availableLabel();$("availableQty").value=p?currentAvailable(p.productCode):0}
 
+const FLOW_CATEGORIES={
+  INFLOW:[
+    {value:"PURCHASE",label:"Purchase"},
+    {value:"RECEIVE_FROM_CLIENT",label:"Receive from Client"},
+    {value:"BACK_SALE",label:"Back Sale"}
+  ],
+  OUTFLOW:[
+    {value:"BATCH_STOCK",label:"Batch Stock to Salesman"},
+    {value:"DIRECT_SALE",label:"Direct Sale to Customer"},
+    {value:"STOCK_DAMAGE",label:"Stock Damage"},
+    {value:"STAFF_ALLOWANCE",label:"Stock Allowance to Staff"}
+  ]
+};
+
+function fillMovementCategorySelect(){
+  const categories=FLOW_CATEGORIES[flow]||[];
+  $("movementCategoryLabel").textContent=
+    flow==="INFLOW"?"Inflow Category":"Outflow / Transfer Category";
+
+  $("movementCategorySelect").innerHTML=categories
+    .map(x=>'<option value="'+esc(x.value)+'">'+esc(x.label)+'</option>')
+    .join("");
+
+  const nextType=categories.some(x=>x.value===movementType)
+    ? movementType
+    : (categories[0]?categories[0].value:"");
+
+  $("movementCategorySelect").value=nextType;
+
+  if(nextType){
+    setMovementType(nextType);
+  }
+}
+
 function setFlow(f){
   flow=f==="OUTFLOW"?"OUTFLOW":"INFLOW";
   $("flowInBtn").className="flow-btn"+(flow==="INFLOW"?" active in":"");
   $("flowOutBtn").className="flow-btn"+(flow==="OUTFLOW"?" active out":"");
-  $("inflowTypes").hidden=flow!=="INFLOW";$("outflowTypes").hidden=flow!=="OUTFLOW";
-  setMovementType(flow==="INFLOW"?"PURCHASE":"BATCH_STOCK");
+
+  items=[];
+  renderItems();
+  updatePreview();
+  $("successPanel").hidden=true;
+
+  fillMovementCategorySelect();
 }
 function setMovementType(t){
-  movementType=t;document.querySelectorAll(".type-btn").forEach(b=>b.classList.toggle("active",b.dataset.type===t));
+  movementType=t;
+  if($("movementCategorySelect")&&$("movementCategorySelect").value!==t){
+    $("movementCategorySelect").value=t;
+  }
   ["purchaseFields","receiveClientFields","newBatchFields","existingBatchFields","directSaleFields","damageFields","allowanceFields"].forEach(id=>$(id).hidden=true);
   if(t==="PURCHASE")$("purchaseFields").hidden=false;
   if(t==="RECEIVE_FROM_CLIENT")$("receiveClientFields").hidden=false;
@@ -476,7 +515,7 @@ function batchChanged(){const b=selectedBatch();$("batchSalesman").value=b?.sale
 function updateDateDisplay(){$("dateDisplay").textContent=formatDate($("activityDate").value)}
 
 $("flowInBtn").onclick=()=>setFlow("INFLOW");$("flowOutBtn").onclick=()=>setFlow("OUTFLOW");
-document.querySelectorAll(".type-btn").forEach(b=>b.onclick=()=>setMovementType(b.dataset.type));
+$("movementCategorySelect").onchange=()=>setMovementType($("movementCategorySelect").value);
 $("damageWarehouseBtn").onclick=()=>setDamageSource("WAREHOUSE");$("damageBatchBtn").onclick=()=>setDamageSource("BATCH");
 $("batchSelect").onchange=batchChanged;$("productSelect").onchange=updateProductAvailability;$("activityDate").onchange=updateDateDisplay;
 $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;
@@ -484,6 +523,7 @@ $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refresh
 (function init(){
   if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("embed");
   $("activityDate").value=todayValue();updateDateDisplay();
+  fillMovementCategorySelect();
   const cached=applyCache();if(cached)setStatus("Saved device data ready · syncing live Stock Database...","success");
   loadLiveData(cached);
 })();

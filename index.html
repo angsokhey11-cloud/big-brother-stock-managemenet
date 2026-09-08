@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.7 Zero Batch Filter</title>
+<title>BIG BROTHER — Stock In-Out V2.8 Reconciled Zero Batch</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -535,7 +535,7 @@ function applySimpleBatchLocalResult(r,d){
 
     const batch={
       ...r.batch,
-      totalPhysicalRemainingQty:issued
+      totalRemainingQty:issued
     };
 
     if(existingIndex>=0){
@@ -576,7 +576,7 @@ function applySimpleBatchLocalResult(r,d){
       : 0;
 
     const current=num(
-      openBatches[existingIndex].totalPhysicalRemainingQty
+      openBatches[existingIndex].totalRemainingQty
     );
 
     if(current>0){
@@ -585,11 +585,11 @@ function applySimpleBatchLocalResult(r,d){
       openBatches[existingIndex]={
         ...openBatches[existingIndex],
         ...(r.batch || {}),
-        totalPhysicalRemainingQty:next
+        totalRemainingQty:next
       };
 
       /*
-       * If physical Batch remaining reaches zero, remove it immediately.
+       * If reconciled Batch remaining reaches zero, remove it immediately.
        */
       if(next<=0.000001){
         openBatches.splice(existingIndex,1);

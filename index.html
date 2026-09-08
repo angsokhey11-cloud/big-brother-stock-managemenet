@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.2 Purchase Receiving</title>
+<title>BIG BROTHER — Stock In-Out V2.3 Flow Polish</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -43,6 +43,20 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
 .purchase-summary strong{display:block;margin-top:4px;color:var(--navy);font-size:12px}
 .received-ok{color:var(--green);font-weight:900}
 .remaining-zero{color:#8897a7}
+
+.client-detail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:9px}
+.client-detail[hidden]{display:none}
+.client-detail .box{border:1px solid var(--line);border-radius:9px;background:#fbfcfe;padding:9px;min-height:58px}
+.client-detail small{display:block;font-size:8px;color:#7b8da0;font-weight:900;text-transform:uppercase}
+.client-detail strong{display:block;margin-top:4px;color:var(--navy);font-size:11px;word-break:break-word}
+.search-picker{position:relative}
+.product-search-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:50;background:#fff;border:1px solid #cbd8e7;border-radius:9px;box-shadow:0 10px 28px rgba(20,50,80,.16);max-height:290px;overflow:auto;display:none}
+.product-search-results.open{display:block}
+.product-result{padding:9px 10px;border-bottom:1px solid #edf1f5;cursor:pointer}
+.product-result:last-child{border-bottom:0}
+.product-result:hover,.product-result.active{background:#eef5ff}
+.product-result strong{display:block;color:var(--navy);font-size:11px}
+.product-result span{display:block;color:#718399;font-size:9px;margin-top:2px}
 .badge{display:inline-block;border-radius:999px;background:#eaf4ff;color:var(--blue);padding:4px 7px;font-size:9px;font-weight:900}
 .preview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.preview-kpi{border:1px solid var(--line);border-radius:10px;background:#fbfcfe;padding:10px}
 .preview-kpi small{display:block;font-size:8px;color:#7b8da0;font-weight:900;text-transform:uppercase}.preview-kpi strong{display:block;margin-top:4px;font-size:15px;color:var(--navy)}
@@ -51,8 +65,8 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
 .success-panel{border:1px solid #ccebdc;border-radius:12px;background:#edf9f3;padding:13px;margin-top:12px}.success-panel[hidden]{display:none}.success-panel strong{color:#176d4b}
 .success-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:9px}.success-item{background:#fff;border:1px solid #d9eee3;border-radius:8px;padding:8px}
 .success-item small{display:block;color:#759080;font-size:8px;text-transform:uppercase;font-weight:900}.success-item div{margin-top:3px;font-size:11px;font-weight:900;color:#315744}
-@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.product-entry,.product-entry.purchase{grid-template-columns:1fr 1fr}.preview-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:650px){.page{padding:12px}.topbar{display:block}.db-pill{display:inline-block;margin-top:9px}.grid,.grid2,.flow-toggle,.product-entry,.product-entry.purchase,.success-grid{grid-template-columns:1fr}.actions .btn{width:100%}}
+@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.product-entry,.product-entry.purchase{grid-template-columns:1fr 1fr}.preview-grid{grid-template-columns:1fr 1fr}.client-detail{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.page{padding:12px}.topbar{display:block}.db-pill{display:inline-block;margin-top:9px}.grid,.grid2,.flow-toggle,.product-entry,.product-entry.purchase,.success-grid,.client-detail{grid-template-columns:1fr}.actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -122,12 +136,20 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
       <div class="grid">
         <div class="field"><label>Client</label><select id="receiveClient"><option value="">Select Client</option></select></div>
       </div>
+      <div id="receiveClientDetail" class="client-detail" hidden>
+        <div class="box"><small>Client ID / Code</small><strong id="clientDetailId">-</strong></div>
+        <div class="box"><small>Contact Person</small><strong id="clientDetailContact">-</strong></div>
+        <div class="box"><small>Phone</small><strong id="clientDetailPhone">-</strong></div>
+        <div class="box"><small>Currency / Payment</small><strong id="clientDetailTerms">-</strong></div>
+        <div class="box" style="grid-column:1/-1"><small>Address</small><strong id="clientDetailAddress">-</strong></div>
+      </div>
     </div>
 
     <div id="newBatchFields" class="dynamic" hidden>
       <div class="grid">
         <div class="field"><label>Salesman</label><select id="salesmanSelect"><option value="">Select Salesman</option></select></div>
-        <div class="field"><label>Driver</label><select id="driverSelect"><option value="">Select Driver</option></select></div>
+        <div class="field"><label>Driver 1</label><select id="driverSelect"><option value="">Select Driver 1</option></select></div>
+        <div class="field"><label>Driver 2 (Optional)</label><select id="driver2Select"><option value="">No Driver 2</option></select></div>
         <div class="field"><label>Batch Location</label><select id="batchLocationSelect"><option value="">Select Location</option></select></div>
         <div class="field"><label>Batch ID</label><input value="Automatic on Save" readonly><div class="helper">1 Batch = 1 working day</div></div>
       </div>
@@ -137,15 +159,9 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
       <div class="grid">
         <div class="field"><label>Open Batch</label><select id="batchSelect"><option value="">Select Batch</option></select></div>
         <div class="field"><label>Salesman</label><input id="batchSalesman" readonly></div>
-        <div class="field"><label>Driver</label><input id="batchDriver" readonly></div>
+        <div class="field"><label>Driver 1</label><input id="batchDriver" readonly></div>
+        <div class="field"><label>Driver 2</label><input id="batchDriver2" readonly></div>
         <div class="field"><label>Location</label><input id="batchLocation" readonly></div>
-      </div>
-    </div>
-
-    <div id="directSaleFields" class="dynamic" hidden>
-      <div class="grid">
-        <div class="field"><label>Customer</label><select id="customerSelect"><option value="">Select Customer</option></select></div>
-        <div class="field"><label>Related Invoice No.</label><input id="relatedInvoiceNo" placeholder="Optional"></div>
       </div>
     </div>
 
@@ -203,7 +219,12 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
 
     <div id="manualProductPanel" hidden>
       <div id="productEntry" class="product-entry">
-        <div class="field"><label>Product</label><select id="productSelect"><option value="">Loading Products...</option></select></div>
+        <div class="field search-picker">
+          <label>Product</label>
+          <input id="productSearchInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type product name, code or barcode">
+          <div id="productSearchResults" class="product-search-results"></div>
+          <div class="helper">Matching products appear only after you type.</div>
+        </div>
         <div class="field"><label>Product Code</label><input id="productCode" readonly></div>
         <div class="field"><label id="availableLabel">Warehouse Good</label><input id="availableQty" readonly value="0"></div>
         <div class="field"><label>Qty</label><input id="qty" type="number" min="0" step="0.01" inputmode="decimal"></div>
@@ -266,6 +287,7 @@ let flow="INFLOW",movementType="PURCHASE",damageSource="WAREHOUSE";
 let products=[],locations=[],staff=[],controllers=[],salesmen=[],drivers=[],clients=[],customers=[];
 let stockSnapshot=[],openBatches=[],items=[],stockRevision="0";
 let purchaseList=[],purchaseDetail=null,purchaseLines=[];
+let selectedProduct=null;
 
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function todayValue(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
@@ -306,10 +328,25 @@ async function tryMaster(actions){for(const action of actions){try{const r=await
 function readCache(){try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const d=JSON.parse(raw);if(!d||Date.now()-Number(d.savedAt||0)>CACHE_MAX_AGE){localStorage.removeItem(CACHE_KEY);return null}return d}catch(_){return null}}
 function writeCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),products,locations,staff,clients,customers,stockSnapshot,openBatches,stockRevision,purchaseList}))}catch(_){}}
 
-function mapProducts(a){return(a||[]).map(x=>({productCode:clean(x.productCode||x["Product Code"]||x.code),productName:clean(x.productName||x["Product Name"]||x.name),unit:clean(x.unit||x["Unit"])})).filter(x=>x.productCode&&x.productName)}
+function mapProducts(a){return(a||[]).map(x=>({
+  productCode:clean(x.productCode||x["Product Code"]||x.code),
+  productName:clean(x.productName||x["Product Name"]||x.name),
+  unit:clean(x.unit||x["Unit"]),
+  barcode:clean(x.productBarcode||x.barcode||x["Product Barcode"])
+})).filter(x=>x.productCode&&x.productName)}
 function mapLocations(a){return(a||[]).map(x=>({locationCode:clean(x.locationCode||x["Location Code"]||x.code),locationName:clean(x.locationName||x.location||x["Location Name"]||x.name||x.locationCode)})).filter(x=>x.locationCode)}
 function mapStaff(a){return(a||[]).map(x=>({staffId:clean(x.staffId||x["Staff ID"]),staffName:clean(x.staffName||x["Staff Name"]),department:clean(x.department||x["Department"]),position:clean(x.position||x["Position"]),status:clean(x.status||x["Status"]||"Active")})).filter(x=>x.staffId&&x.staffName)}
-function mapClients(a){return(a||[]).map(x=>({clientId:clean(x.clientId||x["Client ID"]||x.clientCode||x["Client Code"]),clientName:clean(x.clientName||x["Client Name"]||x.name)})).filter(x=>x.clientName)}
+function mapClients(a){return(a||[]).map(x=>({
+  clientId:clean(x.clientId||x["Client ID"]),
+  clientName:clean(x.clientName||x["Client Name"]||x.name),
+  clientCode:clean(x.clientCode||x["Client Code"]),
+  contactPerson:clean(x.contactPerson||x["Contact Person"]),
+  phoneNumber:clean(x.phoneNumber||x["Phone Number"]||x.phone),
+  address:clean(x.address||x["Address"]),
+  paymentTerm:clean(x.paymentTerm||x["Payment Term"]),
+  currency:clean(x.currency||x["Currency"]||"USD"),
+  status:clean(x.status||x["Status"]||"Active")
+})).filter(x=>x.clientName)}
 function mapCustomers(a){return(a||[]).map(x=>({customerId:clean(x.customerId||x["Customer ID"]),customerName:clean(x.customerName||x["Customer Name"]||x.name)})).filter(x=>x.customerName)}
 
 function splitStaff(){
@@ -343,7 +380,17 @@ async function loadLiveData(silent=false){
     stockSnapshot=Array.isArray(stock?.snapshot)?stock.snapshot:[];openBatches=Array.isArray(stock?.openBatches)?stock.openBatches:[];stockRevision=clean(stock?.revision)||stockRevision||"0";
     splitStaff();fillSelectors();renderItems();updateProductAvailability();writeCache();
     $("dbPill").textContent="STOCK DATABASE · "+clean(stock?.version||"V3");
-    setStatus("Ready · "+products.length+" products · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+".","success");
+    const sync=stock?.salesSync||{};
+    const syncText=sync.synced ? " · "+sync.synced+" new Sales invoice synced" : "";
+    const errorText=sync.errors ? " · "+sync.errors+" Sales sync error" : "";
+
+    setStatus(
+      "Ready · "+products.length+" products · "+openBatches.length+
+      " open batch"+(openBatches.length===1?"":"es")+
+      syncText+errorText+".",
+      sync.errors ? "warn" : "success"
+    );
+
     loadPurchaseList(true);
   }catch(e){
     if(products.length||stockSnapshot.length){fillSelectors();setStatus("Saved device data ready · live sync will retry. "+clean(e?.message),"warn")}
@@ -353,18 +400,138 @@ async function loadLiveData(silent=false){
 
 function selectOptions(list,label,placeholder){return'<option value="">'+esc(placeholder)+'</option>'+list.map((x,i)=>'<option value="'+i+'">'+esc(label(x))+'</option>').join("")}
 function fillSelectors(){
-  $("productSelect").innerHTML=selectOptions(products,x=>x.productName+" — "+x.productCode,"Select Product");
   const loc=selectOptions(locations,x=>x.locationName+" — "+x.locationCode,"Select Location");
   $("locationSelect").innerHTML=loc;$("batchLocationSelect").innerHTML=loc;
   $("controllerSelect").innerHTML=selectOptions(controllers,x=>x.staffName+" — "+x.staffId,"Select Inventory Controller");
   $("salesmanSelect").innerHTML=selectOptions(salesmen,x=>x.staffName+" — "+x.staffId,"Select Salesman");
-  $("driverSelect").innerHTML=selectOptions(drivers,x=>x.staffName+" — "+x.staffId,"Select Driver");
+  $("driverSelect").innerHTML=selectOptions(drivers,x=>x.staffName+" — "+x.staffId,"Select Driver 1");
+  $("driver2Select").innerHTML=selectOptions(drivers,x=>x.staffName+" — "+x.staffId,"No Driver 2");
   $("staffAllowanceSelect").innerHTML=selectOptions(staff,x=>x.staffName+" — "+x.staffId,"Select Staff");
   $("receiveClient").innerHTML=selectOptions(clients,x=>x.clientName+(x.clientId?" — "+x.clientId:""),"Select Client");
   fillPurchaseSelect();
-  $("customerSelect").innerHTML=selectOptions(customers,x=>x.customerName+(x.customerId?" — "+x.customerId:""),"Select Customer");
   fillBatchSelect();
+  setDefaultWarehouseLocation();
 }
+function setDefaultWarehouseLocation(){
+  if(!$("locationSelect") || $("locationSelect").value) return;
+
+  const index=locations.findIndex(x=>
+    clean(x.locationCode).toUpperCase()==="PP-01"
+  );
+
+  if(index>=0){
+    $("locationSelect").value=String(index);
+  }
+}
+
+function receiveClientChanged(){
+  const c=pick(clients,"receiveClient");
+  const box=$("receiveClientDetail");
+
+  if(!c){
+    box.hidden=true;
+    return;
+  }
+
+  $("clientDetailId").textContent=
+    [c.clientId,c.clientCode].filter(Boolean).join(" / ") || "-";
+
+  $("clientDetailContact").textContent=c.contactPerson||"-";
+  $("clientDetailPhone").textContent=c.phoneNumber||"-";
+  $("clientDetailTerms").textContent=
+    [c.currency,c.paymentTerm].filter(Boolean).join(" · ") || "-";
+  $("clientDetailAddress").textContent=c.address||"-";
+  box.hidden=false;
+}
+
+function manualProductPool(){
+  if(movementType==="BACK_SALE" ||
+     (movementType==="STOCK_DAMAGE" && damageSource==="BATCH")){
+    const batch=selectedBatch();
+    if(!batch || !Array.isArray(batch.items)) return [];
+
+    const pendingCodes=new Set(
+      batch.items
+        .filter(x=>num(x.pendingQty)>0)
+        .map(x=>clean(x.productCode))
+    );
+
+    return products.filter(p=>pendingCodes.has(clean(p.productCode)));
+  }
+
+  return products;
+}
+
+function clearProductSearch(){
+  selectedProduct=null;
+  if($("productSearchInput")) $("productSearchInput").value="";
+  if($("productSearchResults")){
+    $("productSearchResults").innerHTML="";
+    $("productSearchResults").classList.remove("open");
+  }
+  $("productCode").value="";
+  $("availableQty").value=0;
+}
+
+function productSearchInputChanged(){
+  const q=clean($("productSearchInput").value).toLowerCase();
+  const box=$("productSearchResults");
+
+  selectedProduct=null;
+  $("productCode").value="";
+  $("availableQty").value=0;
+
+  if(!q){
+    box.innerHTML="";
+    box.classList.remove("open");
+    return;
+  }
+
+  const matches=manualProductPool()
+    .filter(p=>{
+      const hay=[
+        p.productName,
+        p.productCode,
+        p.barcode
+      ].join(" ").toLowerCase();
+
+      return hay.includes(q);
+    })
+    .slice(0,15);
+
+  if(!matches.length){
+    box.innerHTML='<div class="product-result"><strong>No matching product</strong><span>Try another name, code or barcode.</span></div>';
+    box.classList.add("open");
+    return;
+  }
+
+  box.innerHTML=matches.map(p=>`
+    <div class="product-result" data-code="${esc(p.productCode)}" onclick="selectProductSearch('${esc(p.productCode).replace(/'/g,"&#39;")}')">
+      <strong>${esc(p.productName)}</strong>
+      <span>${esc(p.productCode)}${p.barcode ? " · Barcode "+esc(p.barcode) : ""}</span>
+    </div>
+  `).join("");
+
+  box.classList.add("open");
+}
+
+function selectProductSearch(code){
+  const wanted=clean(code);
+  selectedProduct=manualProductPool().find(p=>
+    clean(p.productCode)===wanted
+  ) || products.find(p=>clean(p.productCode)===wanted) || null;
+
+  if(!selectedProduct) return;
+
+  $("productSearchInput").value=
+    selectedProduct.productName+" — "+selectedProduct.productCode;
+
+  $("productSearchResults").classList.remove("open");
+  updateProductAvailability();
+}
+
+window.selectProductSearch=selectProductSearch;
+
 function fillPurchaseSelect(){
   if(!$("purchaseSelect")) return;
 
@@ -621,7 +788,12 @@ function currentAvailable(code){
   return num(stockFor(code).warehouseGood);
 }
 function availableLabel(){return movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")?"Batch Pending":"Warehouse Good"}
-function updateProductAvailability(){const p=pick(products,"productSelect");$("productCode").value=p?p.productCode:"";$("availableLabel").textContent=availableLabel();$("availableQty").value=p?currentAvailable(p.productCode):0}
+function updateProductAvailability(){
+  const p=selectedProduct;
+  $("productCode").value=p?p.productCode:"";
+  $("availableLabel").textContent=availableLabel();
+  $("availableQty").value=p?currentAvailable(p.productCode):0;
+}
 
 const FLOW_CATEGORIES={
   INFLOW:[
@@ -631,7 +803,6 @@ const FLOW_CATEGORIES={
   ],
   OUTFLOW:[
     {value:"BATCH_STOCK",label:"Batch Stock to Salesman"},
-    {value:"DIRECT_SALE",label:"Direct Sale to Customer"},
     {value:"STOCK_DAMAGE",label:"Stock Damage"},
     {value:"STAFF_ALLOWANCE",label:"Stock Allowance to Staff"}
   ]
@@ -674,12 +845,11 @@ function setMovementType(t){
   if($("movementCategorySelect")&&$("movementCategorySelect").value!==t){
     $("movementCategorySelect").value=t;
   }
-  ["purchaseFields","receiveClientFields","newBatchFields","existingBatchFields","directSaleFields","damageFields","allowanceFields"].forEach(id=>$(id).hidden=true);
+  ["purchaseFields","receiveClientFields","newBatchFields","existingBatchFields","damageFields","allowanceFields"].forEach(id=>$(id).hidden=true);
   if(t==="PURCHASE")$("purchaseFields").hidden=false;
   if(t==="RECEIVE_FROM_CLIENT")$("receiveClientFields").hidden=false;
   if(t==="BACK_SALE")$("existingBatchFields").hidden=false;
   if(t==="BATCH_STOCK")$("newBatchFields").hidden=false;
-  if(t==="DIRECT_SALE")$("directSaleFields").hidden=false;
   if(t==="STOCK_DAMAGE"){$("damageFields").hidden=false;if(damageSource==="BATCH")$("existingBatchFields").hidden=false}
   if(t==="STAFF_ALLOWANCE")$("allowanceFields").hidden=false;
   $("purchaseReceivingPanel").hidden=t!=="PURCHASE";
@@ -687,6 +857,7 @@ function setMovementType(t){
   $("unitCostWrap").hidden=true;
 
   items=[];
+  clearProductSearch();
   if(t!=="PURCHASE"){
     purchaseDetail=null;
     purchaseLines=[];
@@ -722,7 +893,7 @@ function addProduct(){
     return setStatus("Purchase products load automatically from Related Purchase No.","warn");
   }
 
-  const p=pick(products,"productSelect"),qty=num($("qty").value);
+  const p=selectedProduct,qty=num($("qty").value);
   if(!p)return setStatus("Select a Product first.","error");
   if(!(qty>0))return setStatus("Qty must be greater than 0.","error");
   if(items.some(x=>x.productCode===p.productCode))return setStatus(p.productName+" is already in this movement.","error");
@@ -732,7 +903,7 @@ function addProduct(){
     return setStatus(p.productName+": Qty "+qty+" is greater than "+availableLabel()+" "+available+".","error");
 
   items.push({productCode:p.productCode,productName:p.productName,unit:p.unit,qty,unitCost:movementType==="PURCHASE"?num($("unitCost").value):0,availableBefore:available});
-  $("productSelect").value="";$("productCode").value="";$("availableQty").value=0;$("qty").value="";$("unitCost").value="";
+  clearProductSearch();$("qty").value="";$("unitCost").value="";
   renderItems();updatePreview();setStatus(items.length+" product line"+(items.length===1?"":"s")+" ready.","success");
 }
 function removeProduct(i){items.splice(i,1);renderItems();updatePreview()}
@@ -751,7 +922,7 @@ function delta(x){
   if(["PURCHASE","RECEIVE_FROM_CLIENT"].includes(movementType)){d.warehouse+=q;d.company+=q}
   if(movementType==="BACK_SALE"){d.pending-=q;d.warehouse+=q}
   if(movementType==="BATCH_STOCK"){d.warehouse-=q;d.pending+=q}
-  if(["DIRECT_SALE","STAFF_ALLOWANCE"].includes(movementType)){d.warehouse-=q;d.company-=q}
+  if(movementType==="STAFF_ALLOWANCE"){d.warehouse-=q;d.company-=q}
   if(movementType==="STOCK_DAMAGE"){if(damageSource==="BATCH")d.pending-=q;else d.warehouse-=q;d.damaged+=q;d.company-=q}
   return d;
 }
@@ -772,10 +943,13 @@ function updatePreview(){
 function buildPayload(){
   const controller=pick(controllers,"controllerSelect"),warehouse=pick(locations,"locationSelect");
   const d={activityDate:$("activityDate").value,flow,movementType,damageSource:movementType==="STOCK_DAMAGE"?damageSource:"",
-    locationCode:warehouse?.locationCode||"",locationName:warehouse?.locationName||"",
+    warehouseLocationCode:warehouse?.locationCode||"PP-01",
+    warehouseLocationName:warehouse?.locationName||"",
+    locationCode:warehouse?.locationCode||"PP-01",
+    locationName:warehouse?.locationName||"",
     inventoryControllerStaffId:controller?.staffId||"",inventoryControllerName:controller?.staffName||"",
     referenceNo:clean($("referenceNo").value),relatedPurchaseNo:"",
-    relatedInvoiceNo:clean($("relatedInvoiceNo").value),note:clean($("note").value),
+    relatedInvoiceNo:"",note:clean($("note").value),
     items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost)}))};
 
   if(movementType==="PURCHASE"){
@@ -800,15 +974,26 @@ function buildPayload(){
   }
   if(movementType==="RECEIVE_FROM_CLIENT"){const c=pick(clients,"receiveClient");d.clientId=c?.clientId||"";d.clientName=c?.clientName||""}
   if(movementType==="BATCH_STOCK"){
-    const s=pick(salesmen,"salesmanSelect"),dr=pick(drivers,"driverSelect"),l=pick(locations,"batchLocationSelect");
-    d.salesmanStaffId=s?.staffId||"";d.salesmanName=s?.staffName||"";d.driverStaffId=dr?.staffId||"";d.driverName=dr?.staffName||"";
-    d.locationCode=l?.locationCode||"";d.locationName=l?.locationName||"";
+    const s=pick(salesmen,"salesmanSelect"),
+      dr=pick(drivers,"driverSelect"),
+      dr2=pick(drivers,"driver2Select"),
+      l=pick(locations,"batchLocationSelect");
+
+    d.salesmanStaffId=s?.staffId||"";
+    d.salesmanName=s?.staffName||"";
+    d.driverStaffId=dr?.staffId||"";
+    d.driverName=dr?.staffName||"";
+    d.driver2StaffId=dr2?.staffId||"";
+    d.driver2Name=dr2?.staffName||"";
+    d.locationCode=l?.locationCode||"";
+    d.locationName=l?.locationName||"";
   }
   if(movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH")){
     const b=selectedBatch();d.batchId=b?.batchId||"";d.salesmanStaffId=b?.salesmanStaffId||"";d.salesmanName=b?.salesmanName||"";
-    d.driverStaffId=b?.driverStaffId||"";d.driverName=b?.driverName||"";d.locationCode=b?.locationCode||"";d.locationName=b?.locationName||b?.locationCode||"";
+    d.driverStaffId=b?.driverStaffId||"";d.driverName=b?.driverName||"";
+    d.driver2StaffId=b?.driver2StaffId||"";d.driver2Name=b?.driver2Name||"";
+    d.locationCode=b?.locationCode||"";d.locationName=b?.locationName||b?.locationCode||"";
   }
-  if(movementType==="DIRECT_SALE"){const c=pick(customers,"customerSelect");d.customerId=c?.customerId||"";d.customerName=c?.customerName||""}
   if(movementType==="STAFF_ALLOWANCE"){const s=pick(staff,"staffAllowanceSelect");d.staffId=s?.staffId||"";d.staffName=s?.staffName||""}
   return d;
 }
@@ -835,7 +1020,6 @@ function validate(d){
   if(movementType==="RECEIVE_FROM_CLIENT"&&!d.clientName)return"Client is required.";
   if(movementType==="BATCH_STOCK"){if(!d.salesmanStaffId)return"Salesman is required.";if(!d.driverStaffId)return"Driver is required.";if(!d.locationCode)return"Batch Location is required."}
   if((movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"))&&!d.batchId)return"Open Batch is required.";
-  if(movementType==="DIRECT_SALE"&&!d.customerName)return"Customer is required.";
   if(movementType==="STAFF_ALLOWANCE"&&!d.staffName)return"Staff is required.";
   return"";
 }
@@ -846,7 +1030,12 @@ async function refreshStockOnly(silent=false){
     const r=await jsonp(STOCK_API,{action:"getStockKeyinBootstrap"},18000);
     stockSnapshot=Array.isArray(r.snapshot)?r.snapshot:[];openBatches=Array.isArray(r.openBatches)?r.openBatches:[];stockRevision=clean(r.revision)||stockRevision;
     fillBatchSelect();updateProductAvailability();renderItems();writeCache();
-    if(!silent)setStatus("Stock refreshed · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+".","success");
+
+    if(!silent){
+      const sync=r.salesSync||{};
+      const extra=sync.synced ? " · "+sync.synced+" Sales invoice synced" : "";
+      setStatus("Stock refreshed · "+openBatches.length+" open batch"+(openBatches.length===1?"":"es")+extra+".","success");
+    }
   }catch(e){if(!silent)setStatus(clean(e?.message)||"Could not refresh Stock.","error")}
 }
 
@@ -877,8 +1066,9 @@ function clearForm(){
   purchaseDetail=null;
   purchaseLines=[];
 
-  ["referenceNo","relatedInvoiceNo","note","qty","unitCost"].forEach(id=>$(id).value="");
-  ["purchaseSelect","receiveClient","customerSelect","salesmanSelect","driverSelect","batchSelect","staffAllowanceSelect","productSelect"].forEach(id=>$(id).value="");
+  ["referenceNo","note","qty","unitCost"].forEach(id=>$(id).value="");
+  ["purchaseSelect","receiveClient","salesmanSelect","driverSelect","driver2Select","batchSelect","staffAllowanceSelect"].forEach(id=>$(id).value="");
+  clearProductSearch();
 
   $("purchaseClientName").value="";
   $("purchaseDateView").value="";
@@ -895,14 +1085,36 @@ function clearForm(){
   updateProductAvailability();
   setStatus("Form cleared.","success");
 }
-function batchChanged(){const b=selectedBatch();$("batchSalesman").value=b?.salesmanName||"";$("batchDriver").value=b?.driverName||"";$("batchLocation").value=b?(b.locationName||b.locationCode||""):"";items=[];renderItems();updateProductAvailability();updatePreview()}
+function batchChanged(){
+  const b=selectedBatch();
+  $("batchSalesman").value=b?.salesmanName||"";
+  $("batchDriver").value=b?.driverName||"";
+  $("batchDriver2").value=b?.driver2Name||"";
+  $("batchLocation").value=b?(b.locationName||b.locationCode||""):"";
+  items=[];
+  clearProductSearch();
+  renderItems();
+  updateProductAvailability();
+  updatePreview();
+}
 function updateDateDisplay(){$("dateDisplay").textContent=formatDate($("activityDate").value)}
 
 $("flowInBtn").onclick=()=>setFlow("INFLOW");$("flowOutBtn").onclick=()=>setFlow("OUTFLOW");
 $("movementCategorySelect").onchange=()=>setMovementType($("movementCategorySelect").value);
 $("damageWarehouseBtn").onclick=()=>setDamageSource("WAREHOUSE");$("damageBatchBtn").onclick=()=>setDamageSource("BATCH");
 $("purchaseSelect").onchange=purchaseChanged;
-$("batchSelect").onchange=batchChanged;$("productSelect").onchange=updateProductAvailability;$("activityDate").onchange=updateDateDisplay;
+$("receiveClient").onchange=receiveClientChanged;
+$("batchSelect").onchange=batchChanged;
+$("productSearchInput").oninput=productSearchInputChanged;
+$("productSearchInput").onfocus=productSearchInputChanged;
+$("activityDate").onchange=updateDateDisplay;
+
+document.addEventListener("click",event=>{
+  if(!event.target.closest(".search-picker")){
+    $("productSearchResults").classList.remove("open");
+  }
+});
+
 $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;
 
 (function init(){

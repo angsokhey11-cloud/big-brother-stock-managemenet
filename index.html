@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock In-Out V2.9 Light Batch</title>
+<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>
 <style>
 *{box-sizing:border-box}
 :root{--navy:#173f77;--blue:#245fae;--green:#16855c;--red:#b43a3a;--line:#dce5ef;--muted:#6d7f93;--text:#24384c;--bg:#f4f7fb}
@@ -772,19 +772,42 @@ function applyCache(){
 
 async function loadReferenceData(silent=false){
   try{
-    const [p,l,s,cust,cli]=await Promise.all([
-      tryMaster(["getProducts","products","masterProducts"]),
-      tryMaster(["getLocations","locations","location"]),
-      jsonp(STAFF_API,{action:"getStaff",includeInactive:"false"},14000).catch(()=>({data:[]})),
-      tryMaster(["getCustomers","customers"]),
-      tryMaster(["getClients","clients"])
-    ]);
+    /*
+     * V3.0:
+     * 1 Master bundle + 1 Staff call.
+     * Old version used 4 Master calls + 1 Staff call.
+     */
+    const [masterBundle,staffResult]=
+      await Promise.all([
+        jsonp(
+          MASTER_API,
+          {action:"stockKeyinReferencesFast"},
+          14000
+        ),
+        jsonp(
+          STAFF_API,
+          {
+            action:"getStaff",
+            includeInactive:"false"
+          },
+          14000
+        ).catch(()=>({data:[]}))
+      ]);
 
-    const newProducts=mapProducts(p);
-    const newLocations=mapLocations(l);
-    const newStaff=mapStaff(arrayOf(s));
-    const newCustomers=mapCustomers(cust);
-    const newClients=mapClients(cli);
+    const newProducts=
+      mapProducts(masterBundle?.products||[]);
+
+    const newLocations=
+      mapLocations(masterBundle?.locations||[]);
+
+    const newCustomers=
+      mapCustomers(masterBundle?.customers||[]);
+
+    const newClients=
+      mapClients(masterBundle?.clients||[]);
+
+    const newStaff=
+      mapStaff(arrayOf(staffResult));
 
     if(newProducts.length)products=newProducts;
     if(newLocations.length)locations=newLocations;
@@ -799,14 +822,62 @@ async function loadReferenceData(silent=false){
     writeCache();
 
     return true;
+
   }catch(e){
-    if(!silent){
-      setStatus(
-        "Reference data using saved device cache · "+clean(e?.message),
-        "warn"
-      );
+    /*
+     * Backward-compatible fallback if Master V6.7 is not deployed yet.
+     */
+    try{
+      const [p,l,s,cust,cli]=
+        await Promise.all([
+          tryMaster(["getProducts","products"]),
+          tryMaster(["getLocations","locations"]),
+          jsonp(
+            STAFF_API,
+            {
+              action:"getStaff",
+              includeInactive:"false"
+            },
+            14000
+          ).catch(()=>({data:[]})),
+          tryMaster(["getCustomers","customers"]),
+          tryMaster(["getClients","clients"])
+        ]);
+
+      const newProducts=mapProducts(p);
+      const newLocations=mapLocations(l);
+      const newStaff=mapStaff(arrayOf(s));
+      const newCustomers=mapCustomers(cust);
+      const newClients=mapClients(cli);
+
+      if(newProducts.length)products=newProducts;
+      if(newLocations.length)locations=newLocations;
+      if(newStaff.length)staff=newStaff;
+      if(newCustomers.length)customers=newCustomers;
+      if(newClients.length)clients=newClients;
+
+      splitStaff();
+      fillSelectors();
+      renderItems();
+      updateProductAvailability();
+      writeCache();
+
+      return true;
+
+    }catch(fallbackError){
+      if(!silent){
+        setStatus(
+          "Reference data using saved device cache · "+
+          clean(
+            fallbackError?.message ||
+            e?.message
+          ),
+          "warn"
+        );
+      }
+
+      return false;
     }
-    return false;
   }
 }
 
@@ -818,7 +889,7 @@ async function loadStockFast(silent=false,forceSync=false){
     if(!silent){
       setStatus(
         forceSync
-          ?"Refreshing Stock + reconciling Sales..."
+          ?"Refreshing Stock + Direct Sales sync..."
           :"Syncing Stock Database..."
       );
     }

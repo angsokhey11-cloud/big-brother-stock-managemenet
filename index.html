@@ -33,9 +33,8 @@
     const view=String(new URLSearchParams(location.search).get('view')||'keyin').toLowerCase();
     let pageScripts='<scr'+'ipt src="batch-v2-stock-guard.js?v=20260910-2"></scr'+'ipt>\n';
     if(view==='keyin'){
-      pageScripts+='<scr'+'ipt src="damaged-clearance-keyin.js?v=20260910-1"></scr'+'ipt>\n';
-      pageScripts+='<scr'+'ipt src="damaged-stock-viewer.js?v=20260910-1"></scr'+'ipt>\n';
-    }
+  pageScripts+='<scr'+'ipt src="damaged-clearance-keyin.js?v=20260910-1"></scr'+'ipt>\n';
+}
     if(view==='damaged'){
       pageScripts+='<scr'+'ipt src="damaged-stock-page.js?v=20260910-1"></scr'+'ipt>\n';
     }

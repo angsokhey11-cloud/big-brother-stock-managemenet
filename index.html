@@ -30,8 +30,12 @@
 
     const bodyClose=html.toLowerCase().lastIndexOf('</body>');
     if(bodyClose<0)throw new Error('Stock Management source is missing </body>.');
+    const view=String(new URLSearchParams(location.search).get('view')||'keyin').toLowerCase();
     let pageScripts='<scr'+'ipt src="batch-v2-stock-guard.js?v=20260910-2"></scr'+'ipt>\n';
-    if(String(new URLSearchParams(location.search).get('view')||'').toLowerCase()==='damaged'){
+    if(view==='keyin'){
+      pageScripts+='<scr'+'ipt src="damaged-clearance-keyin.js?v=20260910-1"></scr'+'ipt>\n';
+    }
+    if(view==='damaged'){
       pageScripts+='<scr'+'ipt src="damaged-stock-page.js?v=20260910-1"></scr'+'ipt>\n';
     }
     html=html.slice(0,bodyClose)+pageScripts+html.slice(bodyClose);

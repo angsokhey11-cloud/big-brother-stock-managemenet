@@ -1154,8 +1154,9 @@
       }
 
       if (productEntry) {
-        productEntry.hidden = true;
-      }
+  productEntry.hidden = true;
+  productEntry.style.display = "none";
+}
 
 
       [
@@ -1198,8 +1199,9 @@
     } else {
 
       if (productEntry) {
-        productEntry.hidden = false;
-      }
+  productEntry.hidden = false;
+  productEntry.style.display = "";
+}
 
 
       if (

@@ -1,23 +1,33 @@
 /* =========================================================
    BIG BROTHER
-   DAMAGED STOCK CLEARED — KEYIN V2
+   DAMAGED STOCK CLEARED — KEYIN V3
 
    OUTFLOW / TRANSFER
    -> Damaged Stock Cleared
 
    CLEARANCE TYPES:
-   1. DEDUCT_AS_COST
-   2. CLIENT_BUY_BACK
-   3. EXCHANGE_FOR_GOOD_PRODUCTS
 
-   EXCHANGE FOR GOOD PRODUCTS:
-   - Client / Supplier required
-   - Exchange Document No. required
-   - Client comes from Supabase Client Master
-   - Supabase validates official Client Name
-   - FIFO Damage audit remains unchanged
-   - Exchange Pending remains unchanged
-   - Same Group Exchange Receive remains unchanged
+   1. DEDUCT_AS_COST
+      - No Client required
+      - No document required
+
+   2. CLIENT_BUY_BACK
+      - Client / Supplier required
+      - Recovery Document No. required
+      - Creates Recovery Pending work item
+
+   3. EXCHANGE_FOR_GOOD_PRODUCTS
+      - Client / Supplier required
+      - Exchange Document No. required
+      - Creates Exchange Pending work item
+
+   Existing functions preserved:
+   - Damaged Stock availability
+   - FIFO clearance audit
+   - Partial clearance
+   - Same Group Exchange receiving
+   - Preview / validation
+   - Existing Stock save flow
    ========================================================= */
 
 (function () {
@@ -60,8 +70,16 @@
     "DAMAGE_CLEAR";
 
 
+  const BUY_BACK_TYPE =
+    "CLIENT_BUY_BACK";
+
+
   const EXCHANGE_TYPE =
     "EXCHANGE_FOR_GOOD_PRODUCTS";
+
+
+  const COST_TYPE =
+    "DEDUCT_AS_COST";
 
 
 
@@ -73,12 +91,16 @@
     [];
 
 
-  let exchangeClients =
+  let recoveryClients =
     [];
 
 
   let clientsLoading =
     false;
+
+
+  let lastClearanceType =
+    "";
 
 
 
@@ -142,6 +164,51 @@
   }
 
 
+  function clearanceCode() {
+
+    return cleanText(
+      selectedClearanceType()
+        ?.typeCode
+    );
+
+  }
+
+
+  function needsClient() {
+
+    const type =
+      clearanceCode();
+
+
+    return (
+      type === BUY_BACK_TYPE
+      ||
+      type === EXCHANGE_TYPE
+    );
+
+  }
+
+
+  function isBuyBack() {
+
+    return (
+      clearanceCode() ===
+      BUY_BACK_TYPE
+    );
+
+  }
+
+
+  function isExchange() {
+
+    return (
+      clearanceCode() ===
+      EXCHANGE_TYPE
+    );
+
+  }
+
+
 
   /* =======================================================
      SELECTED CLEARANCE TYPE
@@ -184,11 +251,11 @@
      SELECTED CLIENT
      ======================================================= */
 
-  function selectedExchangeClient() {
+  function selectedRecoveryClient() {
 
     const select =
       byId(
-        "damageExchangeClientSelect"
+        "damageRecoveryClientSelect"
       );
 
 
@@ -209,7 +276,7 @@
 
     return (
 
-      exchangeClients.find(
+      recoveryClients.find(
         client =>
           cleanText(
             client.clientId
@@ -227,22 +294,15 @@
 
 
   /* =======================================================
-     IS EXCHANGE
+     DOCUMENT
      ======================================================= */
 
-  function isExchangeClearance() {
+  function currentDocumentNo() {
 
-    return (
-
-      cleanText(
-        selectedClearanceType()
-          ?.typeCode
-      )
-
-      ===
-
-      EXCHANGE_TYPE
-
+    return cleanText(
+      byId(
+        "damageRecoveryDocumentNo"
+      )?.value
     );
 
   }
@@ -299,7 +359,7 @@
 
 
   /* =======================================================
-     INSTALL CLEARANCE UI
+     INSTALL UI
      ======================================================= */
 
   function installFields() {
@@ -372,6 +432,10 @@
         </div>
 
 
+        <!-- =============================================
+             CLEARANCE TYPE
+             ============================================= -->
+
         <div class="grid">
 
           <div class="field">
@@ -405,12 +469,12 @@
 
 
 
-        <!-- ===============================================
-             EXCHANGE DOCUMENT
-             =============================================== -->
+        <!-- =============================================
+             CLIENT / RECOVERY DOCUMENT
+             ============================================= -->
 
         <div
-          id="damageExchangeDocumentFields"
+          id="damageRecoveryFields"
           hidden
           style="
             margin-top:12px;
@@ -419,7 +483,9 @@
           "
         >
 
+
           <div
+            id="damageRecoveryTitle"
             style="
               font-size:11px;
               font-weight:1000;
@@ -427,12 +493,14 @@
               margin-bottom:9px;
             "
           >
-            🔄 Exchange Document Information
+            Client / Supplier Information
           </div>
 
 
           <div class="grid">
 
+
+            <!-- CLIENT -->
 
             <div class="field">
 
@@ -441,7 +509,7 @@
               </label>
 
               <select
-                id="damageExchangeClientSelect"
+                id="damageRecoveryClientSelect"
                 disabled
               >
 
@@ -452,32 +520,36 @@
               </select>
 
               <div
-                id="damageExchangeClientHelp"
+                id="damageRecoveryClientHelp"
                 class="helper"
               >
-                Select the Client responsible
-                for replacing the damaged goods.
+                Select Client / Supplier.
               </div>
 
             </div>
 
 
 
+            <!-- DOCUMENT -->
+
             <div class="field">
 
-              <label>
-                Exchange Document No.
+              <label id="damageRecoveryDocumentLabel">
+                Document No.
               </label>
 
               <input
-                id="damageExchangeDocumentNo"
+                id="damageRecoveryDocumentNo"
                 type="text"
                 autocomplete="off"
-                placeholder="Example: EX-2026-001"
+                placeholder="Document No."
               >
 
-              <div class="helper">
-                Required for Exchange for Good products.
+              <div
+                id="damageRecoveryDocumentHelp"
+                class="helper"
+              >
+                Required.
               </div>
 
             </div>
@@ -487,12 +559,17 @@
 
 
 
+          <!-- ===========================================
+               SELECTED CLIENT DETAIL
+               =========================================== -->
+
           <div
-            id="damageExchangeSelectedClient"
+            id="damageRecoverySelectedClient"
             class="client-detail"
             hidden
             style="margin-top:10px"
           >
+
 
             <div class="box">
 
@@ -501,7 +578,7 @@
               </small>
 
               <strong
-                id="damageExchangeClientIdView"
+                id="damageRecoveryClientIdView"
               >
                 -
               </strong>
@@ -516,7 +593,7 @@
               </small>
 
               <strong
-                id="damageExchangeClientNameView"
+                id="damageRecoveryClientNameView"
               >
                 -
               </strong>
@@ -531,18 +608,24 @@
               </small>
 
               <strong
-                id="damageExchangeClientCodeView"
+                id="damageRecoveryClientCodeView"
               >
                 -
               </strong>
 
             </div>
 
+
           </div>
 
 
 
+          <!-- ===========================================
+               BUSINESS MESSAGE
+               =========================================== -->
+
           <div
+            id="damageRecoveryMessage"
             style="
               margin-top:9px;
               padding:8px 10px;
@@ -554,14 +637,16 @@
               line-height:1.5;
             "
           >
-            ✓ This Client and Exchange Document will
-            stay linked to the Exchange Pending record
-            until the physical replacement is received.
           </div>
+
 
         </div>
 
 
+
+        <!-- =============================================
+             STOCK MESSAGE
+             ============================================= -->
 
         <div
           class="helper"
@@ -573,6 +658,7 @@
           is saved. Warehouse Good and Batch Pending
           do not change.
         </div>
+
 
       </div>
 
@@ -598,7 +684,11 @@
 
       function () {
 
-        syncExchangeDocumentFields();
+
+        syncRecoveryFields(
+          true
+        );
+
 
         updatePreview();
 
@@ -608,6 +698,7 @@
           clearSaveRequestState();
 
         } catch (_) {}
+
 
       }
 
@@ -620,14 +711,16 @@
        ===================================================== */
 
     byId(
-      "damageExchangeClientSelect"
+      "damageRecoveryClientSelect"
     ).addEventListener(
 
       "change",
 
       function () {
 
+
         renderSelectedClient();
+
 
         updatePreview();
 
@@ -637,6 +730,7 @@
           clearSaveRequestState();
 
         } catch (_) {}
+
 
       }
 
@@ -649,12 +743,13 @@
        ===================================================== */
 
     byId(
-      "damageExchangeDocumentNo"
+      "damageRecoveryDocumentNo"
     ).addEventListener(
 
       "input",
 
       function () {
+
 
         updatePreview();
 
@@ -664,6 +759,7 @@
           clearSaveRequestState();
 
         } catch (_) {}
+
 
       }
 
@@ -762,7 +858,8 @@
 
 
       select.disabled =
-        clearanceTypes.length === 0;
+        clearanceTypes.length ===
+        0;
 
 
       if (
@@ -787,7 +884,9 @@
       }
 
 
-      syncExchangeDocumentFields();
+      syncRecoveryFields(
+        false
+      );
 
 
     } catch (
@@ -829,10 +928,10 @@
 
 
   /* =======================================================
-     LOAD EXCHANGE CLIENTS
+     LOAD CLIENTS
      ======================================================= */
 
-  async function loadExchangeClients() {
+  async function loadRecoveryClients() {
 
     if (
       clientsLoading
@@ -845,13 +944,13 @@
 
     const select =
       byId(
-        "damageExchangeClientSelect"
+        "damageRecoveryClientSelect"
       );
 
 
     const help =
       byId(
-        "damageExchangeClientHelp"
+        "damageRecoveryClientHelp"
       );
 
 
@@ -890,6 +989,15 @@
     try {
 
 
+      /*
+       * Existing RPC name says exchange,
+       * but it returns the common active Client Master.
+       *
+       * We reuse it for both:
+       * - Client Buy Back
+       * - Exchange for Good products
+       */
+
       const result =
 
         await window
@@ -899,7 +1007,7 @@
           );
 
 
-      exchangeClients =
+      recoveryClients =
 
         Array.isArray(
           result?.rows
@@ -920,13 +1028,13 @@
 
         help.textContent =
 
-          exchangeClients.length
+          recoveryClients.length
 
             ? (
-                exchangeClients.length +
+                recoveryClients.length +
                 " active Client" +
                 (
-                  exchangeClients.length === 1
+                  recoveryClients.length === 1
                     ? ""
                     : "s"
                 ) +
@@ -945,7 +1053,7 @@
     ) {
 
 
-      exchangeClients =
+      recoveryClients =
         [];
 
 
@@ -989,14 +1097,14 @@
 
 
   /* =======================================================
-     RENDER CLIENT OPTIONS
+     CLIENT OPTIONS
      ======================================================= */
 
   function renderClientOptions() {
 
     const select =
       byId(
-        "damageExchangeClientSelect"
+        "damageRecoveryClientSelect"
       );
 
 
@@ -1023,7 +1131,7 @@
 
       +
 
-      exchangeClients
+      recoveryClients
         .map(
           client => {
 
@@ -1078,7 +1186,8 @@
 
 
     select.disabled =
-      exchangeClients.length === 0;
+      recoveryClients.length ===
+      0;
 
 
     if (
@@ -1087,7 +1196,7 @@
 
       &&
 
-      exchangeClients.some(
+      recoveryClients.some(
         client =>
           cleanText(
             client.clientId
@@ -1109,18 +1218,18 @@
 
 
   /* =======================================================
-     RENDER SELECTED CLIENT
+     SELECTED CLIENT DETAIL
      ======================================================= */
 
   function renderSelectedClient() {
 
     const client =
-      selectedExchangeClient();
+      selectedRecoveryClient();
 
 
     const panel =
       byId(
-        "damageExchangeSelectedClient"
+        "damageRecoverySelectedClient"
       );
 
 
@@ -1143,19 +1252,19 @@
 
 
       byId(
-        "damageExchangeClientIdView"
+        "damageRecoveryClientIdView"
       ).textContent =
         "-";
 
 
       byId(
-        "damageExchangeClientNameView"
+        "damageRecoveryClientNameView"
       ).textContent =
         "-";
 
 
       byId(
-        "damageExchangeClientCodeView"
+        "damageRecoveryClientCodeView"
       ).textContent =
         "-";
 
@@ -1170,7 +1279,7 @@
 
 
     byId(
-      "damageExchangeClientIdView"
+      "damageRecoveryClientIdView"
     ).textContent =
 
       cleanText(
@@ -1183,7 +1292,7 @@
 
 
     byId(
-      "damageExchangeClientNameView"
+      "damageRecoveryClientNameView"
     ).textContent =
 
       cleanText(
@@ -1196,7 +1305,7 @@
 
 
     byId(
-      "damageExchangeClientCodeView"
+      "damageRecoveryClientCodeView"
     ).textContent =
 
       cleanText(
@@ -1212,14 +1321,16 @@
 
 
   /* =======================================================
-     EXCHANGE DOCUMENT PANEL
+     CLIENT / DOCUMENT PANEL
      ======================================================= */
 
-  function syncExchangeDocumentFields() {
+  function syncRecoveryFields(
+    clearDocumentOnTypeChange = false
+  ) {
 
     const panel =
       byId(
-        "damageExchangeDocumentFields"
+        "damageRecoveryFields"
       );
 
 
@@ -1232,47 +1343,77 @@
     }
 
 
-    const exchange =
-      isExchangeClearance();
+    const type =
+      clearanceCode();
 
 
-    panel.hidden =
-      !exchange;
+    const requiresClient =
+      needsClient();
 
+
+    /*
+     * When changing between:
+     * Exchange <-> Buy Back
+     *
+     * clear the old document so an Exchange Doc cannot
+     * accidentally become a Recovery Doc or vice versa.
+     */
 
     if (
-      exchange
+
+      clearDocumentOnTypeChange
+
+      &&
+
+      lastClearanceType
+
+      &&
+
+      lastClearanceType !== type
+
     ) {
 
 
+      const documentInput =
+        byId(
+          "damageRecoveryDocumentNo"
+        );
+
+
       if (
-        !exchangeClients.length
-
-        &&
-
-        !clientsLoading
+        documentInput
       ) {
 
-        loadExchangeClients();
+        documentInput.value =
+          "";
 
       }
 
+    }
 
-      renderSelectedClient();
+
+    lastClearanceType =
+      type;
 
 
-    } else {
+    panel.hidden =
+      !requiresClient;
+
+
+    if (
+      !requiresClient
+    ) {
 
 
       const clientSelect =
         byId(
-          "damageExchangeClientSelect"
+          "damageRecoveryClientSelect"
         );
 
 
       const documentInput =
         byId(
-          "damageExchangeDocumentNo"
+          "damageRecoveryDocumentNo"
         );
 
 
@@ -1298,7 +1439,127 @@
 
       renderSelectedClient();
 
+
+      return;
+
     }
+
+
+
+    /* =====================================================
+       CLIENT LIST
+       ===================================================== */
+
+    if (
+
+      !recoveryClients.length
+
+      &&
+
+      !clientsLoading
+
+    ) {
+
+      loadRecoveryClients();
+
+    }
+
+
+
+    /* =====================================================
+       BUY BACK MODE
+       ===================================================== */
+
+    if (
+      type ===
+      BUY_BACK_TYPE
+    ) {
+
+
+      byId(
+        "damageRecoveryTitle"
+      ).textContent =
+        "💳 Client Buy Back Recovery Information";
+
+
+      byId(
+        "damageRecoveryDocumentLabel"
+      ).textContent =
+        "Recovery Document No.";
+
+
+      byId(
+        "damageRecoveryDocumentNo"
+      ).placeholder =
+        "Example: RCV-2026-001";
+
+
+      byId(
+        "damageRecoveryDocumentHelp"
+      ).textContent =
+        "Required for Client Buy Back recovery.";
+
+
+      byId(
+        "damageRecoveryMessage"
+      ).textContent =
+
+        "✓ A Recovery Pending work item will be created " +
+        "for Accounting. Stock clearance does not mean " +
+        "the money has already been received.";
+
+
+    }
+
+
+
+    /* =====================================================
+       EXCHANGE MODE
+       ===================================================== */
+
+    if (
+      type ===
+      EXCHANGE_TYPE
+    ) {
+
+
+      byId(
+        "damageRecoveryTitle"
+      ).textContent =
+        "🔄 Exchange Document Information";
+
+
+      byId(
+        "damageRecoveryDocumentLabel"
+      ).textContent =
+        "Exchange Document No.";
+
+
+      byId(
+        "damageRecoveryDocumentNo"
+      ).placeholder =
+        "Example: EX-2026-001";
+
+
+      byId(
+        "damageRecoveryDocumentHelp"
+      ).textContent =
+        "Required for Exchange for Good products.";
+
+
+      byId(
+        "damageRecoveryMessage"
+      ).textContent =
+
+        "✓ This Client and Exchange Document will stay " +
+        "linked to the Exchange Pending record until the " +
+        "physical replacement stock is received.";
+
+
+    }
+
+
+    renderSelectedClient();
 
   }
 
@@ -1395,9 +1656,13 @@
       }
 
 
-      syncExchangeDocumentFields();
+      syncRecoveryFields(
+        false
+      );
+
 
       updateProductAvailability();
+
 
       updatePreview();
 
@@ -1434,7 +1699,7 @@
 
 
   /* =======================================================
-     START INSTALL
+     INSTALL
      ======================================================= */
 
   installCategory();
@@ -1589,23 +1854,16 @@
 
 
         if (
-          cleanText(
-            chosen.typeCode
-          ) ===
-          EXCHANGE_TYPE
+          needsClient()
         ) {
 
 
           const client =
-            selectedExchangeClient();
+            selectedRecoveryClient();
 
 
           const documentNo =
-            cleanText(
-              byId(
-                "damageExchangeDocumentNo"
-              )?.value
-            );
+            currentDocumentNo();
 
 
           if (
@@ -1636,10 +1894,20 @@
             documentNo
           ) {
 
+
             label +=
 
-              " · Doc " +
-              documentNo;
+              isBuyBack()
+
+                ? (
+                    " · Recovery " +
+                    documentNo
+                  )
+
+                : (
+                    " · Exchange " +
+                    documentNo
+                  );
 
           }
 
@@ -1834,15 +2102,18 @@
           selectedClearanceType();
 
 
-        const client =
-          selectedExchangeClient();
-
-
-        const exchange =
+        const type =
           cleanText(
             chosen?.typeCode
-          ) ===
-          EXCHANGE_TYPE;
+          );
+
+
+        const client =
+          selectedRecoveryClient();
+
+
+        const documentNo =
+          currentDocumentNo();
 
 
         data.flow =
@@ -1858,9 +2129,7 @@
 
 
         data.clearanceType =
-          cleanText(
-            chosen?.typeCode
-          );
+          type;
 
 
         data.clearanceTypeLabel =
@@ -1869,14 +2138,22 @@
           );
 
 
-        /*
-         * Supabase validates Client ID
-         * and resolves official Client Name.
-         */
+
+        /* ===============================================
+           CLIENT
+
+           Required only for:
+           - Buy Back
+           - Exchange
+           =============================================== */
 
         data.clientId =
 
-          exchange
+          (
+            type === BUY_BACK_TYPE
+            ||
+            type === EXCHANGE_TYPE
+          )
 
             ? cleanText(
                 client?.clientId
@@ -1885,15 +2162,32 @@
             : "";
 
 
+
+        /* ===============================================
+           EXCHANGE DOCUMENT
+           =============================================== */
+
         data.exchangeDocumentNo =
 
-          exchange
+          type ===
+          EXCHANGE_TYPE
 
-            ? cleanText(
-                byId(
-                  "damageExchangeDocumentNo"
-                )?.value
-              )
+            ? documentNo
+
+            : "";
+
+
+
+        /* ===============================================
+           RECOVERY DOCUMENT
+           =============================================== */
+
+        data.recoveryDocumentNo =
+
+          type ===
+          BUY_BACK_TYPE
+
+            ? documentNo
 
             : "";
 
@@ -1946,9 +2240,9 @@
 
 
 
-      /* ---------------------------------------------------
-         Clearance Types
-         --------------------------------------------------- */
+      /* ===================================================
+         CLEARANCE TYPE
+         =================================================== */
 
       if (
         !clearanceTypes.length
@@ -1975,24 +2269,36 @@
 
 
 
-      /* ---------------------------------------------------
-         Exchange Client + Document
-         --------------------------------------------------- */
-
-      if (
+      const type =
         cleanText(
           data.clearanceType
-        ) ===
+        );
+
+
+
+      /* ===================================================
+         CLIENT
+         =================================================== */
+
+      if (
+
+        type ===
+        BUY_BACK_TYPE
+
+        ||
+
+        type ===
         EXCHANGE_TYPE
+
       ) {
 
 
         if (
-          !exchangeClients.length
+          !recoveryClients.length
         ) {
 
           return (
-            "Exchange Client list is not available yet."
+            "Client / Supplier list is not available yet."
           );
 
         }
@@ -2005,21 +2311,60 @@
         ) {
 
           return (
-            "Select the Client / Supplier for this Damage Exchange."
+            "Select the Client / Supplier for this transaction."
           );
 
         }
 
 
         if (
-          !selectedExchangeClient()
+          !selectedRecoveryClient()
         ) {
 
           return (
-            "Selected Exchange Client is not available in Client Master."
+            "Selected Client / Supplier is not available in Client Master."
           );
 
         }
+
+      }
+
+
+
+      /* ===================================================
+         CLIENT BUY BACK DOCUMENT
+         =================================================== */
+
+      if (
+        type ===
+        BUY_BACK_TYPE
+      ) {
+
+
+        if (
+          !cleanText(
+            data.recoveryDocumentNo
+          )
+        ) {
+
+          return (
+            "Recovery Document No. is required for Client Buy Back."
+          );
+
+        }
+
+      }
+
+
+
+      /* ===================================================
+         EXCHANGE DOCUMENT
+         =================================================== */
+
+      if (
+        type ===
+        EXCHANGE_TYPE
+      ) {
 
 
         if (
@@ -2038,9 +2383,9 @@
 
 
 
-      /* ---------------------------------------------------
-         Damaged Availability
-         --------------------------------------------------- */
+      /* ===================================================
+         DAMAGED AVAILABILITY
+         =================================================== */
 
       for (
         const item
@@ -2146,6 +2491,12 @@
           );
 
 
+        fingerprint.recoveryDocumentNo =
+          cleanText(
+            data?.recoveryDocumentNo
+          );
+
+
         return JSON.stringify(
           fingerprint
         );
@@ -2215,13 +2566,13 @@
 
       const clientSelect =
         byId(
-          "damageExchangeClientSelect"
+          "damageRecoveryClientSelect"
         );
 
 
       const documentInput =
         byId(
-          "damageExchangeDocumentNo"
+          "damageRecoveryDocumentNo"
         );
 
 
@@ -2255,7 +2606,12 @@
       }
 
 
+      lastClearanceType =
+        "";
+
+
       renderSelectedClient();
+
 
       syncMode();
 
@@ -2267,7 +2623,7 @@
 
 
   /* =======================================================
-     REBIND ORIGINAL BUTTON REFERENCES
+     REBIND BUTTONS
      ======================================================= */
 
   if (
@@ -2305,7 +2661,7 @@
 
   loadClearanceTypes();
 
-  loadExchangeClients();
+  loadRecoveryClients();
 
   syncMode();
 

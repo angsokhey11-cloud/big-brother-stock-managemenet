@@ -1,54 +1,533 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Stock Management Supabase</title>
-<style>html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-serif}.bb-loader{min-height:100vh;display:flex;align-items:center;justify-content:center}.bb-card{background:#fff;border:1px solid #d9e2ef;border-radius:14px;padding:22px 28px;box-shadow:0 8px 30px #173a6615;color:#17457a;font-weight:800}.bb-sub{margin-top:6px;color:#6b7280;font-size:12px;font-weight:600}</style>
-</head>
-<body>
-<div class="bb-loader"><div class="bb-card">Loading BIG BROTHER Stock Management…<div class="bb-sub">Secure Supabase stock database</div></div></div>
-<script>
-(async function(){
-  try{
-    const response=await fetch('legacy-google-v3.html?v=20260910-3',{cache:'no-store'});
-    if(!response.ok)throw new Error('Could not load Stock Management source.');
-    let html=await response.text();
 
-    const adapter='<scr'+'ipt src="supabase-stock-adapter.js?v=20260910-3"></scr'+'ipt>';
-    const headClose=html.toLowerCase().indexOf('</head>');
-    if(headClose<0)throw new Error('Stock Management source is missing </head>.');
-    html=html.slice(0,headClose)+adapter+'\n'+html.slice(headClose);
+<meta charset="utf-8">
 
-    const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
-    const cutover=`// SUPABASE STOCK CUTOVER\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n${marker}`;
-    if(!html.includes(marker))throw new Error('Stock Management cutover marker was not found.');
-    html=html.replace(marker,cutover);
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
 
-    html=html.replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Management Batch V2</title>');
-    html=html.replaceAll('Stock Database','Supabase Stock Database');
-    html=html.replaceAll('Purchase Database','Supabase Purchase Database');
+<title>
+  BIG BROTHER — Stock Management Supabase
+</title>
 
-    const bodyClose=html.toLowerCase().lastIndexOf('</body>');
-    if(bodyClose<0)throw new Error('Stock Management source is missing </body>.');
-    const view=String(new URLSearchParams(location.search).get('view')||'keyin').toLowerCase();
-    let pageScripts='<scr'+'ipt src="batch-v2-stock-guard.js?v=20260910-2"></scr'+'ipt>\n';
-    if(view==='keyin'){
-  pageScripts+='<scr'+'ipt src="damaged-clearance-keyin.js?v=20260911-3"></scr'+'ipt>\n';
-  pageScripts+='<scr'+'ipt src="damaged-exchange-receive-keyin.js?v=20260910-3"></scr'+'ipt>\n';
+
+<style>
+
+html,
+body{
+
+  margin:0;
+
+  min-height:100%;
+
+  background:#eef3f8;
+
+  font-family:
+    Arial,
+    sans-serif;
+
 }
-    if(view==='damaged'){
-      pageScripts+='<scr'+'ipt src="damaged-stock-page.js?v=20260910-1"></scr'+'ipt>\n';
+
+
+.bb-loader{
+
+  min-height:100vh;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+}
+
+
+.bb-card{
+
+  background:#fff;
+
+  border:
+    1px solid
+    #d9e2ef;
+
+  border-radius:14px;
+
+  padding:
+    22px 28px;
+
+  box-shadow:
+    0 8px 30px
+    #173a6615;
+
+  color:#17457a;
+
+  font-weight:800;
+
+}
+
+
+.bb-sub{
+
+  margin-top:6px;
+
+  color:#6b7280;
+
+  font-size:12px;
+
+  font-weight:600;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="bb-loader">
+
+  <div class="bb-card">
+
+    Loading BIG BROTHER Stock Management…
+
+    <div class="bb-sub">
+      Purchased + Zero-Cost Batch Stock V3
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+(async function(){
+
+
+  try{
+
+
+    /* ========================================================
+       LOAD LEGACY STOCK UI
+       ======================================================== */
+
+    const response =
+      await fetch(
+
+        'legacy-google-v3.html?v=20260912-zero-cost-1',
+
+        {
+          cache:'no-store'
+        }
+
+      );
+
+
+    if(
+      !response.ok
+    ){
+
+      throw new Error(
+        'Could not load Stock Management source.'
+      );
+
     }
-    html=html.slice(0,bodyClose)+pageScripts+html.slice(bodyClose);
+
+
+    let html =
+      await response.text();
+
+
+
+    /* ========================================================
+       SUPABASE ADAPTER
+       ======================================================== */
+
+    const adapter =
+
+      '<scr'
+
+      +
+
+      'ipt src="supabase-stock-adapter.js?v=20260912-zero-cost-1">'
+
+      +
+
+      '</scr'
+
+      +
+
+      'ipt>';
+
+
+    const headClose =
+      html
+        .toLowerCase()
+        .indexOf(
+          '</head>'
+        );
+
+
+    if(
+      headClose
+      <
+      0
+    ){
+
+      throw new Error(
+        'Stock Management source is missing </head>.'
+      );
+
+    }
+
+
+    html =
+
+      html.slice(
+        0,
+        headClose
+      )
+
+      +
+
+      adapter
+
+      +
+
+      '\n'
+
+      +
+
+      html.slice(
+        headClose
+      );
+
+
+
+    /* ========================================================
+       SUPABASE CUTOVER
+       ======================================================== */
+
+    const marker =
+
+      '$("addProductBtn").onclick=addProduct;'
+
+      +
+
+      '$("clearBtn").onclick=clearForm;'
+
+      +
+
+      '$("refreshBtn").onclick=()=>refreshStockOnly(false);'
+
+      +
+
+      '$("saveBtn").onclick=saveMovement;';
+
+
+    const cutover =
+
+`// SUPABASE STOCK CUTOVER V3
+
+jsonp=window.BBStockAdapter.jsonp;
+
+apiPost=window.BBStockAdapter.apiPost;
+
+try{
+  window.BBStockAdapter.clearLegacyCaches();
+}catch(_){}
+
+readCache=()=>null;
+
+writeCache=()=>{};
+
+applyCache=()=>false;
+
+applySharedReportStockCache=()=>false;
+
+${marker}`;
+
+
+    if(
+      !html.includes(
+        marker
+      )
+    ){
+
+      throw new Error(
+        'Stock Management cutover marker was not found.'
+      );
+
+    }
+
+
+    html =
+      html.replace(
+        marker,
+        cutover
+      );
+
+
+
+    /* ========================================================
+       TITLES
+       ======================================================== */
+
+    html =
+      html.replace(
+
+        '<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>',
+
+        '<title>BIG BROTHER — Stock Management Zero-Cost Batch V3</title>'
+
+      );
+
+
+    html =
+      html.replaceAll(
+        'Stock Database',
+        'Supabase Stock Database'
+      );
+
+
+    html =
+      html.replaceAll(
+        'Purchase Database',
+        'Supabase Purchase Database'
+      );
+
+
+
+    /* ========================================================
+       PAGE SCRIPTS
+       ======================================================== */
+
+    const bodyClose =
+      html
+        .toLowerCase()
+        .lastIndexOf(
+          '</body>'
+        );
+
+
+    if(
+      bodyClose
+      <
+      0
+    ){
+
+      throw new Error(
+        'Stock Management source is missing </body>.'
+      );
+
+    }
+
+
+    const view =
+      String(
+
+        new URLSearchParams(
+          location.search
+        )
+        .get(
+          'view'
+        )
+
+        ||
+
+        'keyin'
+
+      )
+      .toLowerCase();
+
+
+
+    let pageScripts =
+
+
+      '<scr'
+
+      +
+
+      'ipt src="batch-v2-stock-guard.js?v=20260912-zero-cost-3">'
+
+      +
+
+      '</scr'
+
+      +
+
+      'ipt>\n';
+
+
+
+    if(
+      view
+      ===
+      'keyin'
+    ){
+
+
+      pageScripts +=
+
+        '<scr'
+
+        +
+
+        'ipt src="damaged-clearance-keyin.js?v=20260911-3">'
+
+        +
+
+        '</scr'
+
+        +
+
+        'ipt>\n';
+
+
+
+      pageScripts +=
+
+        '<scr'
+
+        +
+
+        'ipt src="damaged-exchange-receive-keyin.js?v=20260910-3">'
+
+        +
+
+        '</scr'
+
+        +
+
+        'ipt>\n';
+
+
+    }
+
+
+
+    if(
+      view
+      ===
+      'damaged'
+    ){
+
+
+      pageScripts +=
+
+        '<scr'
+
+        +
+
+        'ipt src="damaged-stock-page.js?v=20260910-1">'
+
+        +
+
+        '</scr'
+
+        +
+
+        'ipt>\n';
+
+
+    }
+
+
+
+    html =
+
+      html.slice(
+        0,
+        bodyClose
+      )
+
+      +
+
+      pageScripts
+
+      +
+
+      html.slice(
+        bodyClose
+      );
+
+
+
+    /* ========================================================
+       OPEN
+       ======================================================== */
 
     document.open();
-    document.write(html);
+
+    document.write(
+      html
+    );
+
     document.close();
+
+
   }catch(error){
-    console.error(error);
-    document.body.innerHTML='<div class="bb-loader"><div class="bb-card">Could not open Stock Management<div class="bb-sub">'+String(error?.message||error)+'</div></div></div>';
+
+
+    console.error(
+      error
+    );
+
+
+    document.body.innerHTML =
+
+      '<div class="bb-loader">'
+
+      +
+
+      '<div class="bb-card">'
+
+      +
+
+      'Could not open Stock Management'
+
+      +
+
+      '<div class="bb-sub">'
+
+      +
+
+      String(
+        error?.message
+        ||
+        error
+      )
+
+      +
+
+      '</div>'
+
+      +
+
+      '</div>'
+
+      +
+
+      '</div>';
+
+
   }
+
+
 })();
+
 </script>
+
+
 </body>
+
 </html>

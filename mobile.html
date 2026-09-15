@@ -112,11 +112,11 @@ const categories=[
   {value:'PURCHASE',flow:'INFLOW',icon:'🛒',label:'Purchase'},
   {value:'RECEIVE_FROM_CLIENT',flow:'INFLOW',icon:'📦',label:'Receive from Client'},
   {value:'BACK_SALE',flow:'INFLOW',icon:'↩',label:'Back Sale'},
-  {value:'DAMAGE_EXCHANGE_RECEIVE',flow:'INFLOW',icon:'🔄',label:'Damage Exchange Received'},
   {value:'BATCH_STOCK',flow:'OUTFLOW',icon:'🚚',label:'Batch Stock'},
   {value:'STOCK_DAMAGE',flow:'OUTFLOW',icon:'⚠️',label:'Stock Damage'},
   {value:'STAFF_ALLOWANCE',flow:'OUTFLOW',icon:'👤',label:'Staff Allowance'},
-  {value:'DAMAGE_CLEAR',flow:'OUTFLOW',icon:'🗑️',label:'Damaged Stock Cleared'}
+  {value:'DAMAGE_CLEAR',flow:'OUTFLOW',icon:'🗑️',label:'Damaged Stock Cleared'},
+  {value:'DAMAGE_EXCHANGE_RECEIVE',flow:'INFLOW',icon:'🔄',label:'Damaged Stock Exchange Received'}
 ];
 const titles={
   PURCHASE:['🛒 Purchase Receiving','📦 Products Receiving'],
@@ -130,7 +130,7 @@ const titles={
 };
 function clean(v){return String(v==null?'':v).trim()}
 function currentType(){try{return clean(movementType)||'PURCHASE'}catch(_){return 'PURCHASE'}}
-function cards(){return [...document.querySelectorAll('.page > .card')]}
+function cards(){return [...document.querySelectorAll('.page > .card:not(.bb-category-card)')]}
 function installBase(){
   document.body.classList.add('bb-stock-mobile');
   const h=document.querySelector('.topbar h1');if(h)h.textContent='Stock Key-In';
@@ -297,7 +297,7 @@ try{
   html=html.slice(0,headClose)+headInjection+html.slice(headClose);
 
   const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
-  const cutover='// SUPABASE STOCK CUTOVER MOBILE V2\\njsonp=window.BBStockAdapter.jsonp;\\napiPost=window.BBStockAdapter.apiPost;\\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\\nreadCache=()=>null;\\nwriteCache=()=>{};\\napplyCache=()=>false;\\napplySharedReportStockCache=()=>false;\\n'+marker;
+  const cutover='// SUPABASE STOCK CUTOVER MOBILE V2\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n'+marker;
   if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
   html=html.replace(marker,cutover);
 

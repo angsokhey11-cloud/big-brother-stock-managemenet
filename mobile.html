@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BIG BROTHER — Stock Key-In Mobile</title>
+<style>
+html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-serif}
+.bb-mobile-loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.bb-mobile-loader-card{width:min(420px,100%);padding:20px;border:1px solid #d8e3ef;border-radius:14px;background:#fff;box-shadow:0 10px 32px rgba(23,63,119,.10);color:#173f77;font-weight:900;text-align:center}
+.bb-mobile-loader-card span{display:block;margin-top:7px;color:#6d7f93;font-size:11px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="bb-mobile-loader"><div class="bb-mobile-loader-card">Loading Stock Key-In…<span>Existing Stock engine · Mobile workspace</span></div></div>
+<script>
+(async function(){
+'use strict';
+
+const MOBILE_STYLE = String.raw`
+:root{--bb-navy:#173f77;--bb-blue:#245fae;--bb-line:#dce5ef;--bb-bg:#eef3f8;--bb-muted:#6d7f93;--bb-green:#16855c;--bb-red:#b43a3a}
+html,body{background:var(--bb-bg)!important}
+body.bb-stock-mobile{padding-bottom:86px!important}
+body.bb-stock-mobile .page{width:min(760px,100%)!important;max-width:760px!important;margin:0 auto!important;padding:5px!important}
+body.bb-stock-mobile .topbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin:0 0 7px!important;padding:11px 12px!important;border-radius:0 0 13px 13px;background:linear-gradient(135deg,#173f77,#2473ca);box-shadow:0 5px 18px rgba(23,63,119,.14)}
+body.bb-stock-mobile .topbar h1{margin:0!important;color:#fff!important;font-size:19px!important;line-height:1.1!important}
+body.bb-stock-mobile .topbar .subtitle{margin-top:4px!important;color:#dceaff!important;font-size:8px!important;line-height:1.35!important;font-weight:700!important}
+body.bb-stock-mobile .db-pill{display:none!important}
+body.bb-stock-mobile #status{margin:0 0 7px!important;padding:8px 10px!important;border-radius:10px!important;font-size:8px!important;line-height:1.35!important}
+body.bb-stock-mobile .card{margin:0 0 7px!important;padding:9px!important;border-radius:12px!important;box-shadow:none!important}
+body.bb-stock-mobile .section-title{margin:0 0 8px!important;color:var(--bb-navy)!important;font-size:12px!important}
+body.bb-stock-mobile .grid,body.bb-stock-mobile .grid2{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+body.bb-stock-mobile .field{min-width:0!important}
+body.bb-stock-mobile .field label{margin-bottom:3px!important;font-size:7px!important;letter-spacing:.02em!important}
+body.bb-stock-mobile .field input,body.bb-stock-mobile .field select,body.bb-stock-mobile .field textarea{min-height:38px!important;padding:7px 8px!important;border-radius:8px!important;font-size:11px!important}
+body.bb-stock-mobile .field textarea{min-height:56px!important}
+body.bb-stock-mobile .helper{margin-top:3px!important;font-size:7px!important;line-height:1.3!important}
+body.bb-stock-mobile .flow-toggle{grid-template-columns:1fr 1fr!important;gap:6px!important}
+body.bb-stock-mobile .flow-btn{min-height:42px!important;padding:7px!important;border-radius:9px!important;font-size:10px!important}
+body.bb-stock-mobile .bb-mobile-category-source-wrap{display:none!important}
+body.bb-stock-mobile .bb-mobile-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+body.bb-stock-mobile .bb-mobile-category-btn{min-width:0;min-height:45px;padding:6px 5px;border:1px solid #d6e0eb;border-radius:9px;background:#fff;color:#4e6176;font-size:8px;font-weight:900;line-height:1.15;cursor:pointer}
+body.bb-stock-mobile .bb-mobile-category-btn span{display:block;margin-bottom:3px;font-size:15px;line-height:1}
+body.bb-stock-mobile .bb-mobile-category-btn.active{border-color:var(--bb-navy);background:var(--bb-navy);color:#fff;box-shadow:0 4px 10px rgba(23,63,119,.14)}
+body.bb-stock-mobile .dynamic .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.bb-stock-mobile .client-detail{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+body.bb-stock-mobile .client-detail .box{min-height:48px!important;padding:7px!important}
+body.bb-stock-mobile .client-detail small{font-size:6px!important}
+body.bb-stock-mobile .client-detail strong{font-size:8px!important}
+body.bb-stock-mobile .purchase-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin:6px 0 8px!important}
+body.bb-stock-mobile .purchase-summary .box{padding:7px!important}
+body.bb-stock-mobile .purchase-summary small{font-size:6px!important}
+body.bb-stock-mobile .purchase-summary strong{font-size:10px!important}
+body.bb-stock-mobile .table-wrap{border-radius:9px!important;-webkit-overflow-scrolling:touch}
+body.bb-stock-mobile table{min-width:620px!important}
+body.bb-stock-mobile th,body.bb-stock-mobile td{height:32px!important;padding:5px 6px!important;font-size:7px!important;white-space:nowrap!important}
+body.bb-stock-mobile th{font-size:6px!important}
+body.bb-stock-mobile #purchaseReceivingPanel table{min-width:610px!important}
+body.bb-stock-mobile #purchaseReceivingPanel th:nth-child(3),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(3),body.bb-stock-mobile #purchaseReceivingPanel th:nth-child(4),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(4){display:none!important}
+body.bb-stock-mobile .receive-input{min-width:82px!important;padding:5px 6px!important;font-size:8px!important}
+body.bb-stock-mobile .receive-input[type=date]{min-width:125px!important}
+body.bb-stock-mobile #manualProductPanel #productEntry,body.bb-stock-mobile #productEntry.bb-zero-cost-batch{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+body.bb-stock-mobile #productEntry .search-picker{grid-column:1/-1!important}
+body.bb-stock-mobile #productEntry #addProductBtn{grid-column:1/-1!important;width:100%!important;min-height:40px!important}
+body.bb-stock-mobile #manualProductPanel table{min-width:650px!important}
+body.bb-stock-mobile #manualProductPanel .remove{padding:5px 6px!important;font-size:7px!important}
+body.bb-stock-mobile .product-search-results{max-height:240px!important}
+body.bb-stock-mobile .product-result{padding:8px!important}
+body.bb-stock-mobile .product-result strong{font-size:9px!important}
+body.bb-stock-mobile .product-result span{font-size:7px!important}
+body.bb-stock-mobile .preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin-bottom:7px!important}
+body.bb-stock-mobile .preview-kpi{padding:8px!important}
+body.bb-stock-mobile .preview-kpi small{font-size:6px!important}
+body.bb-stock-mobile .preview-kpi strong{font-size:11px!important}
+body.bb-stock-mobile #previewRows{font-size:7px!important}
+body.bb-stock-mobile .success-panel{padding:9px!important}
+body.bb-stock-mobile .success-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+body.bb-stock-mobile .success-item{padding:7px!important}
+body.bb-stock-mobile .success-item small{font-size:6px!important}
+body.bb-stock-mobile .success-item div{font-size:8px!important}
+body.bb-stock-mobile .actions{position:fixed!important;z-index:1000;left:50%!important;bottom:0!important;transform:translateX(-50%);width:min(760px,100%)!important;display:grid!important;grid-template-columns:1fr 46px 1.8fr!important;gap:6px!important;margin:0!important;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;border-top:1px solid #d8e3ef;background:rgba(255,255,255,.97);box-shadow:0 -5px 18px rgba(23,63,119,.10);backdrop-filter:blur(10px)}
+body.bb-stock-mobile .actions .btn{width:100%!important;min-height:43px!important;padding:7px!important;border-radius:9px!important;font-size:10px!important}
+body.bb-stock-mobile #refreshBtn{font-size:0!important;padding:0!important}
+body.bb-stock-mobile #refreshBtn::after{content:'↻';font-size:19px!important}
+body.bb-stock-mobile #saveBtn{background:linear-gradient(135deg,#174f8f,#2473ca)!important}
+body.bb-stock-mobile .bb-mobile-note-collapsed{margin-top:8px;border:1px solid var(--bb-line);border-radius:9px;background:#fbfcfe;overflow:hidden}
+body.bb-stock-mobile .bb-mobile-note-toggle{width:100%;min-height:34px;border:0;background:#fbfcfe;color:#52677e;padding:7px 9px;text-align:left;font-size:8px;font-weight:900;cursor:pointer}
+body.bb-stock-mobile .bb-mobile-note-body{padding:0 8px 8px}
+body.bb-stock-mobile .bb-mobile-note-collapsed:not(.open) .bb-mobile-note-body{display:none!important}
+body.bb-stock-mobile .bb-batch-source-field input{font-weight:900!important}
+body.bb-stock-mobile #damageClearFields>div,body.bb-stock-mobile #damageExchangeReceiveFields>div{padding:9px!important;border-radius:9px!important}
+@media(max-width:430px){body.bb-stock-mobile .bb-mobile-categories{grid-template-columns:repeat(2,minmax(0,1fr))}body.bb-stock-mobile .grid,body.bb-stock-mobile .grid2,body.bb-stock-mobile .dynamic .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:345px){body.bb-stock-mobile .page{padding:4px!important}body.bb-stock-mobile .card{padding:7px!important}body.bb-stock-mobile .field input,body.bb-stock-mobile .field select{font-size:10px!important}body.bb-stock-mobile .actions{grid-template-columns:1fr 42px 1.6fr!important}}
+`;
+
+const MOBILE_PATCH = String.raw`
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const icons={PURCHASE:'🛒',RECEIVE_FROM_CLIENT:'📦',BACK_SALE:'↩',BATCH_STOCK:'🚚',STOCK_DAMAGE:'⚠️',STAFF_ALLOWANCE:'👤',DAMAGE_CLEAR:'🗑️',DAMAGE_EXCHANGE_RECEIVE:'🔄'};
+function clean(v){return String(v==null?'':v).trim()}
+function titleCaseLabel(value,label){return clean(label)||clean(value).replaceAll('_',' ')}
+function installBase(){
+  document.body.classList.add('bb-stock-mobile');
+  const h=document.querySelector('.topbar h1');if(h)h.textContent='Stock Key-In';
+  const sub=document.querySelector('.topbar .subtitle');if(sub)sub.textContent='Physical stock movement · Purchased + Zero-Cost Batch control';
+  document.querySelectorAll('.section-title').forEach(el=>{el.textContent=el.textContent.replace(/^\s*\d+\.\s*/,'')});
+  const refresh=$('refreshBtn');if(refresh){refresh.title='Refresh Stock';refresh.setAttribute('aria-label','Refresh Stock')}
+}
+function categoryHost(){
+  const select=$('movementCategorySelect');if(!select)return null;
+  const field=select.closest('.field');if(field)field.classList.add('bb-mobile-category-source-wrap');
+  let host=$('bbMobileCategories');
+  if(!host){host=document.createElement('div');host.id='bbMobileCategories';host.className='bb-mobile-categories';const grid=field?.closest('.grid');(grid||field)?.insertAdjacentElement('afterend',host)}
+  return host;
+}
+function renderCategories(){
+  const select=$('movementCategorySelect'),host=categoryHost();if(!select||!host)return;
+  const options=[...select.options].filter(o=>clean(o.value));
+  host.innerHTML=options.map(o=>'<button type="button" class="bb-mobile-category-btn'+(o.value===select.value?' active':'')+'" data-value="'+o.value.replace(/"/g,'&quot;')+'"><span>'+(icons[o.value]||'•')+'</span>'+titleCaseLabel(o.value,o.textContent)+'</button>').join('');
+  host.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{select.value=btn.dataset.value;select.dispatchEvent(new Event('change',{bubbles:true}));setTimeout(renderCategories,0)}));
+}
+function installCategoryObserver(){
+  const select=$('movementCategorySelect');if(!select)return;
+  renderCategories();
+  new MutationObserver(()=>renderCategories()).observe(select,{childList:true,subtree:true,attributes:true});
+  select.addEventListener('change',()=>setTimeout(renderCategories,0));
+  ['flowInBtn','flowOutBtn'].forEach(id=>$(id)?.addEventListener('click',()=>setTimeout(renderCategories,20)));
+}
+function installNoteCollapse(){
+  const note=$('note');if(!note)return;
+  const field=note.closest('.field');if(!field||field.closest('.bb-mobile-note-collapsed'))return;
+  const box=document.createElement('div');box.className='bb-mobile-note-collapsed';
+  const toggle=document.createElement('button');toggle.type='button';toggle.className='bb-mobile-note-toggle';toggle.textContent='▸ Note (Optional)';
+  const body=document.createElement('div');body.className='bb-mobile-note-body';
+  field.parentNode.insertBefore(box,field);body.appendChild(field);box.append(toggle,body);
+  toggle.addEventListener('click',()=>{box.classList.toggle('open');toggle.textContent=(box.classList.contains('open')?'▾':'▸')+' Note (Optional)'});
+}
+function keepActionsLast(){
+  const actions=document.querySelector('.actions');if(!actions)return;
+  document.body.appendChild(actions);
+}
+function syncCategoryLater(){setTimeout(renderCategories,50);setTimeout(renderCategories,250);setTimeout(renderCategories,900)}
+function init(){installBase();installCategoryObserver();installNoteCollapse();keepActionsLast();syncCategoryLater()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+`;
+
+try{
+  const response=await fetch('legacy-google-v3.html?v=20260912-zero-cost-1',{cache:'no-store'});
+  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
+  let html=await response.text();
+
+  const headClose=html.toLowerCase().indexOf('</head>');
+  if(headClose<0)throw new Error('Stock source is missing </head>.');
+  const headInjection='\n<script src="supabase-stock-adapter.js?v=20260912-zero-cost-1"><\/script>\n<style id="bb-stock-mobile-style">'+MOBILE_STYLE+'<\/style>\n';
+  html=html.slice(0,headClose)+headInjection+html.slice(headClose);
+
+  const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
+  const cutover='// SUPABASE STOCK CUTOVER MOBILE V1\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n'+marker;
+  if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
+  html=html.replace(marker,cutover);
+
+  html=html.replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>');
+  html=html.replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
+
+  const bodyClose=html.toLowerCase().lastIndexOf('</body>');
+  if(bodyClose<0)throw new Error('Stock source is missing </body>.');
+  const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
+  html=html.slice(0,bodyClose)+scripts+html.slice(bodyClose);
+
+  document.open();document.write(html);document.close();
+}catch(error){
+  console.error(error);
+  document.body.innerHTML='<div class="bb-mobile-loader"><div class="bb-mobile-loader-card">Could not open Stock Key-In<span>'+String(error?.message||error)+'</span></div></div>';
+}
+})();
+</script>
+</body>
+</html>

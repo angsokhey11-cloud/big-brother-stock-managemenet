@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIG BROTHER — Stock Adjustment</title>
+<style>
+*{box-sizing:border-box}
+:root{--navy:#173f77;--navy2:#0f315e;--blue:#245fae;--blueSoft:#edf5ff;--green:#16855c;--greenSoft:#edf9f3;--red:#b43a3a;--redSoft:#fff1f1;--amber:#9a6800;--amberSoft:#fff7e8;--line:#dce5ef;--line2:#edf1f5;--muted:#6d7f93;--text:#24384c;--bg:#f2f6fa;--white:#fff}
+html,body{margin:0;min-height:100%;font-family:Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{min-width:1080px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.page{max-width:1500px;margin:0 auto;padding:18px 22px 30px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:14px}
+.title{margin:0;color:var(--navy2);font-size:27px;line-height:1.1;font-weight:950;letter-spacing:-.35px}.subtitle{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:650}
+.top-actions{display:flex;align-items:center;gap:8px}.last-update{margin-right:4px;text-align:right;color:var(--muted);font-size:10px}.last-update strong{display:block;margin-top:3px;color:var(--navy);font-size:12px}
+.btn{min-height:40px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:#fff;color:var(--navy);font-weight:850}.btn:hover{background:#f8fbff}.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.btn.primary:hover{background:#123765}.btn.danger{background:var(--red);border-color:var(--red);color:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}
+.notice{display:flex;align-items:flex-start;gap:9px;margin-bottom:12px;padding:10px 12px;border:1px solid #efd49a;border-radius:11px;background:var(--amberSoft);color:#72531a;font-size:11px;font-weight:750;line-height:1.45}.notice strong{color:#684a0d}
+.status{margin-bottom:12px;padding:9px 11px;border:1px solid #d6e4f3;border-radius:10px;background:#eef4fb;color:#46627f;font-size:11px;font-weight:700}.status.ok{background:var(--greenSoft);border-color:#cbe8d9;color:#176d4b}.status.error{background:var(--redSoft);border-color:#efcdcd;color:#9b3030}.status.warn{background:var(--amberSoft);border-color:#efd49a;color:#775617}
+.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.8fr);gap:12px;align-items:start}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 18px rgba(23,63,119,.045);padding:15px;margin-bottom:12px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;color:var(--navy);font-size:15px;font-weight:950}.section-title small{color:var(--muted);font-size:9px;font-weight:750}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.field label{display:block;margin-bottom:5px;color:#53677d;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.025em}.field input,.field select,.field textarea{width:100%;min-height:41px;border:1px solid #cbd8e7;border-radius:9px;background:#fff;padding:8px 10px;color:var(--text);font-size:12px;outline:none}.field textarea{min-height:76px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#8db4df;box-shadow:0 0 0 3px #edf5ff}.helper{margin-top:4px;color:#8797a8;font-size:9px;line-height:1.35}
+.search-picker{position:relative}.search-results{display:none;position:absolute;z-index:80;left:0;right:0;top:calc(100% + 4px);max-height:310px;overflow:auto;background:#fff;border:1px solid #cbd8e7;border-radius:10px;box-shadow:0 14px 34px rgba(17,48,82,.18)}.search-results.open{display:block}.result{padding:9px 10px;border-bottom:1px solid var(--line2);cursor:pointer}.result:last-child{border-bottom:0}.result:hover,.result.active{background:#eef5ff}.result strong{display:block;color:var(--navy);font-size:11px}.result span{display:block;margin-top:2px;color:#788a9e;font-size:9px}
+.product-preview{display:grid;grid-template-columns:minmax(250px,1.4fr) repeat(4,minmax(120px,.7fr));gap:8px;margin-top:12px}.preview-box{border:1px solid var(--line);border-radius:10px;background:#fbfcfe;padding:10px}.preview-box small{display:block;color:#7b8da0;font-size:8px;font-weight:900;text-transform:uppercase}.preview-box strong{display:block;margin-top:5px;color:var(--navy);font-size:15px}.preview-box.product strong{font-size:13px}.preview-box.product span{display:block;margin-top:4px;color:#77899d;font-size:9px}
+.direction{display:grid;grid-template-columns:1fr 1fr;gap:7px}.direction button{min-height:41px;border:1px solid #cbd8e7;border-radius:9px;background:#fff;color:#5e7287;font-size:11px;font-weight:900}.direction button.increase.active{background:var(--greenSoft);border-color:#9fd7bd;color:#126844}.direction button.decrease.active{background:var(--redSoft);border-color:#e5b7b7;color:#9f3131}
+.after-box{min-height:41px;display:flex;align-items:center;justify-content:space-between;border:1px solid #cbd8e7;border-radius:9px;background:#f8fafc;padding:8px 10px}.after-box span{font-size:10px;color:#76889c}.after-box strong{font-size:14px;color:var(--navy)}
+.add-row{display:grid;grid-template-columns:1.4fr .75fr .65fr .7fr auto;gap:9px;align-items:end;margin-top:12px}.add-row .btn{min-width:112px}
+.table-wrap{overflow:hidden;border:1px solid var(--line);border-radius:10px}.table-head,.line-row{display:grid;grid-template-columns:minmax(240px,1.7fr) 100px 110px 100px 100px 110px 120px 74px;gap:8px;align-items:center}.table-head{min-height:39px;padding:0 10px;background:#f6f9fc;border-bottom:1px solid var(--line);color:#687d92;font-size:8.5px;font-weight:950;text-transform:uppercase}.table-head>div:not(:first-child){text-align:right}.line-row{min-height:58px;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:11px}.line-row:last-child{border-bottom:0}.line-product strong{display:block;color:var(--navy);font-size:11px}.line-product span{display:block;margin-top:3px;color:#7a8c9f;font-size:9px}.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:850;color:#425b75}.num.good{color:var(--green)}.num.bad{color:var(--red)}.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 8px;font-size:8px;font-weight:950}.pill.increase{background:var(--greenSoft);color:var(--green)}.pill.decrease{background:var(--redSoft);color:var(--red)}.remove{border:0;border-radius:8px;background:var(--redSoft);color:var(--red);padding:7px 8px;font-size:9px;font-weight:900}.empty{padding:28px 14px;text-align:center;color:#8292a3;font-size:11px}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.summary{border:1px solid var(--line);border-radius:10px;background:#fbfcfe;padding:10px}.summary small{display:block;color:#798b9e;font-size:8px;text-transform:uppercase;font-weight:900}.summary strong{display:block;margin-top:5px;color:var(--navy);font-size:18px}.summary.inc strong{color:var(--green)}.summary.dec strong{color:var(--red)}
+.save-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.recent{border:1px solid var(--line);border-radius:10px;overflow:hidden}.recent-row{display:grid;grid-template-columns:105px 1fr 80px;gap:8px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--line2)}.recent-row:last-child{border-bottom:0}.recent-row strong{display:block;color:var(--navy);font-size:10px}.recent-row span{display:block;margin-top:2px;color:#7a8c9f;font-size:8px}.recent-row .net{text-align:right;font-size:11px;font-weight:950}.net.pos{color:var(--green)}.net.neg{color:var(--red)}.side-note{padding:10px;border:1px solid #d8e4ef;border-radius:10px;background:#f8fbfe;color:#60758b;font-size:10px;line-height:1.5}.side-note strong{color:var(--navy)}
+.success{display:none;margin-top:12px;padding:12px;border:1px solid #ccebdc;border-radius:11px;background:var(--greenSoft)}.success.show{display:block}.success strong{color:#176d4b}.success span{display:block;margin-top:4px;color:#527564;font-size:10px}
+@media(max-width:1180px){.grid{grid-template-columns:repeat(2,1fr)}.product-preview{grid-template-columns:repeat(2,1fr)}.product-preview .product{grid-column:1/-1}.add-row{grid-template-columns:1fr 1fr 1fr}.add-row .search-picker{grid-column:1/-1}.add-row .btn{grid-column:3}.table-head,.line-row{grid-template-columns:minmax(210px,1.5fr) 82px 95px 82px 82px 95px 100px 62px}}
+</style>
+<script src="supabase-stock-adapter.js?v=20260915-adjustment-1"></script>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div>
+      <h1 class="title">⚖️ Stock Adjustment</h1>
+      <div class="subtitle">Correct Warehouse physical stock with a permanent audit trail. Batch Stock is never changed by this function.</div>
+    </div>
+    <div class="top-actions">
+      <div class="last-update">Snapshot<strong id="snapshotTime">Loading...</strong></div>
+      <button class="btn" id="refreshBtn" type="button">↻ Refresh Stock</button>
+    </div>
+  </div>
+
+  <div class="notice"><span>⚠️</span><div><strong>Controlled stock correction.</strong> Decrease cannot make Warehouse physical stock negative. Every save records controller, date, reason, before quantity, adjustment quantity and after quantity.</div></div>
+  <div id="status" class="status">Loading Stock Adjustment workspace...</div>
+
+  <div class="layout">
+    <main>
+      <div class="card">
+        <div class="section-title"><span>1. Adjustment Information</span><small>Required before saving</small></div>
+        <div class="grid">
+          <div class="field"><label>Adjustment Date</label><input id="activityDate" type="date"></div>
+          <div class="field"><label>Inventory Controller</label><select id="controller"><option value="">Loading staff...</option></select></div>
+          <div class="field"><label>Warehouse Location</label><select id="location"><option value="">Loading location...</option></select></div>
+          <div class="field"><label>Reference No.</label><input id="reference" placeholder="Optional count sheet / memo no."></div>
+          <div class="field"><label>Adjustment Reason</label><select id="reason"><option value="">Select Reason</option><option value="PHYSICAL_COUNT">Physical Count Variance</option><option value="DATA_CORRECTION">Data Entry Correction</option><option value="FOUND_STOCK">Found Stock</option><option value="MISSING_STOCK">Missing Stock</option><option value="OTHER">Other</option></select></div>
+          <div class="field" style="grid-column:span 3"><label>Note</label><textarea id="note" placeholder="Optional explanation. Required when Reason = Other."></textarea></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>2. Add Product Adjustment</span><small>Warehouse only · Batch untouched</small></div>
+        <div class="field search-picker">
+          <label>Search Product</label>
+          <input id="productSearch" autocomplete="off" placeholder="Search product name, code or barcode">
+          <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <div class="product-preview">
+          <div class="preview-box product"><small>Selected Product</small><strong id="selectedName">No product selected</strong><span id="selectedMeta">Search and select a product above.</span></div>
+          <div class="preview-box"><small>Purchased Warehouse</small><strong id="selectedPurchased">0</strong></div>
+          <div class="preview-box"><small>Zero-Cost Warehouse</small><strong id="selectedZero">0</strong></div>
+          <div class="preview-box"><small>Physical Warehouse</small><strong id="selectedPhysical">0</strong></div>
+          <div class="preview-box"><small>Average Cost</small><strong id="selectedCost">$0.00</strong></div>
+        </div>
+
+        <div class="add-row">
+          <div class="field"><label>Adjustment Type</label><div class="direction"><button id="increaseBtn" class="increase active" type="button">＋ Increase</button><button id="decreaseBtn" class="decrease" type="button">− Decrease</button></div></div>
+          <div class="field"><label>Adjustment Qty</label><input id="adjustQty" type="number" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label>After Adjustment</label><div class="after-box"><span>Warehouse</span><strong id="afterQty">0</strong></div></div>
+          <div class="field"><label>Value Impact</label><div class="after-box"><span>Estimated</span><strong id="valueImpact">$0.00</strong></div></div>
+          <button id="addBtn" class="btn primary" type="button">＋ Add Product</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>3. Adjustment Preview</span><small>Review before Save</small></div>
+        <div class="table-wrap">
+          <div class="table-head"><div>Product</div><div>Before</div><div>Type</div><div>Qty</div><div>After</div><div>Avg Cost</div><div>Value Impact</div><div>Action</div></div>
+          <div id="lines"><div class="empty">No products added yet.</div></div>
+        </div>
+
+        <div class="summary-grid" style="margin-top:10px">
+          <div class="summary"><small>Products</small><strong id="sumProducts">0</strong></div>
+          <div class="summary inc"><small>Total Increase</small><strong id="sumIncrease">0</strong></div>
+          <div class="summary dec"><small>Total Decrease</small><strong id="sumDecrease">0</strong></div>
+          <div class="summary"><small>Net Change</small><strong id="sumNet">0</strong></div>
+        </div>
+
+        <div class="success" id="successPanel"><strong id="successTitle">Adjustment saved.</strong><span id="successText"></span></div>
+        <div class="save-actions"><button id="clearBtn" class="btn" type="button">Clear Preview</button><button id="saveBtn" class="btn danger" type="button" disabled>Save Stock Adjustment</button></div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="card">
+        <div class="section-title"><span>Safety Rules</span></div>
+        <div class="side-note"><strong>Warehouse only.</strong><br>Stock Adjustment corrects Warehouse physical stock. It does not edit salesman Batch Stock or damaged stock.</div>
+        <div class="side-note" style="margin-top:8px"><strong>No negative stock.</strong><br>A decrease larger than the current Warehouse physical quantity is blocked both on screen and again inside Supabase.</div>
+        <div class="side-note" style="margin-top:8px"><strong>Cost handling.</strong><br>Increase uses the current weighted average cost. Decrease automatically consumes purchased Warehouse stock first, then zero-cost Warehouse stock if needed.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>Recent Adjustments</span><small>Latest 12</small></div>
+        <div id="recent" class="recent"><div class="empty">No adjustments yet.</div></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const clean=v=>String(v==null?'':v).trim();
+const num=v=>Number(v||0);
+const qty=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
+const money=v=>(num(v)<0?'−$':'$')+Math.abs(num(v)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+let snapshot=null,selected=null,direction='INCREASE',lines=[];
+
+function localDate(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function setStatus(message,type=''){const el=$('status');el.textContent=message;el.className='status'+(type?' '+type:'')}
+function requestId(){return 'STKADJ-'+Date.now()+'-'+Math.random().toString(36).slice(2,9).toUpperCase()}
+function reasonName(code){return ({PHYSICAL_COUNT:'Physical Count Variance',DATA_CORRECTION:'Data Entry Correction',FOUND_STOCK:'Found Stock',MISSING_STOCK:'Missing Stock',OTHER:'Other'})[code]||''}
+
+async function loadSnapshot(locationCode){
+  setStatus('Loading current Warehouse physical stock...');
+  try{
+    if(!window.BBStockAdapter)throw new Error('Stock Supabase adapter did not load.');
+    const data=await window.BBStockAdapter.rpc('bb_stock_adjustment_snapshot',{p_location_code:clean(locationCode)||null});
+    snapshot=data;
+    fillSelectors();
+    renderRecent();
+    $('snapshotTime').textContent=(data.generatedAt||'').replace(' ',' · ')||'Ready';
+    setStatus('Stock Adjustment ready · '+(data.locationName||data.locationCode||'Warehouse'),'ok');
+    if(selected){selected=(data.products||[]).find(p=>p.productCode===selected.productCode)||null;renderSelected();}
+  }catch(error){console.error(error);setStatus(error.message||String(error),'error')}
+}
+
+function fillSelectors(){
+  const loc=$('location'),keepLoc=loc.value||snapshot.locationCode||'';
+  loc.innerHTML='<option value="">Select Warehouse</option>'+((snapshot.locations||[]).map(x=>'<option value="'+esc(x.locationCode)+'">'+esc(x.locationName||x.locationCode)+' — '+esc(x.locationCode)+'</option>').join(''));
+  if((snapshot.locations||[]).some(x=>x.locationCode===keepLoc))loc.value=keepLoc;else if(snapshot.locationCode)loc.value=snapshot.locationCode;
+  const ctl=$('controller'),keepCtl=ctl.value;
+  ctl.innerHTML='<option value="">Select Inventory Controller</option>'+((snapshot.staff||[]).map(x=>'<option value="'+esc(x.staffId)+'">'+esc(x.staffName)+' — '+esc(x.staffId)+'</option>').join(''));
+  if((snapshot.staff||[]).some(x=>x.staffId===keepCtl))ctl.value=keepCtl;
+}
+
+function searchProducts(){
+  if(!snapshot)return;
+  const q=clean($('productSearch').value).toLowerCase();
+  const box=$('searchResults');
+  if(!q){box.classList.remove('open');box.innerHTML='';return}
+  const rows=(snapshot.products||[]).filter(p=>[p.productName,p.productCode,p.barcode,p.category].join(' ').toLowerCase().includes(q)).slice(0,30);
+  box.innerHTML=rows.length?rows.map(p=>'<div class="result" data-code="'+esc(p.productCode)+'"><strong>'+esc(p.productName||p.productCode)+'</strong><span>'+esc(p.productCode)+(p.unit?' · '+esc(p.unit):'')+' · Warehouse '+qty(p.warehousePhysical)+'</span></div>').join(''):'<div class="empty">No product found.</div>';
+  box.classList.add('open');
+  box.querySelectorAll('.result').forEach(el=>el.addEventListener('click',()=>selectProduct(el.dataset.code)));
+}
+function selectProduct(code){selected=(snapshot.products||[]).find(p=>p.productCode===code)||null;$('productSearch').value=selected?selected.productName:'';$('searchResults').classList.remove('open');renderSelected();$('adjustQty').focus()}
+function renderSelected(){
+  $('selectedName').textContent=selected?(selected.productName||selected.productCode):'No product selected';
+  $('selectedMeta').textContent=selected?[selected.productCode,selected.unit,selected.category].filter(Boolean).join(' · '):'Search and select a product above.';
+  $('selectedPurchased').textContent=qty(selected?.warehousePurchased);
+  $('selectedZero').textContent=qty(selected?.warehouseZeroCost);
+  $('selectedPhysical').textContent=qty(selected?.warehousePhysical);
+  $('selectedCost').textContent=money(selected?.averageCost);
+  updateCalc();
+}
+function setDirection(next){direction=next;$('increaseBtn').classList.toggle('active',direction==='INCREASE');$('decreaseBtn').classList.toggle('active',direction==='DECREASE');updateCalc()}
+function updateCalc(){const before=num(selected?.warehousePhysical),q=Math.max(0,num($('adjustQty').value));const after=direction==='INCREASE'?before+q:before-q;const purchased=num(selected?.warehousePurchased),cost=num(selected?.averageCost);const impact=direction==='INCREASE'?q*cost:-Math.min(q,purchased)*cost;$('afterQty').textContent=qty(after);$('afterQty').style.color=after<0?'var(--red)':'var(--navy)';$('valueImpact').textContent=money(impact);$('valueImpact').style.color=impact<0?'var(--red)':impact>0?'var(--green)':'var(--navy)'}
+
+function addLine(){
+  if(!selected){setStatus('Select a Product first.','warn');return}
+  if(lines.some(x=>x.productCode===selected.productCode)){setStatus(selected.productName+' is already in the preview. Remove it first if you want to change it.','warn');return}
+  const q=num($('adjustQty').value);if(!(q>0)){setStatus('Adjustment Qty must be greater than 0.','warn');return}
+  const before=num(selected.warehousePhysical);if(direction==='DECREASE'&&q>before+0.000001){setStatus('Decrease blocked: '+selected.productName+' has only '+qty(before)+' Warehouse physical stock.','error');return}
+  const after=direction==='INCREASE'?before+q:before-q;const cost=num(selected.averageCost);const impact=direction==='INCREASE'?q*cost:-Math.min(q,num(selected.warehousePurchased))*cost;
+  lines.push({productCode:selected.productCode,productName:selected.productName,unit:selected.unit,beforeQty:before,direction,qty:q,afterQty:after,averageCost:cost,valueImpact:impact});
+  selected=null;$('productSearch').value='';$('adjustQty').value='';renderSelected();renderLines();setStatus('Product added to Adjustment Preview. Review all lines before saving.','ok')
+}
+function removeLine(code){lines=lines.filter(x=>x.productCode!==code);renderLines()}
+window.bbRemoveAdjustmentLine=removeLine;
+function renderLines(){
+  const box=$('lines');
+  box.innerHTML=lines.length?lines.map(x=>'<div class="line-row"><div class="line-product"><strong>'+esc(x.productName||x.productCode)+'</strong><span>'+esc(x.productCode)+(x.unit?' · '+esc(x.unit):'')+'</span></div><div class="num">'+qty(x.beforeQty)+'</div><div style="text-align:right"><span class="pill '+x.direction.toLowerCase()+'">'+(x.direction==='INCREASE'?'+ Increase':'− Decrease')+'</span></div><div class="num '+(x.direction==='INCREASE'?'good':'bad')+'">'+(x.direction==='INCREASE'?'+':'−')+qty(x.qty)+'</div><div class="num">'+qty(x.afterQty)+'</div><div class="num">'+money(x.averageCost)+'</div><div class="num '+(x.valueImpact>0?'good':x.valueImpact<0?'bad':'')+'">'+money(x.valueImpact)+'</div><div style="text-align:right"><button class="remove" type="button" onclick="bbRemoveAdjustmentLine(\''+esc(x.productCode)+'\')">Remove</button></div></div>').join(''):'<div class="empty">No products added yet.</div>';
+  const inc=lines.filter(x=>x.direction==='INCREASE').reduce((s,x)=>s+x.qty,0),dec=lines.filter(x=>x.direction==='DECREASE').reduce((s,x)=>s+x.qty,0);
+  $('sumProducts').textContent=String(lines.length);$('sumIncrease').textContent=qty(inc);$('sumDecrease').textContent=qty(dec);$('sumNet').textContent=(inc-dec>0?'+':'')+qty(inc-dec);$('sumNet').style.color=inc-dec>0?'var(--green)':inc-dec<0?'var(--red)':'var(--navy)';$('saveBtn').disabled=!lines.length;
+}
+function renderRecent(){
+  const box=$('recent'),rows=snapshot?.recent||[];
+  box.innerHTML=rows.length?rows.map(r=>{const n=num(r.netQty);return '<div class="recent-row"><div><strong>'+esc(r.movementId||'-')+'</strong><span>'+esc(r.activityDate||'')+'</span></div><div><strong>'+esc(r.reason||'Adjustment')+'</strong><span>'+esc(r.controllerName||'')+(r.productCount?' · '+r.productCount+' product'+(Number(r.productCount)===1?'':'s'):'')+'</span></div><div class="net '+(n>0?'pos':n<0?'neg':'')+'">'+(n>0?'+':'')+qty(n)+'</div></div>'}).join(''):'<div class="empty">No Stock Adjustments saved yet.</div>';
+}
+function clearPreview(){lines=[];selected=null;$('productSearch').value='';$('adjustQty').value='';renderSelected();renderLines();$('successPanel').classList.remove('show');setStatus('Adjustment Preview cleared.','ok')}
+
+async function save(){
+  if(!lines.length)return;
+  const controllerId=clean($('controller').value),locationCode=clean($('location').value),reasonCode=clean($('reason').value),note=clean($('note').value);
+  if(!controllerId){setStatus('Inventory Controller is required.','warn');$('controller').focus();return}
+  if(!locationCode){setStatus('Warehouse Location is required.','warn');$('location').focus();return}
+  if(!reasonCode){setStatus('Adjustment Reason is required.','warn');$('reason').focus();return}
+  if(reasonCode==='OTHER'&&!note){setStatus('Note is required when Adjustment Reason is Other.','warn');$('note').focus();return}
+  const controller=(snapshot.staff||[]).find(x=>x.staffId===controllerId);
+  const message='Save '+lines.length+' Stock Adjustment product'+(lines.length===1?'':'s')+'?\n\nThis changes Warehouse physical stock immediately. Batch Stock will not change.';
+  if(!window.confirm(message))return;
+  $('saveBtn').disabled=true;$('refreshBtn').disabled=true;setStatus('Saving Stock Adjustment to Supabase...');
+  try{
+    const payload={requestId:requestId(),activityDate:$('activityDate').value||localDate(),inventoryControllerStaffId:controllerId,inventoryControllerName:controller?.staffName||'',locationCode,referenceNo:clean($('reference').value),reasonCode,reasonName:reasonName(reasonCode),note,items:lines.map(x=>({productCode:x.productCode,direction:x.direction,qty:x.qty}))};
+    const result=await window.BBStockAdapter.rpc('bb_stock_save_adjustment',{p_payload:payload});
+    $('successTitle').textContent='✅ Stock Adjustment '+(result.movementId||'')+' saved.';$('successText').textContent=(result.message||'Stock Adjustment saved successfully.')+' Revision '+(result.revision||'')+'.';$('successPanel').classList.add('show');
+    lines=[];selected=null;$('productSearch').value='';$('adjustQty').value='';renderSelected();renderLines();
+    await loadSnapshot(locationCode);setStatus('Stock Adjustment saved successfully. Live Stock has been refreshed.','ok');
+  }catch(error){console.error(error);setStatus(error.message||String(error),'error')}
+  finally{$('saveBtn').disabled=!lines.length;$('refreshBtn').disabled=false}
+}
+
+$('activityDate').value=localDate();
+$('productSearch').addEventListener('input',searchProducts);
+$('productSearch').addEventListener('focus',searchProducts);
+document.addEventListener('click',e=>{if(!e.target.closest('.search-picker'))$('searchResults').classList.remove('open')});
+$('increaseBtn').addEventListener('click',()=>setDirection('INCREASE'));
+$('decreaseBtn').addEventListener('click',()=>setDirection('DECREASE'));
+$('adjustQty').addEventListener('input',updateCalc);
+$('addBtn').addEventListener('click',addLine);
+$('clearBtn').addEventListener('click',clearPreview);
+$('saveBtn').addEventListener('click',save);
+$('refreshBtn').addEventListener('click',()=>loadSnapshot($('location').value));
+$('location').addEventListener('change',async()=>{if(lines.length){const ok=window.confirm('Changing Warehouse will clear the current Adjustment Preview. Continue?');if(!ok){$('location').value=snapshot.locationCode||'';return}lines=[];renderLines()}selected=null;renderSelected();await loadSnapshot($('location').value)});
+loadSnapshot();
+})();
+</script>
+</body>
+</html>

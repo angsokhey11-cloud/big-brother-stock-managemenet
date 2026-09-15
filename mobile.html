@@ -6,313 +6,239 @@
 <title>BIG BROTHER — Stock Key-In Mobile</title>
 <style>
 html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-serif}
-.bb-mobile-loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.bb-mobile-loader-card{width:min(420px,100%);padding:20px;border:1px solid #d8e3ef;border-radius:14px;background:#fff;box-shadow:0 10px 32px rgba(23,63,119,.10);color:#173f77;font-weight:900;text-align:center}
-.bb-mobile-loader-card span{display:block;margin-top:7px;color:#6d7f93;font-size:11px;font-weight:700}
+.bb-loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.bb-loader-card{width:min(420px,100%);padding:20px;border:1px solid #d8e3ef;border-radius:14px;background:#fff;box-shadow:0 10px 32px rgba(23,63,119,.10);color:#173f77;font-weight:900;text-align:center}
+.bb-loader-card span{display:block;margin-top:7px;color:#6d7f93;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
-<div class="bb-mobile-loader"><div class="bb-mobile-loader-card">Loading Stock Key-In…<span>Existing Stock engine · Mobile workspace</span></div></div>
+<div class="bb-loader"><div class="bb-loader-card">Loading Stock Key-In…<span>Existing Stock engine · Mobile workspace</span></div></div>
 <script>
 (async function(){
 'use strict';
 
-const MOBILE_STYLE = String.raw`
-:root{--bb-navy:#173f77;--bb-blue:#245fae;--bb-line:#dce5ef;--bb-bg:#eef3f8;--bb-muted:#6d7f93;--bb-green:#16855c;--bb-red:#b43a3a;--bb-soft:#f7faff}
+const MOBILE_STYLE=String.raw`
+:root{--bb-navy:#173f77;--bb-blue:#245fae;--bb-line:#dce5ef;--bb-bg:#eef3f8;--bb-muted:#6d7f93;--bb-green:#16855c;--bb-red:#b43a3a}
 html,body{background:var(--bb-bg)!important}
-body.bb-stock-mobile{padding-bottom:86px!important}
+body.bb-stock-mobile{padding-bottom:84px!important}
 body.bb-stock-mobile .page{width:min(760px,100%)!important;max-width:760px!important;margin:0 auto!important;padding:5px!important}
-body.bb-stock-mobile .topbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin:0 0 7px!important;padding:11px 12px!important;border-radius:0 0 13px 13px;background:linear-gradient(135deg,#173f77,#2473ca);box-shadow:0 5px 18px rgba(23,63,119,.14)}
-body.bb-stock-mobile .topbar h1{margin:0!important;color:#fff!important;font-size:19px!important;line-height:1.1!important}
-body.bb-stock-mobile .topbar .subtitle{margin-top:4px!important;color:#dceaff!important;font-size:8px!important;line-height:1.35!important;font-weight:700!important}
-body.bb-stock-mobile .db-pill{display:none!important}
-body.bb-stock-mobile #status{margin:0 0 7px!important;padding:8px 10px!important;border-radius:10px!important;font-size:8px!important;line-height:1.35!important}
-body.bb-stock-mobile .card{margin:0 0 7px!important;padding:9px!important;border-radius:12px!important;box-shadow:none!important}
-body.bb-stock-mobile .section-title{margin:0 0 8px!important;color:var(--bb-navy)!important;font-size:12px!important}
-body.bb-stock-mobile .grid,body.bb-stock-mobile .grid2{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+body.bb-stock-mobile .topbar{display:none!important}
+body.bb-stock-mobile #status{margin:0 0 6px!important;padding:7px 9px!important;border-radius:9px!important;font-size:8px!important;line-height:1.35!important}
+body.bb-stock-mobile .card{margin:0 0 6px!important;padding:8px!important;border-radius:11px!important;box-shadow:none!important}
+body.bb-stock-mobile .section-title{margin:0 0 7px!important;color:var(--bb-navy)!important;font-size:12px!important}
+body.bb-stock-mobile .grid,body.bb-stock-mobile .grid2,body.bb-stock-mobile .dynamic .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
 body.bb-stock-mobile .field{min-width:0!important}
-body.bb-stock-mobile .field label{margin-bottom:3px!important;font-size:7px!important;letter-spacing:.02em!important}
-body.bb-stock-mobile .field input,body.bb-stock-mobile .field select,body.bb-stock-mobile .field textarea{min-height:38px!important;padding:7px 8px!important;border-radius:8px!important;font-size:11px!important}
-body.bb-stock-mobile .field textarea{min-height:56px!important}
+body.bb-stock-mobile .field label{margin-bottom:3px!important;font-size:7px!important}
+body.bb-stock-mobile .field input,body.bb-stock-mobile .field select,body.bb-stock-mobile .field textarea{width:100%!important;min-width:0!important;min-height:36px!important;padding:6px 7px!important;border-radius:8px!important;font-size:10px!important;box-sizing:border-box!important}
+body.bb-stock-mobile .field textarea{min-height:52px!important}
 body.bb-stock-mobile .helper{margin-top:3px!important;font-size:7px!important;line-height:1.3!important}
 body.bb-stock-mobile .bb-transaction-card>div[style*="height"]{display:none!important}
-body.bb-stock-mobile .bb-flow-shell{margin:0 0 7px;padding:0}
-body.bb-stock-mobile .bb-flow-shell .flow-toggle{grid-template-columns:1fr 1fr!important;gap:6px!important}
-body.bb-stock-mobile .bb-flow-shell .flow-btn{min-height:46px!important;padding:7px!important;border-radius:9px!important;font-size:10px!important;background:#fff}
-body.bb-stock-mobile .bb-flow-shell #flowInBtn.active{background:linear-gradient(135deg,#1e7be0,#245fae)!important;border-color:#245fae!important;color:#fff!important}
-body.bb-stock-mobile .bb-flow-shell #flowOutBtn.active{background:linear-gradient(135deg,#174f8f,#173f77)!important;border-color:#173f77!important;color:#fff!important}
+body.bb-stock-mobile .bb-flow-shell{margin:0 0 6px}
+body.bb-stock-mobile .bb-flow-shell .flow-toggle{grid-template-columns:1fr 1fr!important;gap:5px!important}
+body.bb-stock-mobile .bb-flow-shell .flow-btn{min-height:38px!important;padding:6px!important;border-radius:8px!important;font-size:9px!important;background:#fff}
+body.bb-stock-mobile .bb-flow-shell #flowInBtn.active{background:#245fae!important;border-color:#245fae!important;color:#fff!important}
+body.bb-stock-mobile .bb-flow-shell #flowOutBtn.active{background:#173f77!important;border-color:#173f77!important;color:#fff!important}
 body.bb-stock-mobile .bb-mobile-category-source{display:none!important}
-body.bb-stock-mobile .bb-category-card{padding:9px!important}
-body.bb-stock-mobile .bb-category-head{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:7px}
-body.bb-stock-mobile .bb-category-head strong{color:var(--bb-navy);font-size:12px}
-body.bb-stock-mobile .bb-category-head span{color:#7b8da0;font-size:7px;text-align:right}
-body.bb-stock-mobile .bb-mobile-categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-body.bb-stock-mobile .bb-mobile-category-btn{min-width:0;min-height:52px;padding:6px 4px;border:1px solid #d6e0eb;border-radius:9px;background:#fff;color:#4e6176;font-size:7.5px;font-weight:900;line-height:1.13;cursor:pointer}
-body.bb-stock-mobile .bb-mobile-category-btn span{display:block;margin-bottom:3px;font-size:15px;line-height:1}
-body.bb-stock-mobile .bb-mobile-category-btn.active{border-color:var(--bb-navy);background:linear-gradient(135deg,#1d78d3,#245fae);color:#fff;box-shadow:0 4px 10px rgba(23,63,119,.14)}
-body.bb-stock-mobile .bb-work-card .section-title,body.bb-stock-mobile .bb-products-card .section-title{font-size:13px!important}
-body.bb-stock-mobile .bb-work-card .dynamic .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.bb-stock-mobile .bb-category-card{padding:0!important;overflow:hidden}
+body.bb-stock-mobile .bb-category-toggle{width:100%;min-height:36px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:0;background:#fff;padding:7px 9px;color:var(--bb-navy);text-align:left;cursor:pointer}
+body.bb-stock-mobile .bb-category-toggle strong{display:block;font-size:9px;line-height:1.1}
+body.bb-stock-mobile .bb-category-toggle .bb-current{display:block;margin-top:2px;color:#708298;font-size:7px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.bb-stock-mobile .bb-category-chevron{font-size:13px;font-weight:1000;transition:transform .15s ease}
+body.bb-stock-mobile .bb-category-card:not(.open) .bb-category-chevron{transform:rotate(-90deg)}
+body.bb-stock-mobile .bb-category-options{padding:0 6px 6px;border-top:1px solid #edf1f5}
+body.bb-stock-mobile .bb-category-card:not(.open) .bb-category-options{display:none!important}
+body.bb-stock-mobile .bb-mobile-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding-top:5px}
+body.bb-stock-mobile .bb-mobile-category-btn{min-width:0;min-height:30px;display:flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid #d6e0eb;border-radius:7px;background:#fff;color:#4e6176;font-size:7px;font-weight:900;line-height:1.1;cursor:pointer;text-align:left}
+body.bb-stock-mobile .bb-mobile-category-btn span{font-size:10px;line-height:1}
+body.bb-stock-mobile .bb-mobile-category-btn.active{border-color:#9dbbe0;background:#eef5ff;color:var(--bb-navy)}
+body.bb-stock-mobile .bb-work-card .section-title,body.bb-stock-mobile .bb-products-card .section-title{font-size:12px!important}
 body.bb-stock-mobile .bb-purchase-date-field{display:none!important}
-body.bb-stock-mobile .bb-purchase-callout{margin-top:8px;padding:8px 9px;border-radius:8px;background:#eaf4ff;color:#245fae;font-size:8px;font-weight:800;line-height:1.35}
-body.bb-stock-mobile .client-detail{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
-body.bb-stock-mobile .client-detail .box{min-height:48px!important;padding:7px!important}
+body.bb-stock-mobile .bb-purchase-callout{margin-top:7px;padding:7px 8px;border-radius:8px;background:#eaf4ff;color:#245fae;font-size:7px;font-weight:800;line-height:1.35}
+body.bb-stock-mobile .purchase-summary{display:none!important}
+body.bb-stock-mobile .client-detail{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+body.bb-stock-mobile .client-detail .box{min-height:44px!important;padding:6px!important}
 body.bb-stock-mobile .client-detail small{font-size:6px!important}
 body.bb-stock-mobile .client-detail strong{font-size:8px!important}
-body.bb-stock-mobile .purchase-summary{display:none!important}
-body.bb-stock-mobile .table-wrap{border-radius:9px!important;-webkit-overflow-scrolling:touch}
-body.bb-stock-mobile table{min-width:620px!important}
-body.bb-stock-mobile th,body.bb-stock-mobile td{height:32px!important;padding:5px 6px!important;font-size:7px!important;white-space:nowrap!important}
-body.bb-stock-mobile th{font-size:6px!important}
-body.bb-stock-mobile #purchaseReceivingPanel table{min-width:570px!important}
-body.bb-stock-mobile #purchaseReceivingPanel th:nth-child(2),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(2),
-body.bb-stock-mobile #purchaseReceivingPanel th:nth-child(3),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(3),
-body.bb-stock-mobile #purchaseReceivingPanel th:nth-child(4),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(4){display:none!important}
-body.bb-stock-mobile #purchaseReceivingPanel td:first-child{min-width:150px!important;max-width:190px!important}
-body.bb-stock-mobile .bb-mobile-product-code{display:block;margin-top:2px;color:#7b8da0;font-size:6px;font-weight:700}
-body.bb-stock-mobile .receive-input{min-width:76px!important;padding:5px 6px!important;font-size:8px!important}
-body.bb-stock-mobile .receive-input[type=date]{min-width:122px!important}
 body.bb-stock-mobile #manualProductPanel #productEntry,body.bb-stock-mobile #productEntry.bb-zero-cost-batch{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
 body.bb-stock-mobile #productEntry .search-picker{grid-column:1/-1!important}
-body.bb-stock-mobile #productEntry #addProductBtn{grid-column:1/-1!important;width:100%!important;min-height:40px!important}
-body.bb-stock-mobile #manualProductPanel table{min-width:650px!important}
-body.bb-stock-mobile #manualProductPanel .remove{padding:5px 6px!important;font-size:7px!important}
-body.bb-stock-mobile .product-search-results{max-height:240px!important}
-body.bb-stock-mobile .product-result{padding:8px!important}
+body.bb-stock-mobile #productEntry #addProductBtn{grid-column:1/-1!important;width:100%!important;min-height:36px!important}
+body.bb-stock-mobile .product-search-results{max-height:220px!important}
+body.bb-stock-mobile .product-result{padding:7px!important}
 body.bb-stock-mobile .product-result strong{font-size:9px!important}
 body.bb-stock-mobile .product-result span{font-size:7px!important}
-body.bb-stock-mobile .preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;margin-bottom:7px!important}
-body.bb-stock-mobile .preview-kpi{min-width:0;padding:7px!important}
+body.bb-stock-mobile .bb-products-card .table-wrap{overflow:visible!important;border:0!important;border-radius:0!important}
+body.bb-stock-mobile .bb-products-card table{display:block!important;width:100%!important;min-width:0!important;border-collapse:separate!important}
+body.bb-stock-mobile .bb-products-card thead{display:none!important}
+body.bb-stock-mobile .bb-products-card tbody{display:block!important;width:100%!important}
+body.bb-stock-mobile .bb-products-card tbody tr{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%!important;margin:0 0 6px;padding:7px;border:1px solid var(--bb-line);border-radius:9px;background:#fbfcfe}
+body.bb-stock-mobile .bb-products-card tbody tr:last-child{margin-bottom:0}
+body.bb-stock-mobile .bb-products-card tbody td{display:flex!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:0!important;border:0!important;font-size:8px!important;white-space:normal!important;text-align:left!important}
+body.bb-stock-mobile .bb-products-card tbody td::before{content:attr(data-bb-label);display:block;margin-bottom:3px;color:#7b8da0;font-size:6px;font-weight:1000;text-transform:uppercase}
+body.bb-stock-mobile .bb-products-card tbody td:first-child{grid-column:1/-1;padding-bottom:3px!important;border-bottom:1px solid #edf1f5!important}
+body.bb-stock-mobile .bb-products-card tbody td:first-child::before{display:none!important}
+body.bb-stock-mobile .bb-products-card tbody td.empty{grid-column:1/-1!important;display:block!important;padding:12px 7px!important;text-align:center!important;border:0!important}
+body.bb-stock-mobile .bb-products-card tbody td.empty::before{display:none!important}
+body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(2),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(3),body.bb-stock-mobile #purchaseReceivingPanel td:nth-child(4){display:none!important}
+body.bb-stock-mobile .bb-mobile-product-code{display:block;margin-top:2px;color:#7b8da0;font-size:6px;font-weight:700}
+body.bb-stock-mobile .bb-products-card input,body.bb-stock-mobile .bb-products-card select,body.bb-stock-mobile .receive-input,body.bb-stock-mobile .receive-input[type=date]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+body.bb-stock-mobile .receive-input{min-height:33px!important;padding:5px 6px!important;font-size:9px!important}
+body.bb-stock-mobile #manualProductPanel .remove{width:100%!important;min-height:29px;padding:5px 6px!important;font-size:7px!important}
+body.bb-stock-mobile #manualProductPanel tbody td:last-child{justify-content:flex-end}
+body.bb-stock-mobile .preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;margin-bottom:6px!important}
+body.bb-stock-mobile .preview-kpi{min-width:0;padding:6px!important}
 body.bb-stock-mobile .preview-kpi small{font-size:5.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.bb-stock-mobile .preview-kpi strong{font-size:10px!important}
-body.bb-stock-mobile .success-panel{padding:9px!important}
-body.bb-stock-mobile .success-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
-body.bb-stock-mobile .success-item{padding:7px!important}
-body.bb-stock-mobile .success-item small{font-size:6px!important}
-body.bb-stock-mobile .success-item div{font-size:8px!important}
-body.bb-stock-mobile .actions{position:fixed!important;z-index:1000;left:50%!important;bottom:0!important;transform:translateX(-50%);width:min(760px,100%)!important;display:grid!important;grid-template-columns:1fr 46px 1.8fr!important;gap:6px!important;margin:0!important;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;border-top:1px solid #d8e3ef;background:rgba(255,255,255,.97);box-shadow:0 -5px 18px rgba(23,63,119,.10);backdrop-filter:blur(10px)}
-body.bb-stock-mobile .actions .btn{width:100%!important;min-height:43px!important;padding:7px!important;border-radius:9px!important;font-size:10px!important}
+body.bb-stock-mobile .preview-kpi strong{font-size:9px!important}
+body.bb-stock-mobile .bb-preview-card .table-wrap{overflow:auto!important}
+body.bb-stock-mobile .bb-preview-card table{min-width:510px!important}
+body.bb-stock-mobile .bb-preview-card th,body.bb-stock-mobile .bb-preview-card td{padding:5px 6px!important;font-size:7px!important}
+body.bb-stock-mobile .success-panel{padding:8px!important}
+body.bb-stock-mobile .success-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+body.bb-stock-mobile .actions{position:fixed!important;z-index:1000;left:50%!important;bottom:0!important;transform:translateX(-50%);width:min(760px,100%)!important;display:grid!important;grid-template-columns:1fr 44px 1.7fr!important;gap:5px!important;margin:0!important;padding:7px max(7px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))!important;border-top:1px solid #d8e3ef;background:rgba(255,255,255,.97);box-shadow:0 -5px 18px rgba(23,63,119,.10);backdrop-filter:blur(10px)}
+body.bb-stock-mobile .actions .btn{width:100%!important;min-height:40px!important;padding:6px!important;border-radius:8px!important;font-size:9px!important}
 body.bb-stock-mobile #refreshBtn{font-size:0!important;padding:0!important}
-body.bb-stock-mobile #refreshBtn::after{content:'↻';font-size:19px!important}
-body.bb-stock-mobile #saveBtn{background:linear-gradient(135deg,#174f8f,#2473ca)!important}
-body.bb-stock-mobile .bb-mobile-note-collapsed{margin-top:8px;border:1px solid var(--bb-line);border-radius:9px;background:#fbfcfe;overflow:hidden}
-body.bb-stock-mobile .bb-mobile-note-toggle{width:100%;min-height:34px;border:0;background:#fbfcfe;color:#52677e;padding:7px 9px;text-align:left;font-size:8px;font-weight:900;cursor:pointer}
-body.bb-stock-mobile .bb-mobile-note-body{padding:0 8px 8px}
+body.bb-stock-mobile #refreshBtn::after{content:'↻';font-size:18px!important}
+body.bb-stock-mobile .bb-mobile-note-collapsed{margin-top:7px;border:1px solid var(--bb-line);border-radius:8px;background:#fbfcfe;overflow:hidden}
+body.bb-stock-mobile .bb-mobile-note-toggle{width:100%;min-height:32px;border:0;background:#fbfcfe;color:#52677e;padding:6px 8px;text-align:left;font-size:8px;font-weight:900;cursor:pointer}
+body.bb-stock-mobile .bb-mobile-note-body{padding:0 7px 7px}
 body.bb-stock-mobile .bb-mobile-note-collapsed:not(.open) .bb-mobile-note-body{display:none!important}
-body.bb-stock-mobile .bb-batch-source-field input{font-weight:900!important}
-body.bb-stock-mobile #damageClearFields>div,body.bb-stock-mobile #damageExchangeReceiveFields>div{padding:9px!important;border-radius:9px!important}
-@media(max-width:370px){body.bb-stock-mobile .bb-mobile-categories{grid-template-columns:repeat(2,minmax(0,1fr))}body.bb-stock-mobile .preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:345px){body.bb-stock-mobile .page{padding:4px!important}body.bb-stock-mobile .card{padding:7px!important}body.bb-stock-mobile .field input,body.bb-stock-mobile .field select{font-size:10px!important}body.bb-stock-mobile .actions{grid-template-columns:1fr 42px 1.6fr!important}}
+body.bb-stock-mobile #damageClearFields>div,body.bb-stock-mobile #damageExchangeReceiveFields>div{padding:8px!important;border-radius:9px!important}
+@media(max-width:370px){body.bb-stock-mobile .preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:345px){body.bb-stock-mobile .page{padding:4px!important}body.bb-stock-mobile .grid,body.bb-stock-mobile .grid2,body.bb-stock-mobile .dynamic .grid{gap:5px!important}body.bb-stock-mobile .field input,body.bb-stock-mobile .field select{font-size:9px!important}}
 `;
 
-const MOBILE_PATCH = String.raw`
+const MOBILE_PATCH=String.raw`
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 const categories=[
-  {value:'PURCHASE',flow:'INFLOW',icon:'🛒',label:'Purchase'},
-  {value:'RECEIVE_FROM_CLIENT',flow:'INFLOW',icon:'📦',label:'Receive from Client'},
-  {value:'BACK_SALE',flow:'INFLOW',icon:'↩',label:'Back Sale'},
-  {value:'BATCH_STOCK',flow:'OUTFLOW',icon:'🚚',label:'Batch Stock'},
-  {value:'STOCK_DAMAGE',flow:'OUTFLOW',icon:'⚠️',label:'Stock Damage'},
-  {value:'STAFF_ALLOWANCE',flow:'OUTFLOW',icon:'👤',label:'Staff Allowance'},
-  {value:'DAMAGE_CLEAR',flow:'OUTFLOW',icon:'🗑️',label:'Damaged Stock Cleared'},
-  {value:'DAMAGE_EXCHANGE_RECEIVE',flow:'INFLOW',icon:'🔄',label:'Damaged Stock Exchange Received'}
+ {value:'PURCHASE',flow:'INFLOW',icon:'🛒',label:'Purchase'},
+ {value:'RECEIVE_FROM_CLIENT',flow:'INFLOW',icon:'📦',label:'Receive from Client'},
+ {value:'BACK_SALE',flow:'INFLOW',icon:'↩',label:'Back Sale'},
+ {value:'DAMAGE_EXCHANGE_RECEIVE',flow:'INFLOW',icon:'🔄',label:'Damage Exchange Received'},
+ {value:'BATCH_STOCK',flow:'OUTFLOW',icon:'🚚',label:'Batch Stock'},
+ {value:'STOCK_DAMAGE',flow:'OUTFLOW',icon:'⚠️',label:'Stock Damage'},
+ {value:'STAFF_ALLOWANCE',flow:'OUTFLOW',icon:'👤',label:'Staff Allowance'},
+ {value:'DAMAGE_CLEAR',flow:'OUTFLOW',icon:'🗑️',label:'Damaged Stock Cleared'}
 ];
 const titles={
-  PURCHASE:['🛒 Purchase Receiving','📦 Products Receiving'],
-  RECEIVE_FROM_CLIENT:['📦 Receive from Client','📦 Products Receiving'],
-  BACK_SALE:['↩ Back Sale','📦 Batch Return Products'],
-  BATCH_STOCK:['🚚 Batch Stock to Salesman','📦 Batch Products'],
-  STOCK_DAMAGE:['⚠️ Stock Damage','📦 Damage Products'],
-  STAFF_ALLOWANCE:['👤 Staff Allowance','📦 Allowance Products'],
-  DAMAGE_CLEAR:['🗑️ Damaged Stock Cleared','📦 Damaged Products'],
-  DAMAGE_EXCHANGE_RECEIVE:['🔄 Damage Exchange Received','📦 Exchange Receiving Items']
+ PURCHASE:['🛒 Purchase Receiving','📦 Products Receiving'],
+ RECEIVE_FROM_CLIENT:['📦 Receive from Client','📦 Products'],
+ BACK_SALE:['↩ Back Sale','📦 Batch Return Products'],
+ BATCH_STOCK:['🚚 Batch Stock to Salesman','📦 Batch Products'],
+ STOCK_DAMAGE:['⚠️ Stock Damage','📦 Damage Products'],
+ STAFF_ALLOWANCE:['👤 Staff Allowance','📦 Allowance Products'],
+ DAMAGE_CLEAR:['🗑️ Damaged Stock Cleared','📦 Damaged Products'],
+ DAMAGE_EXCHANGE_RECEIVE:['🔄 Damage Exchange Received','📦 Exchange Receiving Items']
 };
-function clean(v){return String(v==null?'':v).trim()}
+const clean=v=>String(v==null?'':v).trim();
 function currentType(){try{return clean(movementType)||'PURCHASE'}catch(_){return 'PURCHASE'}}
+function currentFlow(){try{return clean(flow)==='OUTFLOW'?'OUTFLOW':'INFLOW'}catch(_){return 'INFLOW'}}
 function cards(){return [...document.querySelectorAll('.page > .card:not(.bb-category-card)')]}
 function installBase(){
-  document.body.classList.add('bb-stock-mobile');
-  const h=document.querySelector('.topbar h1');if(h)h.textContent='Stock Key-In';
-  const sub=document.querySelector('.topbar .subtitle');if(sub)sub.textContent='Physical stock movement · Purchased + Zero-Cost Batch control';
-  const refresh=$('refreshBtn');if(refresh){refresh.title='Refresh Stock';refresh.setAttribute('aria-label','Refresh Stock')}
-  const c=cards();
-  if(c[0]){c[0].classList.add('bb-transaction-card');const t=c[0].querySelector('.section-title');if(t)t.textContent='Transaction Information'}
-  if(c[1])c[1].classList.add('bb-work-card');
-  if(c[2])c[2].classList.add('bb-products-card');
-  if(c[3])c[3].classList.add('bb-preview-card');
+ document.body.classList.add('bb-stock-mobile');
+ const refresh=$('refreshBtn');if(refresh){refresh.title='Refresh Stock';refresh.setAttribute('aria-label','Refresh Stock')}
+ const c=cards();
+ if(c[0]){c[0].classList.add('bb-transaction-card');const t=c[0].querySelector('.section-title');if(t)t.textContent='Transaction Information'}
+ if(c[1])c[1].classList.add('bb-work-card');
+ if(c[2])c[2].classList.add('bb-products-card');
+ if(c[3])c[3].classList.add('bb-preview-card');
 }
 function installWorkspace(){
-  const c=cards(),transaction=c[0],work=c[1];
-  if(!transaction||!work)return;
-  const flowToggle=$('flowInBtn')?.closest('.flow-toggle');
-  const sourceField=$('movementCategorySelect')?.closest('.field');
-  const sourceGrid=sourceField?.closest('.grid');
-  if(sourceGrid)sourceGrid.classList.add('bb-mobile-category-source');
-  [...transaction.children].filter(el=>el.tagName==='DIV'&&/height/i.test(el.getAttribute('style')||'')).forEach(el=>el.style.display='none');
-  let flowShell=$('bbMobileFlowShell');
-  if(!flowShell){
-    flowShell=document.createElement('div');
-    flowShell.id='bbMobileFlowShell';
-    flowShell.className='bb-flow-shell';
-    transaction.insertAdjacentElement('afterend',flowShell);
-  }
-  if(flowToggle&&flowToggle.parentNode!==flowShell)flowShell.appendChild(flowToggle);
-  let categoryCard=$('bbMobileCategoryCard');
-  if(!categoryCard){
-    categoryCard=document.createElement('section');
-    categoryCard.id='bbMobileCategoryCard';
-    categoryCard.className='card bb-category-card';
-    categoryCard.innerHTML='<div class="bb-category-head"><strong>Movement Category</strong><span>Choose how stock is moving</span></div><div id="bbMobileCategories" class="bb-mobile-categories"></div>';
-    flowShell.insertAdjacentElement('afterend',categoryCard);
-  }
-  const exchange=$('damageExchangeReceiveFields');
-  if(exchange&&exchange.closest('.bb-work-card')!==work){
-    const note=work.querySelector('.bb-mobile-note-collapsed')||work.querySelector('#note')?.closest('.field');
-    work.insertBefore(exchange,note||null);
-  }
+ const c=cards(),transaction=c[0],work=c[1];if(!transaction||!work)return;
+ const flowToggle=$('flowInBtn')?.closest('.flow-toggle');
+ const sourceField=$('movementCategorySelect')?.closest('.field');
+ const sourceGrid=sourceField?.closest('.grid');if(sourceGrid)sourceGrid.classList.add('bb-mobile-category-source');
+ [...transaction.children].filter(el=>el.tagName==='DIV'&&/height/i.test(el.getAttribute('style')||'')).forEach(el=>el.style.display='none');
+ let flowShell=$('bbMobileFlowShell');
+ if(!flowShell){flowShell=document.createElement('div');flowShell.id='bbMobileFlowShell';flowShell.className='bb-flow-shell';transaction.insertAdjacentElement('afterend',flowShell)}
+ if(flowToggle&&flowToggle.parentNode!==flowShell)flowShell.appendChild(flowToggle);
+ let categoryCard=$('bbMobileCategoryCard');
+ if(!categoryCard){
+   categoryCard=document.createElement('section');categoryCard.id='bbMobileCategoryCard';categoryCard.className='card bb-category-card';
+   categoryCard.innerHTML='<button type="button" id="bbCategoryToggle" class="bb-category-toggle"><div><strong>Movement Category</strong><span id="bbCategoryCurrent" class="bb-current">Select movement</span></div><span class="bb-category-chevron">⌄</span></button><div class="bb-category-options"><div id="bbMobileCategories" class="bb-mobile-categories"></div></div>';
+   $('bbCategoryToggle')?.addEventListener('click',()=>categoryCard.classList.toggle('open'));
+   flowShell.insertAdjacentElement('afterend',categoryCard);
+ }
+ const exchange=$('damageExchangeReceiveFields');
+ if(exchange&&exchange.closest('.bb-work-card')!==work){const note=work.querySelector('.bb-mobile-note-collapsed')||work.querySelector('#note')?.closest('.field');work.insertBefore(exchange,note||null)}
 }
 function activateCategory(meta){
-  if(!meta)return;
-  let activeFlow='';try{activeFlow=clean(flow)}catch(_){}
-  if(activeFlow!==meta.flow&&typeof setFlow==='function')setFlow(meta.flow);
-  setTimeout(()=>{
-    const select=$('movementCategorySelect');
-    if(select&&[...select.options].some(o=>o.value===meta.value))select.value=meta.value;
-    if(typeof setMovementType==='function')setMovementType(meta.value);
-    setTimeout(syncAll,0);
-  },0);
+ if(!meta)return;
+ if(currentFlow()!==meta.flow&&typeof setFlow==='function')setFlow(meta.flow);
+ setTimeout(()=>{
+   const select=$('movementCategorySelect');
+   if(select&&[...select.options].some(o=>o.value===meta.value))select.value=meta.value;
+   if(typeof setMovementType==='function')setMovementType(meta.value);
+   $('bbMobileCategoryCard')?.classList.remove('open');
+   setTimeout(syncAll,0);
+ },0);
 }
 function renderCategories(){
-  const host=$('bbMobileCategories');if(!host)return;
-  const active=currentType();
-  host.innerHTML=categories.map(x=>'<button type="button" class="bb-mobile-category-btn'+(x.value===active?' active':'')+'" data-type="'+x.value+'"><span>'+x.icon+'</span>'+x.label+'</button>').join('');
-  host.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>activateCategory(categories.find(x=>x.value===btn.dataset.type))));
+ const host=$('bbMobileCategories');if(!host)return;
+ const type=currentType(),f=currentFlow(),visible=categories.filter(x=>x.flow===f),current=categories.find(x=>x.value===type);
+ const label=$('bbCategoryCurrent');if(label)label.textContent=(current?.icon||'•')+' '+(current?.label||'Select movement');
+ host.innerHTML=visible.map(x=>'<button type="button" class="bb-mobile-category-btn'+(x.value===type?' active':'')+'" data-type="'+x.value+'"><span>'+x.icon+'</span>'+x.label+'</button>').join('');
+ host.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>activateCategory(categories.find(x=>x.value===btn.dataset.type))));
 }
 function installPurchaseWork(){
-  const fields=$('purchaseFields');if(!fields)return;
-  const grid=fields.querySelector('.grid');if(!grid)return;
-  const dateField=$('purchaseDateView')?.closest('.field');
-  if(dateField)dateField.classList.add('bb-purchase-date-field');
-  if(!$('bbPurchasePurchaser')){
-    const invoiceField=$('purchaseInvoiceView')?.closest('.field');
-    const f=document.createElement('div');
-    f.className='field bb-mobile-purchaser-field';
-    f.innerHTML='<label>Purchaser</label><input id="bbPurchasePurchaser" readonly placeholder="Auto from Purchase">';
-    grid.insertBefore(f,invoiceField||null);
-  }
-  if(!$('bbPurchaseCallout')){
-    const info=document.createElement('div');
-    info.id='bbPurchaseCallout';
-    info.className='bb-purchase-callout';
-    info.textContent='ⓘ Purchase Qty + Promotion Qty are included in receiving.';
-    fields.appendChild(info);
-  }
-  const select=$('purchaseSelect');
-  if(select&&!select.dataset.bbMobileMeta){
-    select.dataset.bbMobileMeta='1';
-    select.addEventListener('change',()=>{[50,250,700,1500].forEach(ms=>setTimeout(updatePurchaseMeta,ms))});
-  }
+ const fields=$('purchaseFields');if(!fields)return;const grid=fields.querySelector('.grid');if(!grid)return;
+ const dateField=$('purchaseDateView')?.closest('.field');if(dateField)dateField.classList.add('bb-purchase-date-field');
+ if(!$('bbPurchasePurchaser')){const invoice=$('purchaseInvoiceView')?.closest('.field'),f=document.createElement('div');f.className='field';f.innerHTML='<label>Purchaser</label><input id="bbPurchasePurchaser" readonly placeholder="Auto from Purchase">';grid.insertBefore(f,invoice||null)}
+ if(!$('bbPurchaseCallout')){const info=document.createElement('div');info.id='bbPurchaseCallout';info.className='bb-purchase-callout';info.textContent='ⓘ Purchase Qty + Promotion Qty are included in receiving.';fields.appendChild(info)}
+ const select=$('purchaseSelect');if(select&&!select.dataset.bbMobileMeta){select.dataset.bbMobileMeta='1';select.addEventListener('change',()=>[50,250,700,1500].forEach(ms=>setTimeout(updatePurchaseMeta,ms)))}
 }
 function updatePurchaseMeta(){
-  const out=$('bbPurchasePurchaser');if(!out)return;
-  let name='';
-  try{
-    if(typeof purchaseDetail!=='undefined')name=clean(purchaseDetail?.purchase?.purchaserName);
-    if(!name&&typeof selectedPurchaseSummary==='function')name=clean(selectedPurchaseSummary()?.purchaserName);
-  }catch(_){}
-  out.value=name||'Auto from Purchase';
+ const out=$('bbPurchasePurchaser');if(!out)return;let name='';
+ try{if(typeof purchaseDetail!=='undefined')name=clean(purchaseDetail?.purchase?.purchaserName);if(!name&&typeof selectedPurchaseSummary==='function')name=clean(selectedPurchaseSummary()?.purchaserName)}catch(_){}
+ out.value=name||'Auto from Purchase';
 }
-function decoratePurchaseRows(){
-  const body=$('purchaseReceiveRows');if(!body)return;
-  [...body.querySelectorAll('tr')].forEach(tr=>{
-    const cells=tr.querySelectorAll('td');if(cells.length<8)return;
-    const code=clean(cells[1].textContent);
-    if(code&&!cells[0].querySelector('.bb-mobile-product-code')){
-      const d=document.createElement('div');d.className='bb-mobile-product-code';d.textContent=code;cells[0].appendChild(d);
-    }
-  });
+function decorateTable(table){
+ if(!table)return;const headers=[...table.querySelectorAll('thead th')].map(th=>clean(th.textContent));
+ [...table.querySelectorAll('tbody tr')].forEach(tr=>[...tr.querySelectorAll('td')].forEach((td,i)=>{const label=headers[i]||'';if(td.dataset.bbLabel!==label)td.dataset.bbLabel=label}));
 }
-function installPurchaseRowObserver(){
-  const body=$('purchaseReceiveRows');if(!body||body.dataset.bbMobileObserver)return;
-  body.dataset.bbMobileObserver='1';
-  decoratePurchaseRows();
-  new MutationObserver(decoratePurchaseRows).observe(body,{childList:true,subtree:true});
+function decorateProducts(){
+ const purchase=$('purchaseReceiveRows')?.closest('table'),manual=$('itemRows')?.closest('table');decorateTable(purchase);decorateTable(manual);
+ const body=$('purchaseReceiveRows');if(!body)return;
+ [...body.querySelectorAll('tr')].forEach(tr=>{const cells=tr.querySelectorAll('td');if(cells.length<8)return;const code=clean(cells[1].textContent);if(code&&!cells[0].querySelector('.bb-mobile-product-code')){const d=document.createElement('div');d.className='bb-mobile-product-code';d.textContent=code;cells[0].appendChild(d)}});
 }
-function installNoteCollapse(){
-  const note=$('note');if(!note)return;
-  const field=note.closest('.field');if(!field||field.closest('.bb-mobile-note-collapsed'))return;
-  const box=document.createElement('div');box.className='bb-mobile-note-collapsed';
-  const toggle=document.createElement('button');toggle.type='button';toggle.className='bb-mobile-note-toggle';toggle.textContent='▸ Note (Optional)';
-  const body=document.createElement('div');body.className='bb-mobile-note-body';
-  field.parentNode.insertBefore(box,field);body.appendChild(field);box.append(toggle,body);
-  toggle.addEventListener('click',()=>{box.classList.toggle('open');toggle.textContent=(box.classList.contains('open')?'▾':'▸')+' Note (Optional)'});
+function installProductObservers(){
+ ['purchaseReceiveRows','itemRows'].forEach(id=>{const body=$(id);if(!body||body.dataset.bbMobileObserver)return;body.dataset.bbMobileObserver='1';const table=body.closest('table');new MutationObserver(decorateProducts).observe(table||body,{childList:true,subtree:true})});
+ decorateProducts();
 }
-function syncTitles(){
-  const c=cards(),work=c[1],products=c[2],type=currentType(),pair=titles[type]||['Movement Details','Products'];
-  const wt=work?.querySelector('.section-title');if(wt)wt.textContent=pair[0];
-  const pt=products?.querySelector('.section-title');if(pt)pt.textContent=pair[1];
+function installNote(){
+ const note=$('note');if(!note)return;const field=note.closest('.field');if(!field||field.closest('.bb-mobile-note-collapsed'))return;
+ const box=document.createElement('div');box.className='bb-mobile-note-collapsed';const btn=document.createElement('button');btn.type='button';btn.className='bb-mobile-note-toggle';btn.textContent='▸ Note (Optional)';const body=document.createElement('div');body.className='bb-mobile-note-body';field.parentNode.insertBefore(box,field);body.appendChild(field);box.append(btn,body);btn.addEventListener('click',()=>{box.classList.toggle('open');btn.textContent=(box.classList.contains('open')?'▾':'▸')+' Note (Optional)'})
 }
-function keepActionsLast(){
-  const actions=document.querySelector('.actions');if(actions&&actions.parentNode!==document.body)document.body.appendChild(actions);
-}
-function syncAll(){
-  installWorkspace();
-  renderCategories();
-  syncTitles();
-  updatePurchaseMeta();
-  decoratePurchaseRows();
-}
-function hookMovementType(){
-  if(typeof setMovementType!=='function'||setMovementType.__bbMobileHook)return;
-  const base=setMovementType;
-  const wrapped=function(){const r=base.apply(this,arguments);setTimeout(syncAll,0);return r};
-  wrapped.__bbMobileHook=true;
-  setMovementType=wrapped;
-}
+function syncTitles(){const c=cards(),pair=titles[currentType()]||['Movement Details','Products'];const wt=c[1]?.querySelector('.section-title'),pt=c[2]?.querySelector('.section-title');if(wt)wt.textContent=pair[0];if(pt)pt.textContent=pair[1]}
+function keepActionsLast(){const actions=document.querySelector('.actions');if(actions&&actions.parentNode!==document.body)document.body.appendChild(actions)}
+function syncAll(){installWorkspace();renderCategories();syncTitles();updatePurchaseMeta();decorateProducts()}
+function hookMovementType(){if(typeof setMovementType!=='function'||setMovementType.__bbMobileHook)return;const base=setMovementType;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(syncAll,0);return r};wrapped.__bbMobileHook=true;setMovementType=wrapped}
 function init(){
-  installBase();
-  installNoteCollapse();
-  installWorkspace();
-  installPurchaseWork();
-  installPurchaseRowObserver();
-  keepActionsLast();
-  hookMovementType();
-  ['flowInBtn','flowOutBtn','damageWarehouseBtn','damageBatchBtn'].forEach(id=>$(id)?.addEventListener('click',()=>setTimeout(syncAll,20)));
-  syncAll();
-  [100,400,1000,1800].forEach(ms=>setTimeout(syncAll,ms));
+ installBase();installNote();installWorkspace();installPurchaseWork();installProductObservers();keepActionsLast();hookMovementType();
+ ['flowInBtn','flowOutBtn','damageWarehouseBtn','damageBatchBtn'].forEach(id=>$(id)?.addEventListener('click',()=>setTimeout(syncAll,20)));
+ syncAll();[100,400,1000,1800].forEach(ms=>setTimeout(syncAll,ms));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 `;
 
 try{
-  const response=await fetch('legacy-google-v3.html?v=20260912-zero-cost-1',{cache:'no-store'});
-  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
-  let html=await response.text();
-
-  const headClose=html.toLowerCase().indexOf('</head>');
-  if(headClose<0)throw new Error('Stock source is missing </head>.');
-  const headInjection='\n<script src="supabase-stock-adapter.js?v=20260912-zero-cost-1"><\/script>\n<style id="bb-stock-mobile-style">'+MOBILE_STYLE+'<\/style>\n';
-  html=html.slice(0,headClose)+headInjection+html.slice(headClose);
-
-  const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
-  const cutover='// SUPABASE STOCK CUTOVER MOBILE V2\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n'+marker;
-  if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
-  html=html.replace(marker,cutover);
-
-  html=html.replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>');
-  html=html.replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
-
-  const bodyClose=html.toLowerCase().lastIndexOf('</body>');
-  if(bodyClose<0)throw new Error('Stock source is missing </body>.');
-  const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
-  html=html.slice(0,bodyClose)+scripts+html.slice(bodyClose);
-
-  document.open();document.write(html);document.close();
+ const response=await fetch('legacy-google-v3.html?v=20260912-zero-cost-1',{cache:'no-store'});
+ if(!response.ok)throw new Error('Could not load Stock Key-In source.');
+ let html=await response.text();
+ const headClose=html.toLowerCase().indexOf('</head>');if(headClose<0)throw new Error('Stock source is missing </head>.');
+ const headInjection='\n<script src="supabase-stock-adapter.js?v=20260912-zero-cost-1"><\/script>\n<style id="bb-stock-mobile-style">'+MOBILE_STYLE+'<\/style>\n';
+ html=html.slice(0,headClose)+headInjection+html.slice(headClose);
+ const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
+ const cutover='// SUPABASE STOCK CUTOVER MOBILE V3\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n'+marker;
+ if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
+ html=html.replace(marker,cutover).replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>').replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
+ const bodyClose=html.toLowerCase().lastIndexOf('</body>');if(bodyClose<0)throw new Error('Stock source is missing </body>.');
+ const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
+ html=html.slice(0,bodyClose)+scripts+html.slice(bodyClose);
+ document.open();document.write(html);document.close();
 }catch(error){
-  console.error(error);
-  document.body.innerHTML='<div class="bb-mobile-loader"><div class="bb-mobile-loader-card">Could not open Stock Key-In<span>'+String(error?.message||error)+'</span></div></div>';
+ console.error(error);document.body.innerHTML='<div class="bb-loader"><div class="bb-loader-card">Could not open Stock Key-In<span>'+String(error?.message||error)+'</span></div></div>';
 }
 })();
 </script>

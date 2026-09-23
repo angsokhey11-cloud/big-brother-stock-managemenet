@@ -156,7 +156,7 @@ function installWorkspace(){
  if(!categoryCard){
    categoryCard=document.createElement('section');categoryCard.id='bbMobileCategoryCard';categoryCard.className='card bb-category-card';
    categoryCard.innerHTML='<button type="button" id="bbCategoryToggle" class="bb-category-toggle"><div><strong>Movement Category</strong><span id="bbCategoryCurrent" class="bb-current">Select movement</span></div><span class="bb-category-chevron">⌄</span></button><div class="bb-category-options"><div id="bbMobileCategories" class="bb-mobile-categories"></div></div>';
-   $('bbCategoryToggle')?.addEventListener('click',()=>categoryCard.classList.toggle('open'));
+   categoryCard.querySelector('#bbCategoryToggle')?.addEventListener('click',()=>categoryCard.classList.toggle('open'));
    flowShell.insertAdjacentElement('afterend',categoryCard);
  }
  const exchange=$('damageExchangeReceiveFields');
@@ -234,7 +234,7 @@ try{
  if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
  html=html.replace(marker,cutover).replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>').replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
  const bodyClose=html.toLowerCase().lastIndexOf('</body>');if(bodyClose<0)throw new Error('Stock source is missing </body>.');
- const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
+ const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
  html=html.slice(0,bodyClose)+scripts+html.slice(bodyClose);
  document.open();document.write(html);document.close();
 }catch(error){

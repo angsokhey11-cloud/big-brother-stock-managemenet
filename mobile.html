@@ -567,13 +567,46 @@ function baseMobilePool(){
   }catch(_){}
   try{return Array.isArray(products)?products.slice():[]}catch(_){return []}
 }
+const BB_DEFAULT_PRODUCT_ORDER=[
+  'KIR3-2L',
+  'KIRB-2L',
+  'KIR0-830',
+  'KIR3-830',
+  'FF-2L',
+  'AF-2L',
+  'VP-2L',
+  'OM-2L',
+  'GF-190',
+  'GF-1L',
+  'GFJ-1L',
+  'KIRP-Y135',
+  'KIRS-Y135',
+  'KIRV-Y135',
+  'CH-O220',
+  'CHM-220',
+  'CHP-220',
+  'CHS-220',
+  'CHT-220'
+];
+const BB_DEFAULT_PRODUCT_RANK=new Map(
+  BB_DEFAULT_PRODUCT_ORDER.map((code,index)=>[code,index])
+);
+function defaultProductCompare(a,b){
+  const aCode=clean(a?.productCode);
+  const bCode=clean(b?.productCode);
+  const aRank=BB_DEFAULT_PRODUCT_RANK.has(aCode)?BB_DEFAULT_PRODUCT_RANK.get(aCode):9999;
+  const bRank=BB_DEFAULT_PRODUCT_RANK.has(bCode)?BB_DEFAULT_PRODUCT_RANK.get(bCode):9999;
+  if(aRank!==bRank)return aRank-bRank;
+  return clean(a?.productName).localeCompare(clean(b?.productName));
+}
+
 function mobilePool(){
   const t=movement();
   let rows=baseMobilePool();
   if(t==='BATCH_STOCK'){
     rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
   }else if(t==='STAFF_ALLOWANCE'){
-    rows=rows.filter(p=>purchasedAvailable(p.productCode)>EPS);
+    rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
   }else if(t==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE'){
     rows=rows.filter(p=>{
       try{return number(currentAvailable(p.productCode))>EPS}catch(_){return purchasedAvailable(p.productCode)>EPS}
@@ -582,7 +615,7 @@ function mobilePool(){
   let existing=new Set();
   try{existing=new Set((Array.isArray(items)?items:[]).map(x=>clean(x.productCode)))}catch(_){}
   return rows.filter(p=>clean(p.productCode)&&!existing.has(clean(p.productCode)))
-    .sort((a,b)=>clean(a.productName).localeCompare(clean(b.productName)));
+    .sort(defaultProductCompare);
 }
 function availabilityText(product){
   const t=movement();

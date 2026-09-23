@@ -76,8 +76,7 @@ function ensureFields(){
     wrap.hidden=true;
     wrap.innerHTML=
       '<div class="grid">'+
-        '<div class="field"><label>Customer</label><select id="bbBorrowCustomer"><option value="">Select Customer (Optional)</option></select></div>'+
-        '<div class="field"><label>Customer Name</label><input id="bbBorrowCustomerName" autocomplete="off" placeholder="Type customer name"><div class="helper">Selecting a Customer fills this automatically. You can still edit it.</div></div>'+
+        '<div class="field"><label>Customer Name</label><input id="bbBorrowCustomerName" list="bbBorrowCustomerSuggestions" autocomplete="off" placeholder="Type customer name"><datalist id="bbBorrowCustomerSuggestions"></datalist><div class="helper">Type a name or choose an existing customer suggestion.</div></div>'+
         '<div class="field"><label>Open Batch</label><select id="bbBorrowBatch"><option value="">Select Open Batch</option></select><div class="helper">Borrowed stock goes directly into this Batch as Purchased stock for normal COGS.</div></div>'+
       '</div>';
     parent.insertBefore(wrap,anchor.nextSibling);
@@ -106,13 +105,8 @@ function ensureFields(){
   $('bbBorrowBatch')?.addEventListener('change',()=>{
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
   });
-  $('bbBorrowCustomer')?.addEventListener('change',()=>{
-    const customer=selectedBorrowCustomer();
-    if($('bbBorrowCustomerName')){
-      $('bbBorrowCustomerName').value=
-        clean(customer?.customerName||customer?.name);
-    }
-    try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
+  $('bbBorrowCustomerName')?.addEventListener('change',()=>{
+    try{updatePreview()}catch(_){}
   });
 
   return true;
@@ -120,23 +114,19 @@ function ensureFields(){
 
 function fillBorrowCustomers(){
   if(!ensureFields())return;
-  const select=$('bbBorrowCustomer');
-  if(!select)return;
-  const keep=clean(select.value);
+  const list=$('bbBorrowCustomerSuggestions');
+  if(!list)return;
   const rows=allCustomers().slice().sort((a,b)=>
     clean(a?.customerName||a?.name).localeCompare(clean(b?.customerName||b?.name))
   );
-  select.innerHTML='<option value="">Select Customer</option>'+
-    rows.map(c=>{
-      const id=clean(c?.customerId||c?.id);
-      const name=clean(c?.customerName||c?.name)||id;
-      return '<option value="'+id.replace(/"/g,'&quot;')+'">'+
-        name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
-      '</option>';
-    }).join('');
-  if(keep&&rows.some(c=>clean(c?.customerId||c?.id)===keep))select.value=keep;
+  list.innerHTML=rows.map(customer=>{
+    const name=clean(customer?.customerName||customer?.name);
+    if(!name)return '';
+    return '<option value="'+
+      name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
+    '"></option>';
+  }).join('');
 }
-
 function fillBorrowBatchSelect(){
   if(!ensureFields())return;
   const select=$('bbBorrowBatch');
@@ -164,10 +154,12 @@ function selectedBorrowBatch(){
 }
 
 function selectedBorrowCustomer(){
-  const id=clean($('bbBorrowCustomer')?.value);
-  return allCustomers().find(x=>clean(x?.customerId||x?.id)===id)||null;
+  const name=clean($('bbBorrowCustomerName')?.value).toLowerCase();
+  if(!name)return null;
+  return allCustomers().find(customer=>
+    clean(customer?.customerName||customer?.name).toLowerCase()===name
+  )||null;
 }
-
 function fillBorrowRefs(){
   if(!ensureFields())return;
   const select=$('bbBorrowRef');
@@ -486,7 +478,6 @@ if(typeof clearForm==='function'){
   const baseClearForm=clearForm;
   clearForm=function(){
     const result=baseClearForm.apply(this,arguments);
-    if($('bbBorrowCustomer'))$('bbBorrowCustomer').value='';
     if($('bbBorrowCustomerName'))$('bbBorrowCustomerName').value='';
     if($('bbBorrowBatch'))$('bbBorrowBatch').value='';
     if($('bbBorrowRef'))$('bbBorrowRef').value='';

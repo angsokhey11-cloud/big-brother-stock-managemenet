@@ -222,6 +222,623 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 `;
 
+const MOBILE_UX_V2=String.raw`
+(function(){
+'use strict';
+if(window.BBStockMobileUxV2)return;
+window.BBStockMobileUxV2=true;
+
+const $=id=>document.getElementById(id);
+const clean=v=>String(v==null?'':v).trim();
+const number=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const EPS=0.000001;
+let clientProductRows=[];
+let clientProductClientId='';
+let clientProductLoading=false;
+let activeProduct=null;
+let batchWorkInitialized=false;
+
+const style=document.createElement('style');
+style.id='bb-stock-mobile-ux-v2-style';
+style.textContent=
+'body.bb-stock-mobile .bb-preview-card{display:none!important}'+
+'body.bb-stock-mobile #receiveClientDetail{display:none!important}'+
+'body.bb-stock-mobile #manualProductPanel #productEntry{display:none!important}'+
+'body.bb-stock-mobile .bb-mobile-hidden-field{display:none!important}'+
+'body.bb-stock-mobile .bb-collapsible>.section-title{position:relative;cursor:pointer;padding-right:28px!important;user-select:none}'+
+'body.bb-stock-mobile .bb-collapsible>.section-title:after{content:"⌄";position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:1000;transition:transform .15s ease}'+
+'body.bb-stock-mobile .bb-collapsible.bb-collapsed>.section-title:after{transform:translateY(-50%) rotate(-90deg)}'+
+'body.bb-stock-mobile .bb-collapsible.bb-collapsed>.bb-collapse-body{display:none!important}'+
+'body.bb-stock-mobile .bb-collapse-summary{display:none;margin:-1px 0 6px;color:#718398;font-size:7px;font-weight:800;line-height:1.35}'+
+'body.bb-stock-mobile .bb-collapsible.bb-collapsed>.bb-collapse-summary{display:block}'+
+'body.bb-stock-mobile .bb-add-launcher{margin:0 0 7px}'+
+'body.bb-stock-mobile .bb-add-launcher[hidden]{display:none!important}'+
+'body.bb-stock-mobile .bb-add-product-btn{width:100%;min-height:42px;border:0;border-radius:9px;background:#173f77!important;color:#fff!important;font-size:11px;font-weight:1000;letter-spacing:.2px;box-shadow:0 5px 14px rgba(23,63,119,.16);cursor:pointer}'+
+'body.bb-stock-mobile .bb-add-product-btn:active{transform:translateY(1px)}'+
+'body.bb-stock-mobile .bb-mobile-overlay{position:fixed;z-index:4000;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:10px;background:rgba(11,29,50,.46);backdrop-filter:blur(2px)}'+
+'body.bb-stock-mobile .bb-mobile-overlay[hidden]{display:none!important}'+
+'body.bb-stock-mobile .bb-mobile-sheet{width:min(760px,100%);max-height:82vh;display:flex;flex-direction:column;border:1px solid #d5e1ed;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(16,42,72,.24);overflow:hidden}'+
+'body.bb-stock-mobile .bb-mobile-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;border-bottom:1px solid #e5ecf3;color:#173f77}'+
+'body.bb-stock-mobile .bb-mobile-sheet-head strong{font-size:13px}'+
+'body.bb-stock-mobile .bb-mobile-sheet-close{width:34px;height:34px;border:0;border-radius:9px;background:#f0f4f8;color:#52677e;font-size:18px;font-weight:900;cursor:pointer}'+
+'body.bb-stock-mobile .bb-mobile-picker-search{padding:9px 10px;border-bottom:1px solid #edf1f5}'+
+'body.bb-stock-mobile .bb-mobile-picker-search input{width:100%;height:42px;box-sizing:border-box;border:1px solid #cfdbe8;border-radius:9px;padding:8px 10px;font-size:16px;color:#173f77;outline:none}'+
+'body.bb-stock-mobile .bb-mobile-product-list{overflow:auto;padding:7px 8px 12px}'+
+'body.bb-stock-mobile .bb-mobile-product-choice{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin:0 0 6px;padding:10px;border:1px solid #dbe5ef;border-radius:10px;background:#fff;color:#173f77;text-align:left;cursor:pointer}'+
+'body.bb-stock-mobile .bb-mobile-product-choice:last-child{margin-bottom:0}'+
+'body.bb-stock-mobile .bb-mobile-product-choice strong{display:block;font-size:11px}'+
+'body.bb-stock-mobile .bb-mobile-product-choice small{display:block;margin-top:3px;color:#74869a;font-size:8px;font-weight:700}'+
+'body.bb-stock-mobile .bb-mobile-product-choice .avail{font-size:8px;font-weight:900;color:#245fae;text-align:right}'+
+'body.bb-stock-mobile .bb-mobile-empty{padding:18px 8px;color:#7a8b9e;font-size:10px;font-weight:800;text-align:center}'+
+'body.bb-stock-mobile .bb-qty-body{padding:12px}'+
+'body.bb-stock-mobile .bb-qty-product{padding:9px 10px;border:1px solid #dfe7ef;border-radius:10px;background:#f8fbfe}'+
+'body.bb-stock-mobile .bb-qty-product strong{display:block;color:#173f77;font-size:12px}'+
+'body.bb-stock-mobile .bb-qty-product span{display:block;margin-top:3px;color:#72859a;font-size:8px;font-weight:800}'+
+'body.bb-stock-mobile .bb-qty-available{margin:7px 0 0;color:#526d89;font-size:8px;font-weight:900;line-height:1.4}'+
+'body.bb-stock-mobile .bb-qty-field{margin-top:10px}'+
+'body.bb-stock-mobile .bb-qty-field[hidden]{display:none!important}'+
+'body.bb-stock-mobile .bb-qty-field label{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;color:#52677e;font-size:8px;font-weight:1000}'+
+'body.bb-stock-mobile .bb-qty-control{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;gap:6px}'+
+'body.bb-stock-mobile .bb-qty-control button{min-height:42px;border:1px solid #ccd9e6;border-radius:9px;background:#f4f7fa;color:#173f77;font-size:18px;font-weight:1000}'+
+'body.bb-stock-mobile .bb-qty-control input{width:100%;min-width:0;height:42px;box-sizing:border-box;border:1px solid #bdcddd;border-radius:9px;padding:6px 8px;text-align:center;font-size:18px;font-weight:1000;color:#173f77}'+
+'body.bb-stock-mobile .bb-qty-actions{display:grid;grid-template-columns:1fr 1.45fr;gap:7px;margin-top:12px}'+
+'body.bb-stock-mobile .bb-qty-actions button{min-height:43px;border:0;border-radius:9px;font-size:10px;font-weight:1000;cursor:pointer}'+
+'body.bb-stock-mobile .bb-qty-cancel{background:#edf2f6;color:#52677e}'+
+'body.bb-stock-mobile .bb-qty-confirm{background:#173f77!important;color:#fff!important}'+
+'body.bb-stock-mobile #successPanel.bb-mobile-success{width:calc(100% - 10px);max-width:750px;box-sizing:border-box;margin:0 auto 7px;padding:8px;border-radius:10px}';
+document.head.appendChild(style);
+
+function movement(){
+  try{return clean(movementType)||'PURCHASE'}catch(_){return 'PURCHASE'}
+}
+function damageMode(){
+  try{return clean(damageSource)||'WAREHOUSE'}catch(_){return 'WAREHOUSE'}
+}
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function selectedClient(){
+  try{return typeof pick==='function'?pick(clients,'receiveClient'):null}catch(_){return null}
+}
+function selectedOpenBatchMobile(){
+  try{return typeof selectedBatch==='function'?selectedBatch():null}catch(_){return null}
+}
+function stockRow(code){
+  try{return typeof stockFor==='function'?(stockFor(code)||{}):{}}catch(_){return {}}
+}
+function purchasedAvailable(code){
+  const row=stockRow(code);
+  return number(row.warehousePurchased!==undefined?row.warehousePurchased:row.warehouseGood);
+}
+function zeroAvailable(code){
+  return number(stockRow(code).warehouseZeroCost);
+}
+function physicalAvailable(code){
+  return purchasedAvailable(code)+zeroAvailable(code);
+}
+function fmtQty(v){
+  return number(v).toLocaleString('en-US',{maximumFractionDigits:2});
+}
+
+function moveSuccessOutsidePreview(){
+  const preview=document.querySelector('.bb-preview-card');
+  const success=$('successPanel');
+  if(preview&&success&&success.parentNode===preview&&preview.parentNode){
+    preview.parentNode.insertBefore(success,preview);
+    success.classList.add('bb-mobile-success');
+  }
+}
+
+function hidePurchaseDetails(){
+  const fields=$('purchaseFields');
+  const keep=$('purchaseSelect')?.closest('.field');
+  if(fields){
+    fields.querySelectorAll('.field').forEach(field=>{
+      field.classList.toggle('bb-mobile-hidden-field',field!==keep);
+    });
+  }
+  const callout=$('bbPurchaseCallout');
+  if(callout)callout.style.display='none';
+}
+
+function simplifyBackSale(){
+  const parent=$('existingBatchFields');
+  if(!parent)return;
+  const keep=$('batchSelect')?.closest('.field');
+  parent.querySelectorAll('.field').forEach(field=>{
+    field.classList.toggle('bb-mobile-hidden-field',movement()==='BACK_SALE'&&field!==keep);
+  });
+}
+
+function ensureCollapse(card,kind,defaultOpen){
+  if(!card)return null;
+  if(!card.dataset.bbCollapseReady){
+    const title=card.querySelector(':scope > .section-title');
+    if(!title)return null;
+    const summary=document.createElement('div');
+    summary.className='bb-collapse-summary';
+    const body=document.createElement('div');
+    body.className='bb-collapse-body';
+    while(summary.nextSibling){}
+    const nodes=[...card.childNodes].filter(node=>node!==title);
+    nodes.forEach(node=>body.appendChild(node));
+    card.appendChild(summary);
+    card.appendChild(body);
+    card.dataset.bbCollapseReady='1';
+    card.dataset.bbCollapseKind=kind;
+    card.dataset.bbOpen=defaultOpen?'1':'0';
+    title.addEventListener('click',()=>{
+      if(!card.classList.contains('bb-collapsible'))return;
+      setCollapse(card,card.dataset.bbOpen!=='1');
+    });
+  }
+  return card;
+}
+function setCollapse(card,open){
+  if(!card)return;
+  card.dataset.bbOpen=open?'1':'0';
+  card.classList.toggle('bb-collapsed',!open);
+}
+function indexItem(list,selectId){
+  const select=$(selectId);
+  const index=Number(select?.value);
+  return Number.isInteger(index)&&index>=0&&Array.isArray(list)?(list[index]||null):null;
+}
+function controllerPreferenceKey(){
+  let id='device';
+  try{
+    const session=JSON.parse(localStorage.getItem('BB_SUPABASE_DEV_SESSION_V1')||'null');
+    id=clean(session?.user?.id);
+    if(!id&&session?.access_token){
+      const part=String(session.access_token).split('.')[1]||'';
+      const json=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));
+      id=clean(json?.sub);
+    }
+  }catch(_){}
+  return 'bb_stock_mobile_controller_v1::'+(id||'device');
+}
+function currentController(){
+  try{return indexItem(controllers,'controllerSelect')}catch(_){return null}
+}
+function currentWarehouse(){
+  try{return indexItem(locations,'locationSelect')}catch(_){return null}
+}
+function saveControllerPreference(){
+  const row=currentController();
+  if(!row)return;
+  try{localStorage.setItem(controllerPreferenceKey(),clean(row.staffId))}catch(_){}
+  updateCollapseSummaries();
+}
+function restoreControllerPreference(){
+  const select=$('controllerSelect');
+  if(!select||select.value)return;
+  let wanted='';
+  try{wanted=clean(localStorage.getItem(controllerPreferenceKey()))}catch(_){}
+  if(!wanted)return;
+  let index=-1;
+  try{index=(Array.isArray(controllers)?controllers:[]).findIndex(row=>clean(row.staffId)===wanted)}catch(_){}
+  if(index>=0){
+    select.value=String(index);
+    updateCollapseSummaries();
+  }
+}
+function updateCollapseSummaries(){
+  const transaction=document.querySelector('.bb-transaction-card');
+  if(transaction){
+    const summary=transaction.querySelector(':scope > .bb-collapse-summary');
+    if(summary){
+      const date=clean($('activityDate')?.value)||'Date';
+      const controller=currentController();
+      const warehouse=currentWarehouse();
+      summary.textContent=[
+        date,
+        controller?.staffName||'Controller not selected',
+        warehouse?.locationName||warehouse?.locationCode||'Warehouse'
+      ].join(' · ');
+    }
+  }
+  const work=document.querySelector('.bb-work-card');
+  if(work){
+    const summary=work.querySelector(':scope > .bb-collapse-summary');
+    if(summary){
+      let text='Tap to expand';
+      if(movement()==='BATCH_STOCK'){
+        let salesman=null,location=null;
+        try{salesman=indexItem(salesmen,'salesmanSelect');location=indexItem(locations,'batchLocationSelect')}catch(_){}
+        text=[salesman?.staffName||'Salesman not selected',location?.locationName||location?.locationCode||'Location not selected'].join(' · ');
+      }
+      summary.textContent=text;
+    }
+  }
+}
+function syncCollapsibles(){
+  const transaction=ensureCollapse(document.querySelector('.bb-transaction-card'),'transaction',false);
+  if(transaction){
+    transaction.classList.add('bb-collapsible');
+    if(!transaction.dataset.bbInitialCollapse){
+      transaction.dataset.bbInitialCollapse='1';
+      setCollapse(transaction,false);
+    }else{
+      setCollapse(transaction,transaction.dataset.bbOpen==='1');
+    }
+  }
+
+  const work=ensureCollapse(document.querySelector('.bb-work-card'),'work',true);
+  if(work){
+    const isBatch=movement()==='BATCH_STOCK';
+    work.classList.toggle('bb-collapsible',isBatch);
+    if(isBatch){
+      if(!batchWorkInitialized){
+        batchWorkInitialized=true;
+        setCollapse(work,true);
+      }else{
+        setCollapse(work,work.dataset.bbOpen==='1');
+      }
+    }else{
+      batchWorkInitialized=false;
+      setCollapse(work,true);
+    }
+  }
+  updateCollapseSummaries();
+}
+
+async function loadClientProducts(force){
+  const client=selectedClient();
+  const id=clean(client?.clientId);
+  if(!id){
+    clientProductRows=[];
+    clientProductClientId='';
+    return [];
+  }
+  if(!force&&clientProductClientId===id&&clientProductRows.length)return clientProductRows;
+  if(clientProductLoading)return clientProductRows;
+  clientProductLoading=true;
+  try{
+    const result=await window.BBStockAdapter.rpc('bb_stock_client_products',{p_client_id:id});
+    const rows=Array.isArray(result?.rows)?result.rows:[];
+    clientProductRows=rows.map(row=>{
+      let master=null;
+      try{master=(Array.isArray(products)?products:[]).find(p=>clean(p.productCode)===clean(row.productCode))||null}catch(_){}
+      return Object.assign({},master||{},row,{
+        productCode:clean(row.productCode),
+        productName:clean(row.productName)||clean(master?.productName)||clean(row.productCode),
+        unit:clean(row.unit)||clean(master?.unit),
+        barcode:clean(row.barcode)||clean(master?.barcode)
+      });
+    });
+    clientProductClientId=id;
+    return clientProductRows;
+  }catch(error){
+    clientProductRows=[];
+    clientProductClientId=id;
+    if(typeof setStatus==='function')setStatus(clean(error?.message)||'Could not load Client products.','error');
+    return [];
+  }finally{
+    clientProductLoading=false;
+  }
+}
+
+function baseMobilePool(){
+  const t=movement();
+  if(t==='RECEIVE_FROM_CLIENT')return clientProductRows.slice();
+  try{
+    if(typeof manualProductPool==='function'){
+      const rows=manualProductPool();
+      return Array.isArray(rows)?rows.slice():[];
+    }
+  }catch(_){}
+  try{return Array.isArray(products)?products.slice():[]}catch(_){return []}
+}
+function mobilePool(){
+  const t=movement();
+  let rows=baseMobilePool();
+  if(t==='BATCH_STOCK'){
+    rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
+  }else if(t==='STAFF_ALLOWANCE'){
+    rows=rows.filter(p=>purchasedAvailable(p.productCode)>EPS);
+  }else if(t==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE'){
+    rows=rows.filter(p=>{
+      try{return number(currentAvailable(p.productCode))>EPS}catch(_){return purchasedAvailable(p.productCode)>EPS}
+    });
+  }
+  let existing=new Set();
+  try{existing=new Set((Array.isArray(items)?items:[]).map(x=>clean(x.productCode)))}catch(_){}
+  return rows.filter(p=>clean(p.productCode)&&!existing.has(clean(p.productCode)))
+    .sort((a,b)=>clean(a.productName).localeCompare(clean(b.productName)));
+}
+function availabilityText(product){
+  const t=movement();
+  if(t==='RECEIVE_FROM_CLIENT')return 'Client product';
+  if(t==='BATCH_STOCK'){
+    const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
+    return 'Purchased '+fmtQty(p)+(z>EPS?' · Zero-Cost '+fmtQty(z):'');
+  }
+  if(t==='BACK_SALE'||(t==='STOCK_DAMAGE'&&damageMode()==='BATCH')){
+    const remaining=number(product.batchRemaining!==undefined?product.batchRemaining:(()=>{try{return currentAvailable(product.productCode)}catch(_){return 0}})());
+    return 'Batch '+fmtQty(remaining);
+  }
+  if(t==='DAMAGE_CLEAR'){
+    try{return 'Damaged '+fmtQty(currentAvailable(product.productCode))}catch(_){return 'Damaged stock'}
+  }
+  try{return 'Available '+fmtQty(currentAvailable(product.productCode))}catch(_){return ''}
+}
+
+function installProductUi(){
+  const panel=$('manualProductPanel');
+  const entry=$('productEntry');
+  if(!panel||!entry)return false;
+
+  let launcher=$('bbMobileProductLauncher');
+  if(!launcher){
+    launcher=document.createElement('div');
+    launcher.id='bbMobileProductLauncher';
+    launcher.className='bb-add-launcher';
+    launcher.innerHTML='<button type="button" id="bbMobileAddProductBtn" class="bb-add-product-btn">＋ Add Product</button>';
+    entry.insertAdjacentElement('afterend',launcher);
+    $('bbMobileAddProductBtn').addEventListener('click',openProductPicker);
+  }
+
+  if(!$('bbMobileProductPicker')){
+    const overlay=document.createElement('div');
+    overlay.id='bbMobileProductPicker';
+    overlay.className='bb-mobile-overlay';
+    overlay.hidden=true;
+    overlay.innerHTML=
+      '<div class="bb-mobile-sheet" role="dialog" aria-modal="true" aria-label="Select Product">'+
+        '<div class="bb-mobile-sheet-head"><strong>Select Product</strong><button type="button" class="bb-mobile-sheet-close" id="bbMobilePickerClose">×</button></div>'+
+        '<div class="bb-mobile-picker-search"><input id="bbMobileProductSearch" autocomplete="off" spellcheck="false" placeholder="Search product name, code or barcode"></div>'+
+        '<div id="bbMobileProductList" class="bb-mobile-product-list"></div>'+
+      '</div>';
+    document.body.appendChild(overlay);
+    $('bbMobilePickerClose').addEventListener('click',closeProductPicker);
+    $('bbMobileProductSearch').addEventListener('input',renderProductPicker);
+    $('bbMobileProductList').addEventListener('click',event=>{
+      const btn=event.target.closest('[data-bb-product-code]');
+      if(btn)chooseProduct(btn.dataset.bbProductCode);
+    });
+    overlay.addEventListener('click',event=>{if(event.target===overlay)closeProductPicker()});
+  }
+
+  if(!$('bbMobileQtyModal')){
+    const overlay=document.createElement('div');
+    overlay.id='bbMobileQtyModal';
+    overlay.className='bb-mobile-overlay';
+    overlay.hidden=true;
+    overlay.innerHTML=
+      '<div class="bb-mobile-sheet" role="dialog" aria-modal="true" aria-label="Product Quantity">'+
+        '<div class="bb-mobile-sheet-head"><strong>Product Quantity</strong><button type="button" class="bb-mobile-sheet-close" id="bbMobileQtyClose">×</button></div>'+
+        '<div class="bb-qty-body">'+
+          '<div class="bb-qty-product"><strong id="bbMobileQtyProductName">Product</strong><span id="bbMobileQtyProductCode">-</span><div id="bbMobileQtyAvailability" class="bb-qty-available"></div></div>'+
+          '<div id="bbMobileSingleQtyWrap" class="bb-qty-field"><label><span>QTY</span></label><div class="bb-qty-control"><button type="button" data-bb-step="-1" data-bb-target="bbMobileQtyInput">−</button><input id="bbMobileQtyInput" type="number" min="0" step="0.01" inputmode="decimal"><button type="button" data-bb-step="1" data-bb-target="bbMobileQtyInput">＋</button></div></div>'+
+          '<div id="bbMobilePurchasedQtyWrap" class="bb-qty-field" hidden><label><span>Purchased QTY</span><span id="bbMobilePurchasedAvailable"></span></label><div class="bb-qty-control"><button type="button" data-bb-step="-1" data-bb-target="bbMobilePurchasedQty">−</button><input id="bbMobilePurchasedQty" type="number" min="0" step="0.01" inputmode="decimal"><button type="button" data-bb-step="1" data-bb-target="bbMobilePurchasedQty">＋</button></div></div>'+
+          '<div id="bbMobileZeroQtyWrap" class="bb-qty-field" hidden><label><span>Zero-Cost QTY</span><span id="bbMobileZeroAvailable"></span></label><div class="bb-qty-control"><button type="button" data-bb-step="-1" data-bb-target="bbMobileZeroQty">−</button><input id="bbMobileZeroQty" type="number" min="0" step="0.01" inputmode="decimal"><button type="button" data-bb-step="1" data-bb-target="bbMobileZeroQty">＋</button></div></div>'+
+          '<div class="bb-qty-actions"><button type="button" id="bbMobileQtyCancel" class="bb-qty-cancel">Cancel</button><button type="button" id="bbMobileQtyConfirm" class="bb-qty-confirm">Add Product</button></div>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(overlay);
+    $('bbMobileQtyClose').addEventListener('click',closeQtyModal);
+    $('bbMobileQtyCancel').addEventListener('click',closeQtyModal);
+    $('bbMobileQtyConfirm').addEventListener('click',confirmProductQty);
+    overlay.querySelectorAll('[data-bb-step]').forEach(btn=>btn.addEventListener('click',()=>{
+      const input=$(btn.dataset.bbTarget);
+      if(!input)return;
+      input.value=String(Math.max(0,number(input.value)+number(btn.dataset.bbStep)));
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    }));
+    overlay.addEventListener('click',event=>{if(event.target===overlay)closeQtyModal()});
+  }
+  return true;
+}
+
+function syncProductLauncher(){
+  if(!installProductUi())return;
+  const launcher=$('bbMobileProductLauncher');
+  if(!launcher)return;
+  const t=movement();
+  const manual=$('manualProductPanel');
+  launcher.hidden=!!manual?.hidden||t==='PURCHASE'||t==='DAMAGE_EXCHANGE_RECEIVE';
+}
+
+async function openProductPicker(){
+  const t=movement();
+  if(t==='RECEIVE_FROM_CLIENT'){
+    const client=selectedClient();
+    if(!client){
+      if(typeof setStatus==='function')setStatus('Select a Client first.','error');
+      return;
+    }
+    await loadClientProducts(false);
+  }
+  if((t==='BACK_SALE'||(t==='STOCK_DAMAGE'&&damageMode()==='BATCH'))&&!selectedOpenBatchMobile()){
+    if(typeof setStatus==='function')setStatus('Select an Open Batch first.','error');
+    return;
+  }
+  const overlay=$('bbMobileProductPicker');
+  if(!overlay)return;
+  $('bbMobileProductSearch').value='';
+  overlay.hidden=false;
+  renderProductPicker();
+}
+function closeProductPicker(){
+  const overlay=$('bbMobileProductPicker');
+  if(overlay)overlay.hidden=true;
+}
+function renderProductPicker(){
+  const host=$('bbMobileProductList');
+  if(!host)return;
+  const q=clean($('bbMobileProductSearch')?.value).toLowerCase();
+  const rows=mobilePool().filter(product=>{
+    if(!q)return true;
+    return [product.productName,product.productCode,product.barcode].join(' ').toLowerCase().includes(q);
+  });
+  host.innerHTML=rows.length?rows.map(product=>
+    '<button type="button" class="bb-mobile-product-choice" data-bb-product-code="'+esc(product.productCode)+'">'+
+      '<span><strong>'+esc(product.productName||product.productCode)+'</strong><small>'+esc(product.productCode)+(product.unit?' · '+esc(product.unit):'')+'</small></span>'+
+      '<span class="avail">'+esc(availabilityText(product))+'</span>'+
+    '</button>'
+  ).join(''):'<div class="bb-mobile-empty">'+(movement()==='RECEIVE_FROM_CLIENT'?'No linked products available for this Client.':'No available products for this movement.')+'</div>';
+}
+function chooseProduct(code){
+  const product=mobilePool().find(p=>clean(p.productCode)===clean(code));
+  if(!product)return;
+  activeProduct=product;
+  try{selectedProduct=product}catch(_){}
+  try{
+    if($('productSearchInput'))$('productSearchInput').value=(product.productName||product.productCode)+' — '+product.productCode;
+    if(typeof updateProductAvailability==='function')updateProductAvailability();
+  }catch(_){}
+  closeProductPicker();
+  openQtyModal(product);
+}
+function openQtyModal(product){
+  const overlay=$('bbMobileQtyModal');
+  if(!overlay)return;
+  $('bbMobileQtyProductName').textContent=clean(product.productName)||clean(product.productCode);
+  $('bbMobileQtyProductCode').textContent=clean(product.productCode)+(product.unit?' · '+clean(product.unit):'');
+  $('bbMobileQtyAvailability').textContent=availabilityText(product);
+  $('bbMobileQtyInput').value='';
+  $('bbMobilePurchasedQty').value='';
+  $('bbMobileZeroQty').value='';
+
+  const batch=movement()==='BATCH_STOCK';
+  $('bbMobileSingleQtyWrap').hidden=batch;
+  $('bbMobilePurchasedQtyWrap').hidden=!batch;
+
+  if(batch){
+    const p=purchasedAvailable(product.productCode);
+    const z=zeroAvailable(product.productCode);
+    $('bbMobilePurchasedAvailable').textContent='Available '+fmtQty(p);
+    $('bbMobileZeroAvailable').textContent='Available '+fmtQty(z);
+    $('bbMobileZeroQtyWrap').hidden=!(z>EPS);
+  }else{
+    $('bbMobileZeroQtyWrap').hidden=true;
+  }
+  overlay.hidden=false;
+}
+function closeQtyModal(){
+  const overlay=$('bbMobileQtyModal');
+  if(overlay)overlay.hidden=true;
+  activeProduct=null;
+}
+function confirmProductQty(){
+  if(!activeProduct)return;
+  const batch=movement()==='BATCH_STOCK';
+  let qty=0;
+  if(batch){
+    const pQty=number($('bbMobilePurchasedQty').value);
+    const zQty=$('bbMobileZeroQtyWrap').hidden?0:number($('bbMobileZeroQty').value);
+    const pAvail=purchasedAvailable(activeProduct.productCode);
+    const zAvail=zeroAvailable(activeProduct.productCode);
+    qty=pQty+zQty;
+    if(!(qty>0)){
+      if(typeof setStatus==='function')setStatus('Qty must be greater than 0.','error');
+      return;
+    }
+    if(pQty>pAvail+EPS){
+      if(typeof setStatus==='function')setStatus('Purchased Qty is greater than Purchased Available '+fmtQty(pAvail)+'.','error');
+      return;
+    }
+    if(zQty>zAvail+EPS){
+      if(typeof setStatus==='function')setStatus('Zero-Cost Qty is greater than Zero-Cost Available '+fmtQty(zAvail)+'.','error');
+      return;
+    }
+    if($('bbPurchasedOut'))$('bbPurchasedOut').value=String(pQty);
+    if($('bbZeroOut'))$('bbZeroOut').value=String(zQty);
+    if($('qty'))$('qty').value=String(qty);
+    try{$('bbPurchasedOut')?.dispatchEvent(new Event('input',{bubbles:true}));$('bbZeroOut')?.dispatchEvent(new Event('input',{bubbles:true}))}catch(_){}
+  }else{
+    qty=number($('bbMobileQtyInput').value);
+    if(!(qty>0)){
+      if(typeof setStatus==='function')setStatus('Qty must be greater than 0.','error');
+      return;
+    }
+    if($('qty'))$('qty').value=String(qty);
+  }
+
+  let before=0;
+  try{before=Array.isArray(items)?items.length:0}catch(_){}
+  try{
+    if(typeof window.addProduct==='function')window.addProduct();
+    else if(typeof addProduct==='function')addProduct();
+  }catch(error){
+    if(typeof setStatus==='function')setStatus(clean(error?.message)||'Could not add Product.','error');
+    return;
+  }
+  let after=before;
+  try{after=Array.isArray(items)?items.length:before}catch(_){}
+  if(after>before){
+    closeQtyModal();
+    activeProduct=null;
+    setTimeout(syncAllV2,0);
+  }
+}
+
+function clearManualItemsForContext(){
+  try{
+    items=[];
+    if(typeof clearProductSearch==='function')clearProductSearch();
+    if(typeof renderItems==='function')renderItems();
+    if(typeof updatePreview==='function')updatePreview();
+  }catch(_){}
+}
+
+function wireContextEvents(){
+  const client=$('receiveClient');
+  if(client&&!client.dataset.bbMobileClientProducts){
+    client.dataset.bbMobileClientProducts='1';
+    client.addEventListener('change',()=>{
+      clientProductRows=[];
+      clientProductClientId='';
+      clearManualItemsForContext();
+      setTimeout(()=>loadClientProducts(true),0);
+      setTimeout(syncAllV2,0);
+    });
+  }
+
+  const controller=$('controllerSelect');
+  if(controller&&!controller.dataset.bbMobileRemember){
+    controller.dataset.bbMobileRemember='1';
+    controller.addEventListener('change',saveControllerPreference);
+    new MutationObserver(()=>setTimeout(restoreControllerPreference,0)).observe(controller,{childList:true});
+  }
+
+  ['activityDate','locationSelect','salesmanSelect','batchLocationSelect','driverSelect','driver2Select'].forEach(id=>{
+    const el=$(id);
+    if(el&&!el.dataset.bbCollapseSummary){
+      el.dataset.bbCollapseSummary='1';
+      el.addEventListener('change',updateCollapseSummaries);
+    }
+  });
+}
+
+function syncAllV2(){
+  document.body.dataset.bbMovement=movement();
+  moveSuccessOutsidePreview();
+  hidePurchaseDetails();
+  simplifyBackSale();
+  syncCollapsibles();
+  syncProductLauncher();
+  wireContextEvents();
+  restoreControllerPreference();
+  updateCollapseSummaries();
+}
+
+function boot(){
+  syncAllV2();
+  ['flowInBtn','flowOutBtn','movementCategorySelect','damageWarehouseBtn','damageBatchBtn','batchSelect'].forEach(id=>{
+    const el=$(id);
+    if(el&&!el.dataset.bbMobileUxV2){
+      el.dataset.bbMobileUxV2='1';
+      el.addEventListener('click',()=>setTimeout(syncAllV2,30));
+      el.addEventListener('change',()=>setTimeout(syncAllV2,30));
+    }
+  });
+  [80,250,600,1200,2200,4000].forEach(ms=>setTimeout(syncAllV2,ms));
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+`;
+
 try{
  const response=await fetch('legacy-google-v3.html?v=20260912-zero-cost-1',{cache:'no-store'});
  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
@@ -234,7 +851,7 @@ try{
  if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
  html=html.replace(marker,cutover).replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>').replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
  const bodyClose=html.toLowerCase().lastIndexOf('</body>');if(bodyClose<0)throw new Error('Stock source is missing </body>.');
- const scripts='\n<script src="batch-v2-stock-guard.js?v=20260912-zero-cost-4"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n';
+ const scripts='\n<script src="batch-v2-stock-guard.js?v=20260923-stockux1"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n<script>'+MOBILE_UX_V2+'<\/script>\n';
  html=html.slice(0,bodyClose)+scripts+html.slice(bodyClose);
  document.open();document.write(html);document.close();
 }catch(error){

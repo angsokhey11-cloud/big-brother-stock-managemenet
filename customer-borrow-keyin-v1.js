@@ -8,9 +8,15 @@ const EPS=0.000001;
 const $=id=>document.getElementById(id);
 const clean=v=>String(v==null?'':v).trim();
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
+const html=v=>clean(v)
+  .replace(/&/g,'&amp;')
+  .replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;');
 
 let borrowData={borrows:[],openBatches:[]};
 let borrowBusy=false;
+let selectedBorrowCustomerId='';
 
 function movement(){
   try{return clean(movementType)}catch(_){return ''}
@@ -76,7 +82,7 @@ function ensureFields(){
     wrap.hidden=true;
     wrap.innerHTML=
       '<div class="grid">'+
-        '<div class="field"><label>Customer Name</label><input id="bbBorrowCustomerName" list="bbBorrowCustomerSuggestions" autocomplete="off" placeholder="Type customer name"><datalist id="bbBorrowCustomerSuggestions"></datalist><div class="helper">Type a name or choose an existing customer suggestion.</div></div>'+
+        '<div class="field"><label>Customer Name</label><div class="search-picker bb-borrow-customer-picker"><input id="bbBorrowCustomerName" autocomplete="off" spellcheck="false" placeholder="Type customer name"><div id="bbBorrowCustomerResults" class="product-search-results"></div></div><div class="helper">Type a keyword and tap the customer name. New names can also be typed manually.</div></div>'+
         '<div class="field"><label>Open Batch</label><select id="bbBorrowBatch"><option value="">Select Open Batch</option></select><div class="helper">Borrowed stock goes directly into this Batch as Purchased stock for normal COGS.</div></div>'+
       '</div>';
     parent.insertBefore(wrap,anchor.nextSibling);
@@ -105,8 +111,21 @@ function ensureFields(){
   $('bbBorrowBatch')?.addEventListener('change',()=>{
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
   });
-  $('bbBorrowCustomerName')?.addEventListener('change',()=>{
+  $('bbBorrowCustomerName')?.addEventListener('input',()=>{
+    selectedBorrowCustomerId='';
+    renderBorrowCustomerResults();
     try{updatePreview()}catch(_){}
+  });
+  $('bbBorrowCustomerName')?.addEventListener('focus',renderBorrowCustomerResults);
+  $('bbBorrowCustomerResults')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-bb-borrow-customer-id]');
+    if(!button)return;
+    chooseBorrowCustomer(button.dataset.bbBorrowCustomerId);
+  });
+  document.addEventListener('click',event=>{
+    if(!event.target.closest('.bb-borrow-customer-picker')){
+      closeBorrowCustomerResults();
+    }
   });
 
   return true;
@@ -114,18 +133,78 @@ function ensureFields(){
 
 function fillBorrowCustomers(){
   if(!ensureFields())return;
-  const list=$('bbBorrowCustomerSuggestions');
-  if(!list)return;
-  const rows=allCustomers().slice().sort((a,b)=>
-    clean(a?.customerName||a?.name).localeCompare(clean(b?.customerName||b?.name))
-  );
-  list.innerHTML=rows.map(customer=>{
-    const name=clean(customer?.customerName||customer?.name);
-    if(!name)return '';
-    return '<option value="'+
-      name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
-    '"></option>';
+}
+function closeBorrowCustomerResults(){
+  const box=$('bbBorrowCustomerResults');
+  if(!box)return;
+  box.innerHTML='';
+  box.classList.remove('open');
+}
+function borrowCustomerSearchRows(query){
+  const q=clean(query).toLowerCase();
+  if(!q)return [];
+
+  return allCustomers()
+    .filter(customer=>{
+      const hay=[
+        customer?.customerName,
+        customer?.name,
+        customer?.customerId,
+        customer?.id,
+        customer?.phone,
+        customer?.address
+      ].map(clean).join(' ').toLowerCase();
+      return hay.includes(q);
+    })
+    .sort((a,b)=>{
+      const an=clean(a?.customerName||a?.name).toLowerCase();
+      const bn=clean(b?.customerName||b?.name).toLowerCase();
+      const aStarts=an.startsWith(q)?0:1;
+      const bStarts=bn.startsWith(q)?0:1;
+      if(aStarts!==bStarts)return aStarts-bStarts;
+      return an.localeCompare(bn);
+    })
+    .slice(0,10);
+}
+function renderBorrowCustomerResults(){
+  const input=$('bbBorrowCustomerName');
+  const box=$('bbBorrowCustomerResults');
+  if(!input||!box)return;
+
+  const q=clean(input.value);
+  if(!q){
+    closeBorrowCustomerResults();
+    return;
+  }
+
+  const rows=borrowCustomerSearchRows(q);
+  if(!rows.length){
+    closeBorrowCustomerResults();
+    return;
+  }
+
+  box.innerHTML=rows.map(customer=>{
+    const id=clean(customer?.customerId||customer?.id);
+    const name=clean(customer?.customerName||customer?.name)||id;
+    return '<button type="button" class="product-result" data-bb-borrow-customer-id="'+html(id)+'">'+
+      '<strong>'+html(name)+'</strong>'+
+    '</button>';
   }).join('');
+  box.classList.add('open');
+}
+function chooseBorrowCustomer(id){
+  const customer=allCustomers().find(item=>
+    clean(item?.customerId||item?.id)===clean(id)
+  );
+  if(!customer)return;
+
+  selectedBorrowCustomerId=clean(customer?.customerId||customer?.id);
+  if($('bbBorrowCustomerName')){
+    $('bbBorrowCustomerName').value=
+      clean(customer?.customerName||customer?.name);
+  }
+  closeBorrowCustomerResults();
+  try{updatePreview()}catch(_){}
 }
 function fillBorrowBatchSelect(){
   if(!ensureFields())return;
@@ -154,8 +233,16 @@ function selectedBorrowBatch(){
 }
 
 function selectedBorrowCustomer(){
+  if(selectedBorrowCustomerId){
+    const byId=allCustomers().find(customer=>
+      clean(customer?.customerId||customer?.id)===selectedBorrowCustomerId
+    );
+    if(byId)return byId;
+  }
+
   const name=clean($('bbBorrowCustomerName')?.value).toLowerCase();
   if(!name)return null;
+
   return allCustomers().find(customer=>
     clean(customer?.customerName||customer?.name).toLowerCase()===name
   )||null;
@@ -478,7 +565,9 @@ if(typeof clearForm==='function'){
   const baseClearForm=clearForm;
   clearForm=function(){
     const result=baseClearForm.apply(this,arguments);
+    selectedBorrowCustomerId='';
     if($('bbBorrowCustomerName'))$('bbBorrowCustomerName').value='';
+    closeBorrowCustomerResults();
     if($('bbBorrowBatch'))$('bbBorrowBatch').value='';
     if($('bbBorrowRef'))$('bbBorrowRef').value='';
     if($('bbBorrowClearBatch'))$('bbBorrowClearBatch').value='';

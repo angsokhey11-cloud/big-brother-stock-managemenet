@@ -77,6 +77,7 @@ function ensureFields(){
     wrap.innerHTML=
       '<div class="grid">'+
         '<div class="field"><label>Borrow From Customer</label><select id="bbBorrowCustomer"><option value="">Select Customer</option></select></div>'+
+        '<div class="field"><label>Manual Customer Name</label><input id="bbBorrowManualCustomer" autocomplete="off" placeholder="Type customer name if not in list"><div class="helper">Use either Customer list or Manual Customer Name.</div></div>'+
         '<div class="field"><label>Open Batch</label><select id="bbBorrowBatch"><option value="">Select Open Batch</option></select><div class="helper">Borrowed stock goes directly into this Batch as Purchased stock for normal COGS.</div></div>'+
       '</div>';
     parent.insertBefore(wrap,anchor.nextSibling);
@@ -106,7 +107,15 @@ function ensureFields(){
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
   });
   $('bbBorrowCustomer')?.addEventListener('change',()=>{
+    if(clean($('bbBorrowCustomer')?.value)&&$('bbBorrowManualCustomer')){
+      $('bbBorrowManualCustomer').value='';
+    }
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
+  });
+  $('bbBorrowManualCustomer')?.addEventListener('input',()=>{
+    if(clean($('bbBorrowManualCustomer')?.value)&&$('bbBorrowCustomer')){
+      $('bbBorrowCustomer').value='';
+    }
   });
 
   return true;
@@ -243,6 +252,16 @@ function clearAvailableFor(code){
   return Math.max(0,batchAvailable(selectedClearBatch(),code));
 }
 
+function forceBorrowProductUi(){
+  const t=movement();
+  if(t!==BORROW&&t!==CLEAR)return;
+  const panel=$('manualProductPanel');
+  if(panel)panel.hidden=false;
+  const launcher=$('bbMobileProductLauncher');
+  if(launcher)launcher.hidden=false;
+  const button=$('bbMobileAddProductBtn');
+  if(button)button.hidden=false;
+}
 function syncCustomFields(){
   if(!ensureFields())return;
   fillBorrowCustomers();
@@ -250,6 +269,8 @@ function syncCustomFields(){
   $('bbBorrowStockFields').hidden=movement()!==BORROW;
   $('bbBorrowClearFields').hidden=movement()!==CLEAR;
   if(movement()===CLEAR)void refreshBorrowOptions(true);
+  forceBorrowProductUi();
+  [0,60,200,600].forEach(ms=>setTimeout(forceBorrowProductUi,ms));
 }
 
 try{
@@ -377,9 +398,11 @@ if(typeof buildPayload==='function'){
     if(movement()===BORROW){
       const batch=selectedBorrowBatch();
       const customer=selectedBorrowCustomer();
+      const manualCustomerName=clean($('bbBorrowManualCustomer')?.value);
       d.batchId=clean(batch?.batchId);
-      d.customerId=clean(customer?.customerId||customer?.id);
-      d.customerName=clean(customer?.customerName||customer?.name);
+      d.customerId=manualCustomerName?'':clean(customer?.customerId||customer?.id);
+      d.manualCustomerName=manualCustomerName;
+      d.customerName=manualCustomerName||clean(customer?.customerName||customer?.name);
       d.salesmanStaffId=clean(batch?.salesmanStaffId);
       d.salesmanName=clean(batch?.salesmanName);
       d.locationCode=clean(batch?.locationCode);
@@ -409,7 +432,7 @@ if(typeof validate==='function'){
     if(base)return base;
 
     if(movement()===BORROW){
-      if(!d.customerId)return 'Borrow From Customer is required.';
+      if(!d.customerId&&!clean(d.manualCustomerName))return 'Borrow From Customer or Manual Customer Name is required.';
       if(!d.batchId)return 'Open Batch is required.';
     }
 
@@ -467,6 +490,7 @@ if(typeof clearForm==='function'){
   clearForm=function(){
     const result=baseClearForm.apply(this,arguments);
     if($('bbBorrowCustomer'))$('bbBorrowCustomer').value='';
+    if($('bbBorrowManualCustomer'))$('bbBorrowManualCustomer').value='';
     if($('bbBorrowBatch'))$('bbBorrowBatch').value='';
     if($('bbBorrowRef'))$('bbBorrowRef').value='';
     if($('bbBorrowClearBatch'))$('bbBorrowClearBatch').value='';

@@ -215,7 +215,7 @@ function decorateProducts(){
      }
      const remove=tr.querySelector('.remove');
      if(remove){
-       remove.textContent='×';
+       if(clean(remove.textContent)!=='×')remove.textContent='×';
        remove.title='Remove product';
        remove.setAttribute('aria-label','Remove product');
      }

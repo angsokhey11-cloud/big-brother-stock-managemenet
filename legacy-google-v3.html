@@ -403,7 +403,13 @@ function applyMovementDeltas(deltas){
         productName:clean(delta.productName)||code,
         unit:"",
         warehouseGood:0,
+        warehousePurchased:0,
+        warehouseZeroCost:0,
+        warehousePhysical:0,
         batchPending:0,
+        batchPurchased:0,
+        batchZeroCost:0,
+        batchPhysical:0,
         damaged:0,
         totalGood:0
       };
@@ -411,21 +417,69 @@ function applyMovementDeltas(deltas){
       stockSnapshot.push(row);
     }
 
-    row.warehouseGood=
-      num(row.warehouseGood)+
-      num(delta.warehouseDelta);
+    const hasWarehouseSplit=
+      Object.prototype.hasOwnProperty.call(delta,"warehousePurchasedDelta") ||
+      Object.prototype.hasOwnProperty.call(delta,"warehouseZeroCostDelta");
 
-    row.batchPending=
-      num(row.batchPending)+
-      num(delta.batchPendingDelta);
+    const hasBatchSplit=
+      Object.prototype.hasOwnProperty.call(delta,"batchPurchasedDelta") ||
+      Object.prototype.hasOwnProperty.call(delta,"batchZeroCostDelta");
+
+    if(hasWarehouseSplit){
+      row.warehousePurchased=
+        num(row.warehousePurchased ?? row.warehouseGood)+
+        num(delta.warehousePurchasedDelta);
+
+      row.warehouseZeroCost=
+        num(row.warehouseZeroCost)+
+        num(delta.warehouseZeroCostDelta);
+
+      row.warehouseGood=row.warehousePurchased;
+      row.warehousePhysical=
+        num(row.warehousePurchased)+
+        num(row.warehouseZeroCost);
+    }else{
+      row.warehouseGood=
+        num(row.warehouseGood)+
+        num(delta.warehouseDelta);
+
+      row.warehousePurchased=num(row.warehouseGood);
+      row.warehousePhysical=
+        num(row.warehouseGood)+
+        num(row.warehouseZeroCost);
+    }
+
+    if(hasBatchSplit){
+      row.batchPurchased=
+        num(row.batchPurchased ?? row.batchPending)+
+        num(delta.batchPurchasedDelta);
+
+      row.batchZeroCost=
+        num(row.batchZeroCost)+
+        num(delta.batchZeroCostDelta);
+
+      row.batchPending=row.batchPurchased;
+      row.batchPhysical=
+        num(row.batchPurchased)+
+        num(row.batchZeroCost);
+    }else{
+      row.batchPending=
+        num(row.batchPending)+
+        num(delta.batchPendingDelta);
+
+      row.batchPurchased=num(row.batchPending);
+      row.batchPhysical=
+        num(row.batchPending)+
+        num(row.batchZeroCost);
+    }
 
     row.damaged=
       num(row.damaged)+
       num(delta.damagedDelta);
 
     row.totalGood=
-      num(row.warehouseGood)+
-      num(row.batchPending);
+      num(row.warehousePhysical)+
+      num(row.batchPhysical);
 
     const batchId=clean(delta.batchId);
 
@@ -712,15 +766,28 @@ function applySharedReportStockCache(){
     return false;
   }
 
-  stockSnapshot=rows.map(x=>({
-    productCode:clean(x.productCode),
-    productName:clean(x.productName),
-    unit:clean(x.unit),
-    warehouseGood:num(x.warehouseGood),
-    batchPending:num(x.batchPending),
-    damaged:num(x.damaged),
-    totalGood:num(x.totalGood)
-  }));
+  stockSnapshot=rows.map(x=>{
+    const warehousePurchased=num(x.warehousePurchased ?? x.warehouseGood);
+    const warehouseZeroCost=num(x.warehouseZeroCost);
+    const batchPurchased=num(x.batchPurchased ?? x.batchPending);
+    const batchZeroCost=num(x.batchZeroCost);
+
+    return{
+      productCode:clean(x.productCode),
+      productName:clean(x.productName),
+      unit:clean(x.unit),
+      warehouseGood:warehousePurchased,
+      warehousePurchased,
+      warehouseZeroCost,
+      warehousePhysical:num(x.warehousePhysical ?? (warehousePurchased+warehouseZeroCost)),
+      batchPending:batchPurchased,
+      batchPurchased,
+      batchZeroCost,
+      batchPhysical:num(x.batchPhysical ?? (batchPurchased+batchZeroCost)),
+      damaged:num(x.damaged),
+      totalGood:num(x.totalGood ?? (warehousePurchased+warehouseZeroCost+batchPurchased+batchZeroCost))
+    };
+  });
 
   if(reportRevision){
     stockRevision=reportRevision;
@@ -1425,7 +1492,7 @@ function fillBatchSelect(){
 }
 function pick(list,id){const i=Number($(id).value);return Number.isInteger(i)&&i>=0&&list[i]?list[i]:null}
 function selectedBatch(){return pick(openBatches,"batchSelect")}
-function stockFor(code){return stockSnapshot.find(x=>clean(x.productCode)===clean(code))||{warehouseGood:0,batchPending:0,damaged:0,totalGood:0}}
+function stockFor(code){return stockSnapshot.find(x=>clean(x.productCode)===clean(code))||{warehouseGood:0,warehousePurchased:0,warehouseZeroCost:0,warehousePhysical:0,batchPending:0,batchPurchased:0,batchZeroCost:0,batchPhysical:0,damaged:0,totalGood:0}}
 function isSimpleBatchReferenceMovement(){
   return (
     movementType==="BACK_SALE" ||
@@ -1441,13 +1508,25 @@ function currentAvailable(code){
     return null;
   }
 
-  return num(stockFor(code).warehouseGood);
+  const stock=stockFor(code);
+
+  if(movementType==="STAFF_ALLOWANCE"){
+    return num(
+      stock.warehousePhysical ??
+      (
+        num(stock.warehousePurchased ?? stock.warehouseGood)+
+        num(stock.warehouseZeroCost)
+      )
+    );
+  }
+
+  return num(stock.warehouseGood);
 }
 
 function availableLabel(){
-  return isSimpleBatchReferenceMovement()
-    ? "Live Batch Check"
-    : "Warehouse Good";
+  if(isSimpleBatchReferenceMovement())return "Live Batch Check";
+  if(movementType==="STAFF_ALLOWANCE")return "Warehouse Stock";
+  return "Warehouse Good";
 }
 
 function updateProductAvailability(){

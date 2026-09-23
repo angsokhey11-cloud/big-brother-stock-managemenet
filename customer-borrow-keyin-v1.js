@@ -76,8 +76,8 @@ function ensureFields(){
     wrap.hidden=true;
     wrap.innerHTML=
       '<div class="grid">'+
-        '<div class="field"><label>Borrow From Customer</label><select id="bbBorrowCustomer"><option value="">Select Customer</option></select></div>'+
-        '<div class="field"><label>Manual Customer Name</label><input id="bbBorrowManualCustomer" autocomplete="off" placeholder="Type customer name if not in list"><div class="helper">Use either Customer list or Manual Customer Name.</div></div>'+
+        '<div class="field"><label>Customer</label><select id="bbBorrowCustomer"><option value="">Select Customer (Optional)</option></select></div>'+
+        '<div class="field"><label>Customer Name</label><input id="bbBorrowCustomerName" autocomplete="off" placeholder="Type customer name"><div class="helper">Selecting a Customer fills this automatically. You can still edit it.</div></div>'+
         '<div class="field"><label>Open Batch</label><select id="bbBorrowBatch"><option value="">Select Open Batch</option></select><div class="helper">Borrowed stock goes directly into this Batch as Purchased stock for normal COGS.</div></div>'+
       '</div>';
     parent.insertBefore(wrap,anchor.nextSibling);
@@ -107,15 +107,12 @@ function ensureFields(){
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
   });
   $('bbBorrowCustomer')?.addEventListener('change',()=>{
-    if(clean($('bbBorrowCustomer')?.value)&&$('bbBorrowManualCustomer')){
-      $('bbBorrowManualCustomer').value='';
+    const customer=selectedBorrowCustomer();
+    if($('bbBorrowCustomerName')){
+      $('bbBorrowCustomerName').value=
+        clean(customer?.customerName||customer?.name);
     }
     try{items=[];renderItems();clearProductSearch();updateProductAvailability();updatePreview()}catch(_){}
-  });
-  $('bbBorrowManualCustomer')?.addEventListener('input',()=>{
-    if(clean($('bbBorrowManualCustomer')?.value)&&$('bbBorrowCustomer')){
-      $('bbBorrowCustomer').value='';
-    }
   });
 
   return true;
@@ -398,11 +395,11 @@ if(typeof buildPayload==='function'){
     if(movement()===BORROW){
       const batch=selectedBorrowBatch();
       const customer=selectedBorrowCustomer();
-      const manualCustomerName=clean($('bbBorrowManualCustomer')?.value);
+      const customerName=clean($('bbBorrowCustomerName')?.value);
       d.batchId=clean(batch?.batchId);
-      d.customerId=manualCustomerName?'':clean(customer?.customerId||customer?.id);
-      d.manualCustomerName=manualCustomerName;
-      d.customerName=manualCustomerName||clean(customer?.customerName||customer?.name);
+      d.customerId=clean(customer?.customerId||customer?.id);
+      d.manualCustomerName=customerName;
+      d.customerName=customerName||clean(customer?.customerName||customer?.name);
       d.salesmanStaffId=clean(batch?.salesmanStaffId);
       d.salesmanName=clean(batch?.salesmanName);
       d.locationCode=clean(batch?.locationCode);
@@ -432,7 +429,7 @@ if(typeof validate==='function'){
     if(base)return base;
 
     if(movement()===BORROW){
-      if(!d.customerId&&!clean(d.manualCustomerName))return 'Borrow From Customer or Manual Customer Name is required.';
+      if(!clean(d.customerName))return 'Customer Name is required.';
       if(!d.batchId)return 'Open Batch is required.';
     }
 
@@ -490,7 +487,7 @@ if(typeof clearForm==='function'){
   clearForm=function(){
     const result=baseClearForm.apply(this,arguments);
     if($('bbBorrowCustomer'))$('bbBorrowCustomer').value='';
-    if($('bbBorrowManualCustomer'))$('bbBorrowManualCustomer').value='';
+    if($('bbBorrowCustomerName'))$('bbBorrowCustomerName').value='';
     if($('bbBorrowBatch'))$('bbBorrowBatch').value='';
     if($('bbBorrowRef'))$('bbBorrowRef').value='';
     if($('bbBorrowClearBatch'))$('bbBorrowClearBatch').value='';

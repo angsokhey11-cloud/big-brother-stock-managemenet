@@ -885,7 +885,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 `;
 
 try{
- const response=await fetch('legacy-google-v3.html?v=20260912-zero-cost-1',{cache:'no-store'});
+ const response=await fetch('legacy-google-v3.html?v=20260923-staffallow1',{cache:'no-store'});
  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
  let html=await response.text();
  const headClose=html.toLowerCase().indexOf('</head>');if(headClose<0)throw new Error('Stock source is missing </head>.');

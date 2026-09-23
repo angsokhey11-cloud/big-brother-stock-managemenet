@@ -14,9 +14,11 @@ const $=id=>document.getElementById(id);
 const categories=[
  {value:'PURCHASE',flow:'INFLOW',icon:'🛒',label:'Purchase'},
  {value:'RECEIVE_FROM_CLIENT',flow:'INFLOW',icon:'📦',label:'Receive from Client'},
+ {value:'CUSTOMER_BORROW',flow:'INFLOW',icon:'🤝',label:'Borrow Stock'},
  {value:'BACK_SALE',flow:'INFLOW',icon:'↩',label:'Back Sale'},
  {value:'DAMAGE_EXCHANGE_RECEIVE',flow:'INFLOW',icon:'🔄',label:'Damage Exchange Received'},
  {value:'BATCH_STOCK',flow:'OUTFLOW',icon:'🚚',label:'Batch Stock'},
+ {value:'CUSTOMER_BORROW_CLEAR',flow:'OUTFLOW',icon:'↪',label:'Clear Borrow'},
  {value:'STOCK_DAMAGE',flow:'OUTFLOW',icon:'⚠️',label:'Stock Damage'},
  {value:'STAFF_ALLOWANCE',flow:'OUTFLOW',icon:'👤',label:'Staff Allowance'},
  {value:'DAMAGE_CLEAR',flow:'OUTFLOW',icon:'🗑️',label:'Damaged Stock Cleared'}
@@ -24,8 +26,10 @@ const categories=[
 const titles={
  PURCHASE:['🛒 Purchase Receiving','📦 Products Receiving'],
  RECEIVE_FROM_CLIENT:['📦 Receive from Client','📦 Products'],
+ CUSTOMER_BORROW:['🤝 Borrow Stock from Customer','📦 Borrowed Products'],
  BACK_SALE:['↩ Back Sale','📦 Batch Return Products'],
  BATCH_STOCK:['🚚 Batch Stock to Salesman','📦 Batch Products'],
+ CUSTOMER_BORROW_CLEAR:['↪ Clear Borrowed Stock','📦 Return Products'],
  STOCK_DAMAGE:['⚠️ Stock Damage','📦 Damage Products'],
  STAFF_ALLOWANCE:['👤 Staff Allowance','📦 Allowance Products'],
  DAMAGE_CLEAR:['🗑️ Damaged Stock Cleared','📦 Damaged Products'],
@@ -519,6 +523,10 @@ function mobilePool(){
 function availabilityText(product){
   const t=movement();
   if(t==='RECEIVE_FROM_CLIENT')return 'Client product';
+  if(t==='CUSTOMER_BORROW')return 'Borrow into Batch';
+  if(t==='CUSTOMER_BORROW_CLEAR'){
+    try{return 'Batch '+fmtQty(currentAvailable(product.productCode))}catch(_){return 'Current Batch'}
+  }
   if(t==='BATCH_STOCK'){
     const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
     return 'Purchased '+fmtQty(p)+(z>EPS?' · Zero-Cost '+fmtQty(z):'');

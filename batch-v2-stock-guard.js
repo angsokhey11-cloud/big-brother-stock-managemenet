@@ -904,6 +904,20 @@ function showBatchSourceFields(
 
   }
 
+
+  /*
+   * Zero-Cost controls are conditional even while Batch Stock
+   * mode is active. Do not waste space when this SKU has no
+   * Zero-Cost Warehouse stock.
+   */
+  if(
+    show
+  ){
+
+    updateBatchSourceAvailability();
+
+  }
+
 }
 
 
@@ -1063,6 +1077,24 @@ function updateBatchSourceAvailability(){
   }
 
 
+  const zeroAvailableWrap =
+    document.getElementById(
+      'bbZeroAvailableWrap'
+    );
+
+
+  const zeroOutWrap =
+    document.getElementById(
+      'bbZeroOutWrap'
+    );
+
+
+  const zeroOut =
+    document.getElementById(
+      'bbZeroOut'
+    );
+
+
   let product = null;
 
 
@@ -1074,6 +1106,56 @@ function updateBatchSourceAvailability(){
   }catch(error){}
 
 
+  const zeroAvailable =
+    product
+      ?
+      zeroCostWarehouseAvailable(
+        product.productCode
+      )
+      :
+      0;
+
+
+  const showZeroCost =
+    isNewBatchStock()
+    &&
+    zeroAvailable
+    >
+    EPS;
+
+
+  if(
+    zeroAvailableWrap
+  ){
+
+    zeroAvailableWrap.hidden =
+      !showZeroCost;
+
+  }
+
+
+  if(
+    zeroOutWrap
+  ){
+
+    zeroOutWrap.hidden =
+      !showZeroCost;
+
+  }
+
+
+  if(
+    !showZeroCost
+    &&
+    zeroOut
+  ){
+
+    zeroOut.value =
+      '0';
+
+  }
+
+
   if(
     !product
   ){
@@ -1083,6 +1165,8 @@ function updateBatchSourceAvailability(){
 
     zeroField.value =
       '0';
+
+    updateBatchTotal();
 
     return;
 
@@ -1099,10 +1183,11 @@ function updateBatchSourceAvailability(){
 
   zeroField.value =
     fmtQty(
-      zeroCostWarehouseAvailable(
-        product.productCode
-      )
+      zeroAvailable
     );
+
+
+  updateBatchTotal();
 
 }
 

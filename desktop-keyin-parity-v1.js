@@ -833,3 +833,135 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   style.textContent="\n/* Desktop sizing only. Behavior intentionally stays identical to mobile Stock Key-In. */\nbody.bb-stock-desktop-parity{padding-bottom:78px!important}\nbody.bb-stock-desktop-parity .page{\n  width:min(1180px,calc(100% - 24px))!important;\n  max-width:1180px!important;\n  margin:0 auto!important;\n  padding:12px!important\n}\nbody.bb-stock-desktop-parity .topbar{\n  display:flex!important;\n  width:min(1180px,calc(100% - 24px))!important;\n  max-width:1180px!important;\n  margin:10px auto 8px!important\n}\nbody.bb-stock-desktop-parity #status{\n  margin:0 0 10px!important;\n  padding:9px 12px!important;\n  font-size:11px!important\n}\nbody.bb-stock-desktop-parity .card{\n  margin:0 0 10px!important;\n  padding:14px!important;\n  border-radius:12px!important\n}\nbody.bb-stock-desktop-parity .section-title{\n  margin:0 0 10px!important;\n  font-size:15px!important\n}\nbody.bb-stock-desktop-parity .grid,\nbody.bb-stock-desktop-parity .grid2,\nbody.bb-stock-desktop-parity .dynamic .grid{\n  grid-template-columns:repeat(4,minmax(0,1fr))!important;\n  gap:10px!important\n}\nbody.bb-stock-desktop-parity .field label{\n  margin-bottom:5px!important;\n  font-size:10px!important\n}\nbody.bb-stock-desktop-parity .field input,\nbody.bb-stock-desktop-parity .field select,\nbody.bb-stock-desktop-parity .field textarea{\n  min-height:40px!important;\n  padding:8px 10px!important;\n  font-size:12px!important\n}\nbody.bb-stock-desktop-parity .helper{\n  margin-top:4px!important;\n  font-size:9px!important\n}\nbody.bb-stock-desktop-parity .bb-flow-shell .flow-btn{\n  min-height:42px!important;\n  font-size:11px!important\n}\nbody.bb-stock-desktop-parity .bb-category-toggle{\n  min-height:43px!important;\n  padding:9px 12px!important\n}\nbody.bb-stock-desktop-parity .bb-category-toggle strong{font-size:11px!important}\nbody.bb-stock-desktop-parity .bb-category-toggle .bb-current{font-size:9px!important}\nbody.bb-stock-desktop-parity .bb-mobile-categories{\n  grid-template-columns:repeat(4,minmax(0,1fr))!important;\n  gap:7px!important;\n  padding-top:7px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-category-btn{\n  min-height:38px!important;\n  padding:7px 9px!important;\n  font-size:10px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-category-btn span{font-size:13px!important}\nbody.bb-stock-desktop-parity .bb-collapse-summary{\n  margin:-2px 0 8px!important;\n  font-size:10px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-note-toggle{\n  min-height:38px!important;\n  padding:8px 10px!important;\n  font-size:10px!important\n}\nbody.bb-stock-desktop-parity .bb-add-product-btn{\n  min-height:46px!important;\n  font-size:12px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-overlay{\n  align-items:center!important;\n  padding:22px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-sheet{\n  width:min(720px,92vw)!important;\n  max-height:82vh!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-sheet-head{\n  padding:14px 16px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-sheet-head strong{font-size:16px!important}\nbody.bb-stock-desktop-parity .bb-mobile-picker-search{padding:11px 14px!important}\nbody.bb-stock-desktop-parity .bb-mobile-picker-search input{\n  height:44px!important;\n  font-size:13px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-product-list{padding:0 14px 14px!important}\nbody.bb-stock-desktop-parity .bb-mobile-product-choice{\n  min-height:50px!important;\n  padding:9px 4px!important\n}\nbody.bb-stock-desktop-parity .bb-mobile-product-choice strong{font-size:12px!important}\nbody.bb-stock-desktop-parity .bb-mobile-product-choice small{font-size:9px!important}\nbody.bb-stock-desktop-parity .bb-mobile-product-choice .avail{font-size:10px!important}\nbody.bb-stock-desktop-parity .bb-qty-body{padding:16px!important}\nbody.bb-stock-desktop-parity .bb-qty-product strong{font-size:14px!important}\nbody.bb-stock-desktop-parity .bb-qty-product span,\nbody.bb-stock-desktop-parity .bb-qty-available{font-size:10px!important}\nbody.bb-stock-desktop-parity .bb-qty-field label{font-size:10px!important}\nbody.bb-stock-desktop-parity .bb-qty-control{\n  grid-template-columns:48px minmax(0,1fr) 48px!important;\n  gap:8px!important\n}\nbody.bb-stock-desktop-parity .bb-qty-control button,\nbody.bb-stock-desktop-parity .bb-qty-control input{\n  min-height:46px!important;\n  height:46px!important\n}\nbody.bb-stock-desktop-parity .bb-qty-actions button{\n  min-height:46px!important;\n  font-size:11px!important\n}\nbody.bb-stock-desktop-parity .bb-products-card .table-wrap{\n  border:1px solid #e0e8f1!important;\n  border-radius:10px!important;\n  overflow:hidden!important\n}\nbody.bb-stock-desktop-parity #manualProductPanel tbody tr:not(:has(td.empty)){\n  grid-template-columns:minmax(0,1fr) 110px 42px!important;\n  gap:12px!important;\n  padding:10px 12px!important\n}\nbody.bb-stock-desktop-parity[data-bb-movement=\"BATCH_STOCK\"] #manualProductPanel tbody tr:not(:has(td.empty)){\n  grid-template-columns:minmax(0,1fr) 100px 100px 110px 42px!important\n}\nbody.bb-stock-desktop-parity #manualProductPanel tbody td:first-child strong{\n  font-size:12px!important\n}\nbody.bb-stock-desktop-parity #manualProductPanel tbody td:first-child .bb-mobile-product-code{\n  font-size:8px!important\n}\nbody.bb-stock-desktop-parity #manualProductPanel tbody td[data-bb-label=\"Qty\"],\nbody.bb-stock-desktop-parity #manualProductPanel tbody td[data-bb-label=\"Batch Qty\"]{\n  min-width:90px!important;\n  font-size:12px!important\n}\nbody.bb-stock-desktop-parity[data-bb-movement=\"BATCH_STOCK\"] #manualProductPanel tbody td[data-bb-label=\"Purchased Out\"],\nbody.bb-stock-desktop-parity[data-bb-movement=\"BATCH_STOCK\"] #manualProductPanel tbody td[data-bb-label=\"Zero-Cost Out\"]{\n  min-width:80px!important;\n  font-size:11px!important\n}\nbody.bb-stock-desktop-parity #manualProductPanel .remove{\n  width:34px!important;\n  height:34px!important;\n  min-height:34px!important\n}\nbody.bb-stock-desktop-parity .actions{\n  width:min(1180px,100%)!important;\n  grid-template-columns:1fr 56px 1.6fr!important;\n  padding:9px 12px!important\n}\nbody.bb-stock-desktop-parity .actions .btn{\n  min-height:44px!important;\n  font-size:11px!important\n}\nbody.bb-stock-desktop-parity #refreshBtn::after{font-size:20px!important}\nbody.bb-stock-desktop-parity #successPanel.bb-mobile-success{\n  width:min(1156px,calc(100% - 24px))!important;\n  max-width:1156px!important;\n  padding:12px!important\n}\n@media(max-width:900px){\n  body.bb-stock-desktop-parity .grid,\n  body.bb-stock-desktop-parity .grid2,\n  body.bb-stock-desktop-parity .dynamic .grid{\n    grid-template-columns:repeat(2,minmax(0,1fr))!important\n  }\n  body.bb-stock-desktop-parity .bb-mobile-categories{\n    grid-template-columns:repeat(2,minmax(0,1fr))!important\n  }\n}\n";
   document.head.appendChild(style);
 })();
+
+/* BIG BROTHER Desktop Stock Key-In — Wide Workspace V2 */
+(function(){
+  if(document.getElementById('bb-stock-desktop-wide-v2-style'))return;
+  const style=document.createElement('style');
+  style.id='bb-stock-desktop-wide-v2-style';
+  style.textContent=`
+body.bb-stock-desktop-parity{
+  padding-bottom:86px!important
+}
+body.bb-stock-desktop-parity .page{
+  width:min(1360px,calc(100% - 24px))!important;
+  max-width:1360px!important;
+  margin:0 auto!important;
+  padding:16px!important
+}
+body.bb-stock-desktop-parity .topbar{
+  display:flex!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0 0 12px!important
+}
+body.bb-stock-desktop-parity #status{
+  margin:0 0 12px!important;
+  padding:10px 13px!important;
+  font-size:12px!important;
+  line-height:1.4!important
+}
+body.bb-stock-desktop-parity .card{
+  margin:0 0 12px!important;
+  padding:16px!important;
+  border-radius:13px!important
+}
+body.bb-stock-desktop-parity .section-title{
+  margin:0 0 11px!important;
+  font-size:16px!important
+}
+body.bb-stock-desktop-parity .grid,
+body.bb-stock-desktop-parity .grid2,
+body.bb-stock-desktop-parity .dynamic .grid{
+  gap:12px!important
+}
+body.bb-stock-desktop-parity .field label{
+  margin-bottom:5px!important;
+  font-size:10px!important
+}
+body.bb-stock-desktop-parity .field input,
+body.bb-stock-desktop-parity .field select,
+body.bb-stock-desktop-parity .field textarea{
+  min-height:44px!important;
+  padding:9px 11px!important;
+  font-size:13px!important
+}
+body.bb-stock-desktop-parity .helper{
+  margin-top:5px!important;
+  font-size:9px!important;
+  line-height:1.4!important
+}
+body.bb-stock-desktop-parity .bb-flow-shell .flow-btn{
+  min-height:48px!important;
+  font-size:12px!important
+}
+body.bb-stock-desktop-parity .bb-category-toggle{
+  min-height:48px!important;
+  padding:10px 13px!important
+}
+body.bb-stock-desktop-parity .bb-category-toggle strong{
+  font-size:12px!important
+}
+body.bb-stock-desktop-parity .bb-category-toggle .bb-current{
+  font-size:10px!important
+}
+body.bb-stock-desktop-parity .bb-mobile-category-btn{
+  min-height:42px!important;
+  padding:8px 10px!important;
+  font-size:11px!important
+}
+body.bb-stock-desktop-parity .bb-add-product-btn{
+  min-height:50px!important;
+  font-size:13px!important
+}
+body.bb-stock-desktop-parity #manualProductPanel tbody tr:not(:has(td.empty)){
+  padding:12px 14px!important
+}
+body.bb-stock-desktop-parity #manualProductPanel tbody td:first-child strong{
+  font-size:13px!important
+}
+body.bb-stock-desktop-parity #manualProductPanel tbody td:first-child .bb-mobile-product-code{
+  font-size:9px!important
+}
+body.bb-stock-desktop-parity .actions{
+  width:min(1360px,100%)!important;
+  padding:10px 14px!important
+}
+body.bb-stock-desktop-parity .actions .btn{
+  min-height:46px!important;
+  font-size:12px!important
+}
+body.bb-stock-desktop-parity #successPanel.bb-mobile-success{
+  width:min(1336px,calc(100% - 24px))!important;
+  max-width:1336px!important
+}
+
+/* Back Sale: existingBatchFields wraps its real grid one level deeper. */
+body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide>.grid{
+  grid-template-columns:minmax(0,1fr)!important;
+  width:100%!important
+}
+body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide>.grid>.field:not(.bb-mobile-hidden-field){
+  grid-column:1/-1!important;
+  width:100%!important;
+  max-width:none!important
+}
+body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide #batchSelect{
+  width:100%!important;
+  max-width:none!important;
+  min-height:48px!important;
+  font-size:13px!important
+}
+
+@media(max-width:1100px){
+  body.bb-stock-desktop-parity .page{
+    width:min(100%,calc(100% - 16px))!important;
+    padding:10px!important
+  }
+  body.bb-stock-desktop-parity .actions{
+    width:100%!important
+  }
+}
+`;
+  document.head.appendChild(style);
+})();

@@ -169,6 +169,9 @@ style.textContent=
 'body.bb-stock-desktop-parity #receiveClientDetail{display:none!important}'+
 'body.bb-stock-desktop-parity #manualProductPanel #productEntry{display:none!important}'+
 'body.bb-stock-desktop-parity .bb-mobile-hidden-field{display:none!important}'+
+'body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide{grid-template-columns:minmax(0,1fr)!important}'+
+'body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide>.field:not(.bb-mobile-hidden-field){grid-column:1/-1!important;width:100%!important;max-width:none!important}'+
+'body.bb-stock-desktop-parity #existingBatchFields.bb-back-sale-batch-wide #batchSelect{width:100%!important;max-width:none!important}'+
 'body.bb-stock-desktop-parity .bb-collapsible>.section-title{position:relative;cursor:pointer;padding-right:28px!important;user-select:none}'+
 'body.bb-stock-desktop-parity .bb-collapsible>.section-title:after{content:"⌄";position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:1000;transition:transform .15s ease}'+
 'body.bb-stock-desktop-parity .bb-collapsible.bb-collapsed>.section-title:after{transform:translateY(-50%) rotate(-90deg)}'+
@@ -286,8 +289,10 @@ function simplifyBackSale(){
   const parent=$('existingBatchFields');
   if(!parent)return;
   const keep=$('batchSelect')?.closest('.field');
+  const isBackSale=movement()==='BACK_SALE';
+  parent.classList.toggle('bb-back-sale-batch-wide',isBackSale);
   parent.querySelectorAll('.field').forEach(field=>{
-    field.classList.toggle('bb-mobile-hidden-field',movement()==='BACK_SALE'&&field!==keep);
+    field.classList.toggle('bb-mobile-hidden-field',isBackSale&&field!==keep);
   });
 }
 

@@ -12,7 +12,7 @@ html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-ser
 <script>
 (async function(){
   try{
-    const response=await fetch('legacy-google-v3.html?v=20260926-batchwide1',{cache:'no-store'});
+    const response=await fetch('legacy-google-v3.html?v=20260926-desktopwide2',{cache:'no-store'});
     if(!response.ok)throw new Error('Could not load Stock Management source.');
     let html=await response.text();
 
@@ -49,7 +49,7 @@ ${marker}`;
       pageScripts+='<scr'+'ipt src="damaged-clearance-keyin.js?v=20260911-3"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="damaged-exchange-receive-keyin.js?v=20260910-3"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="customer-borrow-keyin-v1.js?v=20260923-borrow4"></scr'+'ipt>\n';
-      pageScripts+='<scr'+'ipt src="desktop-keyin-parity-v1.js?v=20260926-batchwide1"></scr'+'ipt>\n';
+      pageScripts+='<scr'+'ipt src="desktop-keyin-parity-v1.js?v=20260926-desktopwide2"></scr'+'ipt>\n';
     }
     if(view==='damaged')pageScripts+='<scr'+'ipt src="damaged-stock-page.js?v=20260910-1"></scr'+'ipt>\n';
 

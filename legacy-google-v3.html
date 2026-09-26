@@ -1475,9 +1475,9 @@ function fillBatchSelect(){
         " · "+
         formatDate(x.batchDate)+
         " · "+
-        (x.salesmanName||"-")+
+        (x.locationName||x.locationCode||"-")+
         " · "+
-        (x.locationName||x.locationCode||"-")
+        (x.salesmanName||"-")
       )+
       '</option>'
     ).join("");

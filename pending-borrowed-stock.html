@@ -21,6 +21,13 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
 .overlay[hidden]{display:none}.receipt{width:min(850px,100%);max-height:94vh;overflow:auto;padding:22px}.receipt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0}.receipt-head>div:first-child{min-width:0;flex:1}.receipt-head>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:65%}.receipt-head .btn{white-space:normal;flex:0 1 auto}.receipt{min-width:0;overflow-x:hidden}.receipt-body,#receiptBody{min-width:0;overflow-wrap:anywhere}
 .receipt h1{font-size:22px}.receipt h3{font-size:15px;margin-top:25px}.receipt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px;font-size:13px}
 .receipt-grid div{padding:9px;background:#f5f8fc;border-radius:7px}.receipt-grid b{display:block;font-size:11px;color:#63758b;margin-bottom:5px}
+.borrow-compact{margin:12px 0 2px;display:grid;grid-template-columns:minmax(0,1fr);gap:0;font-size:13px}
+.borrow-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:9px 0;border-bottom:1px solid #e2e9f2}
+.borrow-field{min-width:0;overflow-wrap:anywhere}
+.borrow-field b{display:block;color:#63758b;font-size:11px;margin-bottom:3px}
+.borrow-field span{display:block;font-weight:650;line-height:1.4}
+.borrow-meta{font-size:12px;color:#566f89;padding:7px 0}
+#receiptSubtitle{font-size:12px;line-height:1.35;margin-top:5px}
 .summary-compact-line{font-size:13px;line-height:1.6}.summary-inline-products{font-weight:500;color:#25466b}.summary-group{break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #dfe8f2;padding:9px 0}.summary-group h3{margin:0 0 5px}.summary-item{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}.summary-totals{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;font-size:13px}
 .clearance{border-top:1px dashed #cbd8e6;margin-top:16px}.status{font-size:13px;margin:10px 0;color:#aa3b37}
 @media(max-width:650px){.wrap{padding:12px}h1{font-size:20px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:10px}.stat strong{font-size:17px}.overlay{padding:8px;align-items:flex-start}.receipt{width:100%;max-width:100%;max-height:calc(100dvh - 16px);margin:0;padding:14px 12px;overflow-y:auto;overflow-x:hidden}.receipt-head{flex-direction:column;align-items:stretch;gap:10px}.receipt-head h1{font-size:18px;line-height:1.3;overflow-wrap:anywhere}.receipt-head>div:last-child{width:100%;max-width:none;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px}.receipt-head .btn{min-width:0;padding:9px 6px;font-size:12px;line-height:1.2;white-space:normal}.receipt-head #close{padding-inline:12px}.receipt-grid{grid-template-columns:1fr}.summary-totals{gap:5px 12px;font-size:12px;line-height:1.5}.summary-group{line-height:1.6;padding:10px 0;overflow-wrap:anywhere}.summary-inline-products{overflow-wrap:anywhere}.summary-group .mini{font-size:11px}}
@@ -63,7 +70,7 @@ html.bb-borrow-phone .tablewrap{max-width:100%;overflow-x:auto}
  <div id="records" aria-live="polite"><div class="empty">Loading pending borrowed stock…</div></div>
 </div>
 <div class="overlay" id="overlay" hidden><section class="receipt" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
- <div class="receipt-head"><div><h1 id="receiptTitle">BIG BROTHER — Borrow Receipt</h1><p>Borrow and clearance audit review</p></div><div ><button class="btn secondary" id="telegram">✈ Share to Telegram</button><button class="btn secondary" id="print">Print / PDF</button><button class="btn" id="close">Close</button></div></div>
+ <div class="receipt-head"><div><h1 id="receiptTitle">BIG BROTHER — Borrow Receipt</h1><p id="receiptSubtitle">Borrow and clearance audit review</p></div><div ><button class="btn secondary" id="telegram">✈ Share to Telegram</button><button class="btn secondary" id="print">Print / PDF</button><button class="btn" id="close">Close</button></div></div>
  <div id="receiptBody"></div>
 </section></div>
 <script>
@@ -128,6 +135,7 @@ function showSummary(){
  const rows=[...groups.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.location.localeCompare(b.location));
  const total=rows.reduce((s,g)=>s+g.total,0);
  $('receiptTitle').textContent='BIG BROTHER — Borrowed Stock Summary';
+ $('receiptSubtitle').textContent='Customer balances across your selected locations';
  $('receiptBody').innerHTML='<p>Pending balances as of '+esc(new Date().toLocaleString('en-GB'))+' · '+esc($('location').selectedOptions[0]?.text||'Assigned locations')+'</p>'+
  '<div class="summary-totals"><span>Customer / location groups: <strong>'+rows.length+'</strong></span><span>Borrow receipts: <strong>'+selected.length+'</strong></span><span>Pending units: <strong>'+qty(total)+'</strong></span></div>'+
  (rows.length?rows.map((g,index)=>'<section class="summary-group summary-compact-line"><strong>'+(index+1)+'. '+esc(g.name)+'</strong> <span class="mini"> · '+esc(g.location)+'</span><span class="summary-inline-products"> — '+
@@ -145,8 +153,15 @@ function render(){
 }
 function review(id){
  const b=borrows.find(b=>b.borrowId===id);if(!b)return;
- const info=[['Borrow ID',b.borrowId],['Borrow Date',b.borrowDate],['Customer',b.customerName],['Location',b.locationName||b.locationCode],['Salesperson',b.salespersonName],['Original Batch',b.originalBatchId],['Controller',b.controllerName],['Notes',b.note||'—']];
- $('receiptBody').innerHTML='<div class="receipt-grid">'+info.map(([k,v])=>'<div><b>'+esc(k)+'</b>'+esc(v||'—')+'</div>').join('')+'</div><h3>Original borrow items and current balances</h3>'+table(b.items||[])+'<h3>Clearance receipt history</h3>'+((b.clearances||[]).length?b.clearances.map(c=>'<div class="clearance"><h3>'+esc(c.clearanceId)+' · '+esc(c.clearDate)+'</h3><p>Source batch: '+esc(c.sourceBatchId||'—')+' · Controller: '+esc(c.controllerName||'—')+' · Total cleared: '+qty(c.totalQty)+'</p><div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Returned QTY</th><th class="num">Purchased</th><th class="num">Zero cost</th></tr></thead><tbody>'+(c.items||[]).map(i=>{const p=(b.items||[]).find(x=>x.productCode===i.productCode);return '<tr><td>'+esc(p?.productName||i.productCode)+'</td><td class="num">'+qty(i.qty)+'</td><td class="num">'+qty(i.purchasedQty)+'</td><td class="num">'+qty(i.zeroCostQty)+'</td></tr>';}).join('')+'</tbody></table></div><p>'+esc(c.note||'')+'</p></div>').join(''):'<p>No clearance receipts yet.</p>');
+ $('receiptTitle').textContent='BIG BROTHER — Borrow Receipt';
+ $('receiptSubtitle').textContent='Borrow Date: '+(b.borrowDate||'—')+' · '+(b.borrowId||'');
+ const compactField=(label,value)=>'<div class="borrow-field"><b>'+esc(label)+'</b><span>'+esc(value||'—')+'</span></div>';
+ const header='<div class="borrow-compact">'+
+ '<div class="borrow-pair">'+compactField('Customer',b.customerName)+compactField('Location',b.locationName||b.locationCode)+'</div>'+
+ '<div class="borrow-pair">'+compactField('Salesperson',b.salespersonName)+compactField('Batch ID',b.originalBatchId)+'</div>'+
+ (b.note?'<div class="borrow-meta"><strong>Notes:</strong> '+esc(b.note)+'</div>':'')+
+ '</div>';
+ $('receiptBody').innerHTML=header+'<h3>Original borrow items and current balances</h3>'+table(b.items||[])+'<h3>Clearance receipt history</h3>'+((b.clearances||[]).length?b.clearances.map(c=>'<div class="clearance"><h3>'+esc(c.clearanceId)+' · '+esc(c.clearDate)+'</h3><p>Source batch: '+esc(c.sourceBatchId||'—')+' · Controller: '+esc(c.controllerName||'—')+' · Total cleared: '+qty(c.totalQty)+'</p><div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Returned QTY</th><th class="num">Purchased</th><th class="num">Zero cost</th></tr></thead><tbody>'+(c.items||[]).map(i=>{const p=(b.items||[]).find(x=>x.productCode===i.productCode);return '<tr><td>'+esc(p?.productName||i.productCode)+'</td><td class="num">'+qty(i.qty)+'</td><td class="num">'+qty(i.purchasedQty)+'</td><td class="num">'+qty(i.zeroCostQty)+'</td></tr>';}).join('')+'</tbody></table></div><p>'+esc(c.note||'')+'</p></div>').join(''):'<p>No clearance receipts yet.</p>');
  $('overlay').hidden=false;document.body.style.overflow='hidden';
 }
 function close(){$('overlay').hidden=true;document.body.style.overflow='';}

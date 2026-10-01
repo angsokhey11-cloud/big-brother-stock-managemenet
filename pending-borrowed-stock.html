@@ -128,7 +128,9 @@ async function load(){
 $('refresh').onclick=load;$('summary').onclick=showSummary;['search','location','salesman'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
 $('records').addEventListener('click',e=>{const btn=e.target.closest('[data-receipt]');if(btn)review(btn.dataset.receipt)});
 $('close').onclick=close;$('print').onclick=()=>window.print();$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});\nconst autoSummary=new URLSearchParams(location.search).get('summary')==='1';\nif(autoSummary){\n const header=document.querySelector('.wrap');\n if(header)header.style.display='none';\n}\nload().then(()=>{if(autoSummary&&!$('status').textContent)showSummary()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+const autoSummary=new URLSearchParams(location.search).get('summary')==='1';
+load().then(()=>{if(autoSummary&&!$('status').textContent)showSummary()});
 })();
 </script>
 </body></html>

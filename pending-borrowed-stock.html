@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIG BROTHER — Pending Borrowed Stock</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#193d69;background:#f2f6fb}*{box-sizing:border-box}
+body{margin:0}.wrap{max-width:1400px;margin:auto;padding:20px}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:24px;margin:0}h2{font-size:18px}p{margin:5px 0;color:#61758b;font-size:13px}
+button,input,select{font:inherit}.btn{border:0;background:#1765b4;color:#fff;padding:10px 15px;border-radius:9px;font-weight:700;cursor:pointer}
+.btn.secondary{background:#e9f1fb;color:#19568d}.btn:disabled{opacity:.55}.filters{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0}
+.filters input,.filters select{padding:10px;border:1px solid #cbd8e6;border-radius:9px;background:#fff;min-width:150px}
+.filters input{flex:1;min-width:220px}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 18px}
+.stat,.record,.receipt{background:#fff;border:1px solid #dce6f1;border-radius:12px;box-shadow:0 3px 12px #193c6409}.stat{padding:14px}.stat small{color:#687d94}.stat strong{display:block;font-size:24px;margin-top:4px}
+.record{padding:15px;margin:12px 0}.recordtop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.record h2{margin:0 0 4px}.tag{display:inline-block;border-radius:6px;padding:3px 7px;background:#fff3d8;color:#9a6200;font-weight:800;font-size:11px}
+.mini{font-size:12px;color:#63768a;line-height:1.7}.numbers{display:flex;gap:18px;flex-wrap:wrap;font-size:13px}.numbers strong{font-size:16px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{padding:10px;border-bottom:1px solid #e8edf4;text-align:left}th{color:#62768a;background:#f6f9fd;font-size:12px}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}.pending{font-weight:900;color:#bb6811}
+.tablewrap{overflow-x:auto}.empty{text-align:center;padding:34px;background:white;border-radius:12px;color:#698098}
+.overlay{position:fixed;inset:0;background:#081b3299;display:flex;align-items:center;justify-content:center;z-index:20;padding:12px}
+.overlay[hidden]{display:none}.receipt{width:min(850px,100%);max-height:94vh;overflow:auto;padding:22px}.receipt-head{display:flex;justify-content:space-between;align-items:start;gap:10px}
+.receipt h1{font-size:22px}.receipt h3{font-size:15px;margin-top:25px}.receipt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px;font-size:13px}
+.receipt-grid div{padding:9px;background:#f5f8fc;border-radius:7px}.receipt-grid b{display:block;font-size:11px;color:#63758b;margin-bottom:5px}
+.clearance{border-top:1px dashed #cbd8e6;margin-top:16px}.status{font-size:13px;margin:10px 0;color:#aa3b37}
+@media(max-width:650px){.wrap{padding:12px}h1{font-size:20px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:10px}.stat strong{font-size:17px}.receipt{padding:15px}.receipt-grid{grid-template-columns:1fr}}
+@media print{body{background:#fff}.wrap,.receipt-head .btn{display:none!important}.overlay{position:static;padding:0;background:none}.receipt{width:100%;max-height:none;overflow:visible;box-shadow:none;border:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="head"><div><h1>Pending Borrowed Stock</h1><p>Customer borrow balances · exact products · original and clearance receipts</p></div><button class="btn" id="refresh">↻ Refresh</button></div>
+ <p id="updated">Connecting to BIG BROTHER Database…</p><div id="status" class="status" role="alert"></div>
+ <div class="stats"><div class="stat"><small>Open borrow receipts</small><strong id="sReceipts">—</strong></div><div class="stat"><small>Remaining units</small><strong id="sPending">—</strong></div><div class="stat"><small>Pending product lines</small><strong id="sLines">—</strong></div></div>
+ <div class="filters"><input id="search" placeholder="Search customer, product, borrow ID or batch"><select id="location"><option value="">All assigned locations</option></select><select id="salesman"><option value="">All salespersons</option></select></div>
+ <div id="records" aria-live="polite"><div class="empty">Loading pending borrowed stock…</div></div>
+</div>
+<div class="overlay" id="overlay" hidden><section class="receipt" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+ <div class="receipt-head"><div><h1 id="receiptTitle">BIG BROTHER — Borrow Receipt</h1><p>Borrow and clearance audit review</p></div><div style="display:flex;gap:6px"><button class="btn secondary" id="print">Print / PDF</button><button class="btn" id="close">Close</button></div></div>
+ <div id="receiptBody"></div>
+</section></div>
+<script>
+(function(){
+'use strict';
+const SUPABASE_URL='https://sjfhlaclgmkwwofzstok.supabase.co';
+const API_KEY='sb_publishable_w762jR65CWwlO30fKQsYOw_6L9grx8S';
+const SESSION_KEY='BB_SUPABASE_DEV_SESSION_V1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clean=s=>String(s??'').trim();
+const qty=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:4});
+let borrows=[];
+let loading=false;
+function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch(_){return null}}
+async function auth(){
+ let s=session();if(!s?.access_token)throw Error('Please sign in through BIG BROTHER Dashboard.');
+ if(s.expires_at&&Number(s.expires_at)<Date.now()/1000+30){
+  const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:API_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+  const d=await res.json();if(!res.ok||!d.access_token)throw Error('Your session expired. Please sign in again.');
+  s=d;s.expires_at=Math.floor(Date.now()/1000)+Number(s.expires_in||3600);localStorage.setItem(SESSION_KEY,JSON.stringify(s));
+ }
+ return s.access_token;
+}
+async function rpc(){
+ const token=await auth();
+ const res=await fetch(SUPABASE_URL+'/rest/v1/rpc/bb_stock_pending_customer_borrow_report',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
+ const d=await res.json();if(!res.ok)throw Error(d.message||d.error||'Could not load borrow report.');return d;
+}
+function filterOptions(){
+ const location=$('location').value,salesman=$('salesman').value;
+ function options(id,values,placeholder){const el=$(id);el.innerHTML='<option value="">'+esc(placeholder)+'</option>'+values.map(([key,name])=>'<option value="'+esc(key)+'">'+esc(name)+'</option>').join('');}
+ const locs=new Map(),salesmen=new Map();
+ borrows.forEach(b=>{if(b.locationCode)locs.set(b.locationCode,b.locationName||b.locationCode);if(b.salespersonName)salesmen.set(b.salespersonName,b.salespersonName)});
+ options('location',[...locs].sort((a,b)=>a[1].localeCompare(b[1])),'All assigned locations');
+ options('salesman',[...salesmen].sort((a,b)=>a[1].localeCompare(b[1])),'All salespersons');
+ $('location').value=location;$('salesman').value=salesman;
+}
+function table(items){return '<div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Borrowed</th><th class="num">Cleared</th><th class="num">Pending</th></tr></thead><tbody>'+items.map(i=>'<tr><td><b>'+esc(i.productName||i.productCode)+'</b><div class="mini">'+esc(i.productCode)+(i.unit?' · '+esc(i.unit):'')+'</div></td><td class="num">'+qty(i.borrowedQty)+'</td><td class="num">'+qty(i.clearedQty)+'</td><td class="num pending">'+qty(i.outstandingQty)+'</td></tr>').join('')+'</tbody></table></div>';}
+function render(){
+ const q=clean($('search').value).toLowerCase(),loc=$('location').value,salesman=$('salesman').value;
+ const selected=borrows.filter(b=>(!loc||b.locationCode===loc)&&(!salesman||b.salespersonName===salesman)&&(!q||[b.borrowId,b.customerName,b.locationName,b.locationCode,b.salespersonName,b.originalBatchId,...(b.items||[]).flatMap(i=>[i.productName,i.productCode])].some(s=>clean(s).toLowerCase().includes(q))));
+ $('sReceipts').textContent=selected.length;
+ $('sPending').textContent=qty(selected.reduce((sum,b)=>sum+Number(b.outstandingQty||0),0));
+ $('sLines').textContent=selected.reduce((sum,b)=>sum+(b.items||[]).filter(i=>Number(i.outstandingQty)>0.000001).length,0);
+ $('records').innerHTML=selected.length?selected.map(b=>'<article class="record"><div class="recordtop"><div><h2>'+esc(b.customerName||'Unknown customer')+' <span class="tag">'+esc(b.status||'OPEN')+'</span></h2><div class="mini">'+esc(b.borrowId)+' · '+esc(b.borrowDate)+' · '+esc(b.locationName||b.locationCode)+' · '+esc(b.salespersonName)+'</div></div><button class="btn secondary" data-receipt="'+esc(b.borrowId)+'">Review Receipt</button></div><div class="numbers"><span>Borrowed <strong>'+qty(b.borrowedQty)+'</strong></span><span>Cleared <strong>'+qty(b.clearedQty)+'</strong></span><span>Pending <strong class="pending">'+qty(b.outstandingQty)+'</strong></span></div>'+table((b.items||[]).filter(i=>Number(i.outstandingQty)>0.000001))+'</article>').join(''):'<div class="empty">No matching pending borrowed stock.</div>';
+}
+function review(id){
+ const b=borrows.find(b=>b.borrowId===id);if(!b)return;
+ const info=[['Borrow ID',b.borrowId],['Borrow Date',b.borrowDate],['Customer',b.customerName],['Location',b.locationName||b.locationCode],['Salesperson',b.salespersonName],['Original Batch',b.originalBatchId],['Controller',b.controllerName],['Notes',b.note||'—']];
+ $('receiptBody').innerHTML='<div class="receipt-grid">'+info.map(([k,v])=>'<div><b>'+esc(k)+'</b>'+esc(v||'—')+'</div>').join('')+'</div><h3>Original borrow items and current balances</h3>'+table(b.items||[])+'<h3>Clearance receipt history</h3>'+((b.clearances||[]).length?b.clearances.map(c=>'<div class="clearance"><h3>'+esc(c.clearanceId)+' · '+esc(c.clearDate)+'</h3><p>Source batch: '+esc(c.sourceBatchId||'—')+' · Controller: '+esc(c.controllerName||'—')+' · Total cleared: '+qty(c.totalQty)+'</p><div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Returned QTY</th><th class="num">Purchased</th><th class="num">Zero cost</th></tr></thead><tbody>'+(c.items||[]).map(i=>{const p=(b.items||[]).find(x=>x.productCode===i.productCode);return '<tr><td>'+esc(p?.productName||i.productCode)+'</td><td class="num">'+qty(i.qty)+'</td><td class="num">'+qty(i.purchasedQty)+'</td><td class="num">'+qty(i.zeroCostQty)+'</td></tr>';}).join('')+'</tbody></table></div><p>'+esc(c.note||'')+'</p></div>').join(''):'<p>No clearance receipts yet.</p>');
+ $('overlay').hidden=false;document.body.style.overflow='hidden';
+}
+function close(){$('overlay').hidden=true;document.body.style.overflow='';}
+async function load(){
+ if(loading)return;loading=true;$('refresh').disabled=true;$('status').textContent='';
+ try{const data=await rpc();borrows=Array.isArray(data.borrows)?data.borrows:[];filterOptions();render();$('updated').textContent='Last update: '+new Date(data.generatedAt||Date.now()).toLocaleString('en-GB');}
+ catch(e){$('status').textContent=e.message||String(e);$('updated').textContent='Could not load current balances.';}
+ finally{loading=false;$('refresh').disabled=false;}
+}
+$('refresh').onclick=load;['search','location','salesman'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
+$('records').addEventListener('click',e=>{const btn=e.target.closest('[data-receipt]');if(btn)review(btn.dataset.receipt)});
+$('close').onclick=close;$('print').onclick=()=>window.print();$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});load();
+})();
+</script>
+</body></html>

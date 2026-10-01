@@ -2141,8 +2141,8 @@ holder.addEventListener('click',event=>{
   byId('productCode').value=product.productCode;
   byId('availableQty').value=left;
   byId('qty').value=left;
-  document.dispatchEvent(new CustomEvent('bb-reported-damage-select',{detail:{code}}));
   byId('qty').focus();
+  document.dispatchEvent(new CustomEvent('bb-reported-damage-select',{detail:{code}}));
   setStatus('Reported damage selected. Confirm the quantity physically received, then Add Product.','success');
  }catch(e){setStatus(e.message||String(e),'error')}
 });

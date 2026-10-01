@@ -27,6 +27,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
 
 /* Explicit mobile-dashboard mode: embedded Android WebViews may report a wide CSS viewport. */
 html.bb-borrow-phone,html.bb-borrow-phone body{width:100%;max-width:100%;min-width:0;margin:0;overflow-x:hidden}
+html.bb-borrow-phone .overlay[hidden]{display:none!important}
 html.bb-borrow-phone .overlay{position:fixed;inset:0;width:100%;max-width:100%;padding:8px;display:flex;align-items:flex-start;justify-content:center;overflow:hidden}
 html.bb-borrow-phone .receipt{display:block;flex:0 1 auto;width:100%;min-width:0;max-width:100%;height:auto;max-height:calc(100dvh - 16px);margin:0;padding:13px 12px;overflow-x:hidden;overflow-y:auto;border-radius:13px}
 html.bb-borrow-phone .receipt-head{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:8px!important;width:100%;max-width:100%;min-width:0}

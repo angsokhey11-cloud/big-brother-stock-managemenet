@@ -510,7 +510,8 @@ function defaultProductCompare(a,b){
 
 function mobilePool(){
   const t=movement();
-  let rows=baseMobilePool();
+  const receiving=t==='STOCK_DAMAGE'&&damageMode()==='BATCH';
+  let rows=receiving?(window.BBReportedDamageReceiving?.availableProducts?.()||[]):baseMobilePool();
   if(t==='BATCH_STOCK'){
     rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
   }else if(t==='STAFF_ALLOWANCE'){
@@ -536,7 +537,10 @@ function availabilityText(product){
     const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
     return 'Purchased '+fmtQty(p)+(z>EPS?' · Zero-Cost '+fmtQty(z):'');
   }
-  if(t==='BACK_SALE'||(t==='STOCK_DAMAGE'&&damageMode()==='BATCH')){
+  if(t==='STOCK_DAMAGE'&&damageMode()==='BATCH'){
+    return 'Reported '+fmtQty(window.BBReportedDamageReceiving?.pendingQty?.(product.productCode)||0);
+  }
+  if(t==='BACK_SALE'){
     const remaining=number(product.batchRemaining!==undefined?product.batchRemaining:(()=>{try{return currentAvailable(product.productCode)}catch(_){return 0}})());
     return 'Batch '+fmtQty(remaining);
   }
@@ -634,6 +638,10 @@ async function openProductPicker(){
   }
   if((t==='BACK_SALE'||(t==='STOCK_DAMAGE'&&damageMode()==='BATCH'))&&!selectedOpenBatchMobile()){
     if(typeof setStatus==='function')setStatus('Select an Open Batch first.','error');
+    return;
+  }
+  if(t==='STOCK_DAMAGE'&&damageMode()==='BATCH'&&!window.BBReportedDamageReceiving?.ready?.()){
+    if(typeof setStatus==='function')setStatus('Load the selected salesman damage report first.','error');
     return;
   }
   const overlay=$('bbMobileProductPicker');
@@ -738,6 +746,13 @@ function confirmProductQty(){
     try{$('bbPurchasedOut')?.dispatchEvent(new Event('input',{bubbles:true}));$('bbZeroOut')?.dispatchEvent(new Event('input',{bubbles:true}))}catch(_){}
   }else{
     qty=number($('bbMobileQtyInput').value);
+    if(movement()==='STOCK_DAMAGE'&&damageMode()==='BATCH'){
+      const available=number(window.BBReportedDamageReceiving?.pendingQty?.(activeProduct.productCode));
+      if(!window.BBReportedDamageReceiving?.ready?.()||qty>available+EPS){
+        if(typeof setStatus==='function')setStatus('Receipt exceeds the salesman report. Available: '+fmtQty(available),'error');
+        return;
+      }
+    }
     if(!(qty>0)){
       if(typeof setStatus==='function')setStatus('Qty must be greater than 0.','error');
       return;
@@ -762,6 +777,15 @@ function confirmProductQty(){
     setTimeout(syncAllV2,0);
   }
 }
+
+// The existing warehouse Select buttons must open this desktop quantity dialog.
+document.addEventListener('bb-reported-damage-select',event=>{
+  if(movement()!=='STOCK_DAMAGE'||damageMode()!=='BATCH')return;
+  const code=clean(event.detail?.code);
+  const product=mobilePool().find(p=>clean(p.productCode)===code);
+  if(!product){if(typeof setStatus==='function')setStatus('This reported product is not available for receiving. Refresh the report.','error');return;}
+  chooseProduct(code);
+});
 
 function clearManualItemsForContext(){
   try{

@@ -21,7 +21,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
 .overlay[hidden]{display:none}.receipt{width:min(850px,100%);max-height:94vh;overflow:auto;padding:22px}.receipt-head{display:flex;justify-content:space-between;align-items:start;gap:10px}
 .receipt h1{font-size:22px}.receipt h3{font-size:15px;margin-top:25px}.receipt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px;font-size:13px}
 .receipt-grid div{padding:9px;background:#f5f8fc;border-radius:7px}.receipt-grid b{display:block;font-size:11px;color:#63758b;margin-bottom:5px}
-.summary-group{break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #dfe8f2;padding:9px 0}.summary-group h3{margin:0 0 5px}.summary-item{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}.summary-totals{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;font-size:13px}
+.summary-compact-line{font-size:13px;line-height:1.6}.summary-inline-products{font-weight:500;color:#25466b}.summary-group{break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #dfe8f2;padding:9px 0}.summary-group h3{margin:0 0 5px}.summary-item{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}.summary-totals{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;font-size:13px}
 .clearance{border-top:1px dashed #cbd8e6;margin-top:16px}.status{font-size:13px;margin:10px 0;color:#aa3b37}
 @media(max-width:650px){.wrap{padding:12px}h1{font-size:20px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:10px}.stat strong{font-size:17px}.receipt{padding:15px}.receipt-grid{grid-template-columns:1fr}}
 @page{size:A4;margin:12mm}@media print{body{background:#fff}.summary-group{padding:5px 0}.summary-item{font-size:11px}.wrap,.receipt-head .btn{display:none!important}.overlay{position:static;padding:0;background:none}.receipt{width:100%;max-height:none;overflow:visible;box-shadow:none;border:0}}
@@ -99,10 +99,10 @@ function showSummary(){
  $('receiptTitle').textContent='BIG BROTHER — Borrowed Stock Summary';
  $('receiptBody').innerHTML='<p>Pending balances as of '+esc(new Date().toLocaleString('en-GB'))+' · '+esc($('location').selectedOptions[0]?.text||'Assigned locations')+'</p>'+
  '<div class="summary-totals"><span>Customer / location groups: <strong>'+rows.length+'</strong></span><span>Borrow receipts: <strong>'+selected.length+'</strong></span><span>Pending units: <strong>'+qty(total)+'</strong></span></div>'+
- (rows.length?rows.map((g,index)=>'<section class="summary-group"><h3>'+(index+1)+'. '+esc(g.name)+' <span class="mini"> · '+esc(g.location)+'</span></h3>'+
- [...g.items.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>'<div class="summary-item"><span>'+esc(i.name)+(i.unit?' ('+esc(i.unit)+')':'')+'</span><strong>['+qty(i.total)+']</strong></div>').join('')+
- '<div class="summary-item"><strong>Customer pending total</strong><strong>'+qty(g.total)+'</strong></div></section>').join(''):'<p>No matching pending borrowed stock.</p>')+
- '<h3>Grand total pending: '+qty(total)+' units</h3><p class="mini">Only outstanding stock in permitted locations is included; cleared quantities are excluded. Product quantities are displayed separately.</p>';
+ (rows.length?rows.map((g,index)=>'<section class="summary-group summary-compact-line"><strong>'+(index+1)+'. '+esc(g.name)+'</strong> <span class="mini"> · '+esc(g.location)+'</span><span class="summary-inline-products"> — '+
+ [...g.items.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>esc(i.name)+' ['+qty(i.total)+']').join(', ')+
+ '</span></section>').join(''):'<p>No matching pending borrowed stock.</p>')+
+ '<h3>Grand total pending: '+qty(total)+' units</h3><p class="mini">Only outstanding stock in permitted locations is included; cleared quantities are excluded. Product quantities are combined into one line per customer and location.</p>';
  $('overlay').hidden=false;document.body.style.overflow='hidden';
 }
 function render(){

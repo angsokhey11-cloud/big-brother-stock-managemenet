@@ -1627,6 +1627,34 @@ function(){
   }
 
 
+  /*
+   * Reported Batch Damage is now warehouse receipt ONLY.
+   * Salesman reporting already removed the items from sellable batch stock.
+   * The old batch-remaining guard must not block these receipts.
+   * The database validates each receipt against outstanding reported damage.
+   */
+  if(
+    movementType === 'STOCK_DAMAGE' &&
+    damageSource === 'BATCH'
+  ){
+    const receiving = window.BBReportedDamageReceiving;
+    let product = null;
+    try{product=selectedProduct;}catch(_){}
+    const quantity=Number(document.getElementById('qty')?.value)||0;
+    const already=Array.isArray(items)?
+      items.filter(x=>x.productCode===product?.productCode)
+        .reduce((total,x)=>total+(Number(x.qty)||0),0):0;
+    const pending=Number(receiving?.pendingQty?.(product?.productCode))||0;
+    if(!receiving?.ready?.()||!product||quantity<=0||
+       quantity+already>pending+0.000001){
+      return setStatus(
+        'Select a reported damage product. Maximum remaining receipt: '+
+        Math.max(0,pending-already)+'.','error'
+      );
+    }
+    return originalAddProduct.apply(this,arguments);
+  }
+
   /* ==========================================================
      EXISTING BATCH BACK SALE / DAMAGE
      ========================================================== */

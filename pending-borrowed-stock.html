@@ -24,6 +24,32 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
 .summary-compact-line{font-size:13px;line-height:1.6}.summary-inline-products{font-weight:500;color:#25466b}.summary-group{break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #dfe8f2;padding:9px 0}.summary-group h3{margin:0 0 5px}.summary-item{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}.summary-totals{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;font-size:13px}
 .clearance{border-top:1px dashed #cbd8e6;margin-top:16px}.status{font-size:13px;margin:10px 0;color:#aa3b37}
 @media(max-width:650px){.wrap{padding:12px}h1{font-size:20px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:10px}.stat strong{font-size:17px}.overlay{padding:8px;align-items:flex-start}.receipt{width:100%;max-width:100%;max-height:calc(100dvh - 16px);margin:0;padding:14px 12px;overflow-y:auto;overflow-x:hidden}.receipt-head{flex-direction:column;align-items:stretch;gap:10px}.receipt-head h1{font-size:18px;line-height:1.3;overflow-wrap:anywhere}.receipt-head>div:last-child{width:100%;max-width:none;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px}.receipt-head .btn{min-width:0;padding:9px 6px;font-size:12px;line-height:1.2;white-space:normal}.receipt-head #close{padding-inline:12px}.receipt-grid{grid-template-columns:1fr}.summary-totals{gap:5px 12px;font-size:12px;line-height:1.5}.summary-group{line-height:1.6;padding:10px 0;overflow-wrap:anywhere}.summary-inline-products{overflow-wrap:anywhere}.summary-group .mini{font-size:11px}}
+
+/* Explicit mobile-dashboard mode: embedded Android WebViews may report a wide CSS viewport. */
+html.bb-borrow-phone,html.bb-borrow-phone body{width:100%;max-width:100%;min-width:0;margin:0;overflow-x:hidden}
+html.bb-borrow-phone .overlay{position:fixed;inset:0;width:100%;max-width:100%;padding:8px;display:flex;align-items:flex-start;justify-content:center;overflow:hidden}
+html.bb-borrow-phone .receipt{display:block;flex:0 1 auto;width:100%;min-width:0;max-width:100%;height:auto;max-height:calc(100dvh - 16px);margin:0;padding:13px 12px;overflow-x:hidden;overflow-y:auto;border-radius:13px}
+html.bb-borrow-phone .receipt-head{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:8px!important;width:100%;max-width:100%;min-width:0}
+html.bb-borrow-phone .receipt-head>div:first-child{display:block;flex:none;width:100%;max-width:100%;min-width:0}
+html.bb-borrow-phone .receipt-head h1{display:block;font-size:18px!important;line-height:1.3;margin:0;overflow-wrap:anywhere;word-break:normal}
+html.bb-borrow-phone .receipt-head p{font-size:11px;margin:3px 0}
+html.bb-borrow-phone .receipt-head>div:last-child{display:grid!important;flex:none!important;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.75fr)!important;gap:5px!important;align-items:stretch!important;justify-content:stretch!important;width:100%!important;max-width:100%!important;min-width:0!important}
+html.bb-borrow-phone .receipt-head .btn{width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:10px 5px!important;border-radius:7px;font-size:12px!important;line-height:1.25;overflow-wrap:break-word;white-space:normal!important}
+html.bb-borrow-phone #receiptBody{width:100%;min-width:0;max-width:100%;overflow-wrap:anywhere}
+html.bb-borrow-phone .receipt-grid{display:grid;grid-template-columns:minmax(0,1fr)!important;gap:7px;font-size:12px}
+html.bb-borrow-phone .receipt-grid>div{min-width:0;overflow-wrap:anywhere}
+html.bb-borrow-phone .summary-group{width:100%;min-width:0;overflow-wrap:anywhere}
+html.bb-borrow-phone .summary-inline-products{overflow-wrap:anywhere}
+html.bb-borrow-phone .summary-totals{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:12px}
+html.bb-borrow-phone .wrap{padding:10px;max-width:100%;min-width:0}
+html.bb-borrow-phone .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+html.bb-borrow-phone .tablewrap{max-width:100%;overflow-x:auto}
+@media print{
+ html.bb-borrow-phone .overlay{position:static;overflow:visible;padding:0}
+ html.bb-borrow-phone .receipt{width:100%;max-height:none;overflow:visible;padding:0}
+ html.bb-borrow-phone .receipt-head .btn{display:none!important}
+}
+
 @page{size:A4;margin:12mm}@media print{body{background:#fff}.summary-group{padding:5px 0}.summary-item{font-size:11px}.wrap,.receipt-head .btn{display:none!important}.overlay{position:static;padding:0;background:none}.receipt{width:100%;max-height:none;overflow:visible;box-shadow:none;border:0}}
 </style>
 </head>
@@ -42,6 +68,10 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
 <script>
 (function(){
 'use strict';
+/* Force phone layout inside app WebViews, even when iframe media queries are unreliable. */
+const params=new URLSearchParams(location.search);
+const phoneMode=params.get('mobile')==='1'||(/Android|iPhone|iPod/i.test(navigator.userAgent)&&Math.min(screen.width,screen.height)<=900);
+if(phoneMode)document.documentElement.classList.add('bb-borrow-phone');
 const SUPABASE_URL='https://sjfhlaclgmkwwofzstok.supabase.co';
 const API_KEY='sb_publishable_w762jR65CWwlO30fKQsYOw_6L9grx8S';
 const SESSION_KEY='BB_SUPABASE_DEV_SESSION_V1';

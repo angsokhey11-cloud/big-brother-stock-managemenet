@@ -83,6 +83,7 @@ function ensureFields(){
     wrap.innerHTML=
       '<div class="grid">'+
         '<div class="field"><label>Customer Name</label><div class="search-picker bb-borrow-customer-picker"><input id="bbBorrowCustomerName" autocomplete="off" spellcheck="false" placeholder="Type customer name"><div id="bbBorrowCustomerResults" class="product-search-results"></div></div><div class="helper">Type a keyword and tap the customer name. New names can also be typed manually.</div></div>'+
+        '<div class="field"><label>Borrow Date (actual date)</label><input type="date" id="bbBorrowActualDate" required><div class="helper">The original date the customer loaned the stock; used on reports and receipts.</div></div>'+ 
         '<div class="field"><label>Open Batch</label><select id="bbBorrowBatch"><option value="">Select Open Batch</option></select><div class="helper">Borrowed stock goes directly into this Batch as Purchased stock for normal COGS.</div></div>'+
       '</div>';
     parent.insertBefore(wrap,anchor.nextSibling);
@@ -343,6 +344,7 @@ function syncCustomFields(){
   fillBorrowCustomers();
   fillBorrowBatchSelect();
   $('bbBorrowStockFields').hidden=movement()!==BORROW;
+  if(movement()===BORROW && $('bbBorrowActualDate') && !$('bbBorrowActualDate').value) $('bbBorrowActualDate').value=$('activityDate')?.value||new Date().toLocaleDateString('en-CA');
   $('bbBorrowClearFields').hidden=movement()!==CLEAR;
   if(movement()===CLEAR)void refreshBorrowOptions(true);
   forceBorrowProductUi();
@@ -476,6 +478,7 @@ if(typeof buildPayload==='function'){
       const customer=selectedBorrowCustomer();
       const customerName=clean($('bbBorrowCustomerName')?.value);
       d.batchId=clean(batch?.batchId);
+      d.borrowDate=clean($('bbBorrowActualDate')?.value);
       d.customerId=clean(customer?.customerId||customer?.id);
       d.manualCustomerName=customerName;
       d.customerName=customerName||clean(customer?.customerName||customer?.name);
@@ -508,6 +511,7 @@ if(typeof validate==='function'){
     if(base)return base;
 
     if(movement()===BORROW){
+      if(!d.borrowDate || !/^\d{4}-\d{2}-\d{2}$/.test(d.borrowDate))return 'Valid Borrow Date is required.';
       if(!clean(d.customerName))return 'Customer Name is required.';
       if(!d.batchId)return 'Open Batch is required.';
     }
@@ -567,6 +571,7 @@ if(typeof clearForm==='function'){
     const result=baseClearForm.apply(this,arguments);
     selectedBorrowCustomerId='';
     if($('bbBorrowCustomerName'))$('bbBorrowCustomerName').value='';
+    if($('bbBorrowActualDate'))$('bbBorrowActualDate').value=$('activityDate')?.value||new Date().toLocaleDateString('en-CA');
     closeBorrowCustomerResults();
     if($('bbBorrowBatch'))$('bbBorrowBatch').value='';
     if($('bbBorrowRef'))$('bbBorrowRef').value='';

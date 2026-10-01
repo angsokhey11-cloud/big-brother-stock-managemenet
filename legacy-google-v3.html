@@ -2048,6 +2048,33 @@ $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refresh
 if(!window.BBStockAdapter?.rpc)return;
 const byId=id=>document.getElementById(id);
 let pending=new Map(),loadedFor='',busy=false,active=false;
+const addedWarehousePendingIds=new Set();
+let lastPendingBatchOptionsAt=0;
+async function syncPendingBatchOptions(){
+ if(!mode()){
+  if(addedWarehousePendingIds.size){
+   const oldId=batch()?.batchId||'';
+   openBatches=openBatches.filter(x=>!addedWarehousePendingIds.has(x.batchId));
+   addedWarehousePendingIds.clear();
+   fillBatchSelect();
+   const oldIndex=openBatches.findIndex(x=>x.batchId===oldId);
+   byId('batchSelect').value=oldIndex>=0?String(oldIndex):'';
+  }
+  return;
+ }
+ if(Date.now()-lastPendingBatchOptionsAt<5000)return;
+ const oldId=batch()?.batchId||'';
+ const result=await window.BBStockAdapter.rpc('bb_warehouse_pending_batch_damage');
+ if(!mode())return;
+ for(const b of result.batches||[]){
+  if(openBatches.some(x=>x.batchId===b.batchId))continue;
+  openBatches.push(b);addedWarehousePendingIds.add(b.batchId);
+ }
+ fillBatchSelect();
+ const oldIndex=openBatches.findIndex(x=>x.batchId===oldId);
+ byId('batchSelect').value=oldIndex>=0?String(oldIndex):'';
+ lastPendingBatchOptionsAt=Date.now();
+}
 const htmlEscape=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const holder=document.createElement('div');
 holder.id='bb-reported-damage-receiving';
@@ -2069,7 +2096,9 @@ function refreshLater(){setTimeout(()=>{refresh().catch(e=>error(e.message||Stri
 function num(v){return Number(v)||0}
 function resetBatchItems(){try{items=[];renderItems();updatePreview()}catch(_){}}
 async function refresh(){
- holder.hidden=!mode();active=mode();if(!active){pending.clear();loadedFor='';return}
+ holder.hidden=!mode();active=mode();
+ if(!active){pending.clear();loadedFor='';await syncPendingBatchOptions();return}
+ try{await syncPendingBatchOptions()}catch(e){error('Could not load warehouse pending batches: '+(e.message||e))}
  const selected=batch(),id=selected?.batchId||'';
  if(!id){loadedFor='';pending.clear();error('Select the salesman batch to see reported damage awaiting return.');byId('bb-reported-damage-lines').innerHTML='';return}
  if(busy)return;

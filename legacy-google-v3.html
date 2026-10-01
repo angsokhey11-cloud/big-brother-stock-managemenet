@@ -2091,6 +2091,13 @@ if(!attachTo)return;
 attachTo.insertAdjacentElement('afterend',holder);
 function mode(){try{return movementType==='STOCK_DAMAGE'&&damageSource==='BATCH'}catch(_){return false}}
 function batch(){try{return selectedBatch()}catch(_){return null}}
+// Only the salesman-reported and still-unreceived lines are selectable.
+window.BBReportedDamageReceiving={
+ ready:()=>mode()&&!!loadedFor&&batch()?.batchId===loadedFor,
+ pendingQty:code=>mode()&&batch()?.batchId===loadedFor?num(pending.get(String(code||''))):0,
+ availableProducts:()=>mode()&&batch()?.batchId===loadedFor?
+  products.filter(p=>num(pending.get(String(p.productCode||'')))>0):[]
+};
 function error(message){const el=byId('bb-reported-damage-status');if(el)el.textContent=message}
 function refreshLater(){setTimeout(()=>{refresh().catch(e=>error(e.message||String(e)))},40)}
 function num(v){return Number(v)||0}
@@ -2134,6 +2141,7 @@ holder.addEventListener('click',event=>{
   byId('productCode').value=product.productCode;
   byId('availableQty').value=left;
   byId('qty').value=left;
+  document.dispatchEvent(new CustomEvent('bb-reported-damage-select',{detail:{code}}));
   byId('qty').focus();
   setStatus('Reported damage selected. Confirm the quantity physically received, then Add Product.','success');
  }catch(e){setStatus(e.message||String(e),'error')}

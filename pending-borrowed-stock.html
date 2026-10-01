@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}th,td{p
  <div id="records" aria-live="polite"><div class="empty">Loading pending borrowed stock…</div></div>
 </div>
 <div class="overlay" id="overlay" hidden><section class="receipt" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
- <div class="receipt-head"><div><h1 id="receiptTitle">BIG BROTHER — Borrow Receipt</h1><p>Borrow and clearance audit review</p></div><div style="display:flex;gap:6px"><button class="btn secondary" id="print">Print / PDF</button><button class="btn" id="close">Close</button></div></div>
+ <div class="receipt-head"><div><h1 id="receiptTitle">BIG BROTHER — Borrow Receipt</h1><p>Borrow and clearance audit review</p></div><div style="display:flex;gap:6px"><button class="btn secondary" id="telegram">✈ Share to Telegram</button><button class="btn secondary" id="print">Print / PDF</button><button class="btn" id="close">Close</button></div></div>
  <div id="receiptBody"></div>
 </section></div>
 <script>
@@ -127,7 +127,13 @@ async function load(){
 }
 $('refresh').onclick=load;$('summary').onclick=showSummary;['search','location','salesman'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
 $('records').addEventListener('click',e=>{const btn=e.target.closest('[data-receipt]');if(btn)review(btn.dataset.receipt)});
-$('close').onclick=close;$('print').onclick=()=>window.print();$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
+$('close').onclick=close;$('print').onclick=()=>window.print();
+$('telegram').onclick=()=>{
+ const title=$('receiptTitle').textContent||'BIG BROTHER — Borrowed Stock';
+ const content=$('receiptBody').innerText||$('receiptBody').textContent||'';
+ const message=title+'\n'+content.trim();
+ window.open('https://t.me/share/url?url=&text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
+};$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))close()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 const autoSummary=new URLSearchParams(location.search).get('summary')==='1';
 load().then(()=>{if(autoSummary&&!$('status').textContent)showSummary()});

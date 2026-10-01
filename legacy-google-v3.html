@@ -160,7 +160,7 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
         <div class="field">
           <label>Open Batch</label>
           <select id="batchSelect"><option value="">Select Batch</option></select>
-          <div class="helper">Batch is used as a reference only. Back Sale / Batch Damage do not check live Batch Pending.</div>
+          <div class="helper">Back Sale uses the selected batch. Batch Damage now receives only damage already reported by its salesman; it does not deduct sellable stock again.</div>
         </div>
         <div class="field"><label>Salesman</label><input id="batchSalesman" readonly></div>
         <div class="field"><label>Driver 1</label><input id="batchDriver" readonly></div>
@@ -2039,6 +2039,127 @@ $("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refresh
       }
     }
   );
+})();
+</script>
+<script>
+/* BIG BROTHER — Warehouse receives only previously reported salesman damage. */
+(function(){
+'use strict';
+if(!window.BBStockAdapter?.rpc)return;
+const byId=id=>document.getElementById(id);
+let pending=new Map(),loadedFor='',busy=false,active=false;
+const htmlEscape=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const holder=document.createElement('div');
+holder.id='bb-reported-damage-receiving';
+holder.className='dynamic';
+holder.hidden=true;
+holder.innerHTML='<div style="margin:10px 0;padding:13px;border:1px solid #bed7ef;border-radius:11px;background:#f0f7ff;color:#17457a">'+
+'<strong style="font-size:14px">Warehouse Damage Receipt · Salesman Report</strong>'+
+'<p style="font-size:11px;line-height:1.45;color:#536b87">Only products already reported damaged by this batch salesman may be received here. Receiving does not deduct sellable stock twice.</p>'+
+'<div id="bb-reported-damage-status" style="font-size:11px;font-weight:750">Select a batch.</div>'+
+'<div id="bb-reported-damage-lines"></div>'+
+'</div>';
+const attachTo=byId('existingBatchFields');
+if(!attachTo)return;
+attachTo.insertAdjacentElement('afterend',holder);
+function mode(){try{return movementType==='STOCK_DAMAGE'&&damageSource==='BATCH'}catch(_){return false}}
+function batch(){try{return selectedBatch()}catch(_){return null}}
+function error(message){const el=byId('bb-reported-damage-status');if(el)el.textContent=message}
+function refreshLater(){setTimeout(()=>{refresh().catch(e=>error(e.message||String(e)))},40)}
+function num(v){return Number(v)||0}
+function resetBatchItems(){try{items=[];renderItems();updatePreview()}catch(_){}}
+async function refresh(){
+ holder.hidden=!mode();active=mode();if(!active){pending.clear();loadedFor='';return}
+ const selected=batch(),id=selected?.batchId||'';
+ if(!id){loadedFor='';pending.clear();error('Select the salesman batch to see reported damage awaiting return.');byId('bb-reported-damage-lines').innerHTML='';return}
+ if(busy)return;
+ if(id!==loadedFor)resetBatchItems();
+ busy=true;pending.clear();loadedFor='';error('Loading reported damage for '+id+'…');
+ try{
+ const report=await window.BBStockAdapter.rpc('bb_batch_damage_pending',{p_batch_id:id});
+ if(!mode()||batch()?.batchId!==id)return;
+ loadedFor=id;
+ const rows=Array.isArray(report.items)?report.items:[];
+ for(const line of rows)pending.set(String(line.productCode||''),num(line.currentDamageQty));
+ error(rows.length?'Reported damage awaiting return · '+(report.salesmanName||'')+' · '+(report.locationName||''):'No reported damage is awaiting warehouse return for this batch. The salesman must submit Report Damage first.');
+ byId('bb-reported-damage-lines').innerHTML=rows.map(line=>{
+  const code=String(line.productCode||'');
+  const left=num(line.currentDamageQty);
+  return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 68px 80px;gap:8px;align-items:center;margin-top:9px;padding:8px;background:#fff;border:1px solid #d5e4f2;border-radius:8px;font-size:11px">'+
+   '<strong>'+htmlEscape(line.productName||code)+'</strong>'+
+   '<span style="text-align:right;color:#b57522;font-weight:bold">'+left+'</span>'+
+   '<button type="button" data-bb-receive-code="'+htmlEscape(code)+'" style="border:0;border-radius:7px;background:#17457a;color:white;padding:8px 4px;font-weight:bold;font-size:10px">Select</button></div>';
+ }).join('');
+ }catch(e){if(batch()?.batchId===id){loadedFor='';error(e.message||String(e))}}
+ finally{busy=false}
+}
+holder.addEventListener('click',event=>{
+ const button=event.target.closest('[data-bb-receive-code]');if(!button)return;
+ const code=button.dataset.bbReceiveCode;const left=pending.get(code)||0;
+ try{
+  const product=products.find(p=>p.productCode===code);
+  if(!product)throw Error('Product is missing from current product list.');
+  if(items.some(x=>x.productCode===code))throw Error('Product is already in the receipt preview.');
+  selectedProduct=product;
+  byId('productSearchInput').value=product.productName;
+  byId('productCode').value=product.productCode;
+  byId('availableQty').value=left;
+  byId('qty').value=left;
+  byId('qty').focus();
+  setStatus('Reported damage selected. Confirm the quantity physically received, then Add Product.','success');
+ }catch(e){setStatus(e.message||String(e),'error')}
+});
+function validateAdded(item,quantity){
+ if(!active)return '';
+ if(!loadedFor||batch()?.batchId!==loadedFor)return 'Wait until reported damage is loaded for the selected batch.';
+ const remaining=pending.get(String(item?.productCode||''))||0;
+ const already=items.filter(x=>x.productCode===item?.productCode).reduce((sum,x)=>sum+num(x.qty),0);
+ if(!item?.productCode||quantity<=0||quantity>remaining-already+0.000001)
+  return 'Warehouse receipt must match the salesman report. Available to receive: '+Math.max(0,remaining-already);
+ return '';
+}
+document.addEventListener('click',event=>{
+ if(!mode())return;
+ if(event.target.closest('#addProductBtn')){
+  const issue=validateAdded(selectedProduct,num(byId('qty').value));
+  if(issue){event.stopImmediatePropagation();event.preventDefault();setStatus(issue,'error')}
+ }
+ if(event.target.closest('#saveBtn')){
+  event.stopImmediatePropagation();event.preventDefault();
+  if(busy)return setStatus('Please wait for reported damage to finish loading.','warn');
+  if(!items.length)return setStatus('Add reported damaged products before receiving.','warn');
+  if(!loadedFor||batch()?.batchId!==loadedFor)return setStatus('Load the selected batch damage report first.','error');
+  const capturedBatch=loadedFor,copy=items.map(x=>({productCode:x.productCode,qty:num(x.qty)}));
+  byId('saveBtn').disabled=true;
+  (async()=>{
+   try{
+    const fresh=await window.BBStockAdapter.rpc('bb_batch_damage_pending',{p_batch_id:capturedBatch});
+    if(batch()?.batchId!==capturedBatch||!mode())throw Error('Batch selection changed. Try again.');
+    const available=new Map((fresh.items||[]).map(x=>[x.productCode,num(x.currentDamageQty)]));
+    for(const item of copy){
+     if(item.qty<=0||item.qty>(available.get(item.productCode)||0)+0.000001)
+      throw Error(item.productCode+': quantity exceeds reported damage awaiting return. Refresh and check physical quantity.');
+    }
+    await saveMovement();
+    refreshLater();
+   }catch(e){setStatus(e.message||String(e),'error')}
+   finally{byId('saveBtn').disabled=false}
+  })();
+ }
+},true);
+byId('batchSelect')?.addEventListener('change',refreshLater);
+byId('damageBatchBtn')?.addEventListener('click',refreshLater);
+byId('damageWarehouseBtn')?.addEventListener('click',refreshLater);
+byId('movementCategorySelect')?.addEventListener('change',refreshLater);
+byId('flowOutBtn')?.addEventListener('click',refreshLater);
+byId('flowInBtn')?.addEventListener('click',refreshLater);
+const oldDelta=typeof delta==='function'?delta:null;
+if(oldDelta){
+ window.delta=function(item){
+  if(mode())return {warehouse:0,pending:0,damaged:num(item.qty),company:0};
+  return oldDelta(item);
+ };
+}
 })();
 </script>
 </body>

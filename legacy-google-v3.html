@@ -252,15 +252,17 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
   </div>
 
   <div class="card">
-    <div class="section-title">4. Movement Preview</div>
-    <div class="preview-grid">
+    <!-- Movement Preview is intentionally hidden in Key-In; keep its data nodes
+         mounted because renderPreview still updates them during entry. -->
+    <div class="section-title" style="display:none">4. Movement Preview</div>
+    <div class="preview-grid" style="display:none">
       <div class="preview-kpi"><small>Warehouse Good</small><strong id="previewWarehouse" class="zero">No change</strong></div>
       <div class="preview-kpi"><small>Batch Pending</small><strong id="previewPending" class="zero">No change</strong></div>
       <div class="preview-kpi"><small>Damaged Stock</small><strong id="previewDamaged" class="zero">No change</strong></div>
       <div class="preview-kpi"><small>Company Good Stock</small><strong id="previewCompany" class="zero">No change</strong></div>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" style="display:none">
       <table>
         <thead><tr><th>Product</th><th class="amount">Warehouse Δ</th><th class="amount">Batch Pending Δ</th><th class="amount">Damaged Δ</th><th class="amount">Company Good Δ</th></tr></thead>
         <tbody id="previewRows"><tr><td colspan="5" class="empty">Add products to preview the stock movement.</td></tr></tbody>

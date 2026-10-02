@@ -850,6 +850,36 @@ function confirmProductQty(){
     if($('qty'))$('qty').value=String(qty);
   }
 
+  // Staff allowance uses explicit inventory buckets. Bypass legacy single-qty add
+  // so zero-cost-only withdrawals are not blocked by purchased-stock validation.
+  if(allowance){
+    try{
+      if(!Array.isArray(items))throw Error('Stock items are unavailable.');
+      if(items.some(x=>clean(x.productCode)===clean(activeProduct.productCode))){
+        setStatus('This product is already in Staff Allowance.','error');return;
+      }
+      const line={
+        productCode:activeProduct.productCode,
+        productName:activeProduct.productName,
+        unit:activeProduct.unit,
+        qty,
+        unitCost:0,
+        purchasedQty:allowanceSplit.purchasedQty,
+        zeroCostQty:allowanceSplit.zeroCostQty,
+        availableBefore:purchasedAvailable(activeProduct.productCode)+zeroAvailable(activeProduct.productCode)
+      };
+      items.push(line);
+      if(typeof clearProductSearch==='function')clearProductSearch();
+      if(typeof renderItems==='function')renderItems();
+      if(typeof updatePreview==='function')updatePreview();
+      closeQtyModal();
+      activeProduct=null;
+      if(typeof setStatus==='function')setStatus('Staff Allowance product added.','success');
+      setTimeout(syncAllV2,0);
+    }catch(error){if(typeof setStatus==='function')setStatus(clean(error?.message)||'Could not add allowance product.','error');}
+    return;
+  }
+
   let before=0;
   try{before=Array.isArray(items)?items.length:0}catch(_){}
   try{

@@ -1733,7 +1733,7 @@ function buildPayload(){
     inventoryControllerStaffId:controller?.staffId||"",inventoryControllerName:controller?.staffName||"",
     referenceNo:clean($("referenceNo").value),relatedPurchaseNo:"",
     relatedInvoiceNo:"",note:clean($("note").value),
-    items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost)}))};
+    items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost),...(movementType==='STAFF_ALLOWANCE'&&x.purchasedQty!==undefined?{purchasedQty:num(x.purchasedQty),zeroCostQty:num(x.zeroCostQty)}:{})}))};
 
   if(movementType==="PURCHASE"){
     const summary=selectedPurchaseSummary();

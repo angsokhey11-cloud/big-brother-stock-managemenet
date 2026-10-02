@@ -2121,9 +2121,7 @@ function(){
 
   <td class="amount bb-purchased">
 
-    ${fmtQty(
-      purchased
-    )}
+    <input aria-label="Purchased Out Qty" type="number" min="0" step="1" inputmode="numeric" style="width:78px;max-width:100%;padding:6px;border:1px solid #aac5e5;border-radius:6px;text-align:right;font-weight:700" value="${purchased}" oninput="window.bbBatchEditQty(${index},'purchasedQty',this)" onchange="window.bbBatchEditFinish()">
 
     ${h(item.unit)}
 
@@ -2131,9 +2129,7 @@ function(){
 
   <td class="amount bb-zero">
 
-    ${fmtQty(
-      zero
-    )}
+    <input aria-label="Zero-Cost Out Qty" type="number" min="0" step="1" inputmode="numeric" style="width:78px;max-width:100%;padding:6px;border:1px solid #aac5e5;border-radius:6px;text-align:right;font-weight:700" value="${zero}" oninput="window.bbBatchEditQty(${index},'zeroCostQty',this)" onchange="window.bbBatchEditFinish()">
 
     ${h(item.unit)}
 
@@ -2192,6 +2188,17 @@ function(){
 };
 
 
+
+window.bbBatchEditQty=function(index,field,input){
+ if(!isNewBatchStock()||!items[index])return;
+ const row=items[index],value=Number(input.value),available=field==='purchasedQty'?purchasedWarehouseAvailable(row.productCode):zeroCostWarehouseAvailable(row.productCode);
+ if(!Number.isFinite(value)||value<0){input.setCustomValidity('Enter a nonnegative quantity.');return}
+ if(value>available+EPS){input.setCustomValidity('Available '+fmtQty(available));input.style.borderColor='#d33';return}
+ input.setCustomValidity('');input.style.borderColor='#aac5e5';row[field]=value;row.qty=n(row.purchasedQty)+n(row.zeroCostQty);
+ const cells=input.closest('tr')?.querySelectorAll('td');if(cells?.[6])cells[6].textContent=fmtQty(row.qty)+' '+s(row.unit);
+ try{updatePreview()}catch(_){}
+};
+window.bbBatchEditFinish=function(){try{window.renderItems()}catch(_){}};
 
 /* ============================================================
    PAYLOAD

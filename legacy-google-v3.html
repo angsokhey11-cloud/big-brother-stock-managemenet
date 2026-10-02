@@ -190,6 +190,11 @@ td.amount,th.amount{text-align:right}.empty{padding:22px!important;text-align:ce
   <div class="card">
     <div class="section-title">3. Products</div>
     <div id="purchaseReceivingPanel">
+      <div id="bbPurchaseAddPicker" style="margin:10px 0;padding:12px;border:1px solid #dce5ef;border-radius:10px;background:#f7faff">
+        <label for="bbPurchaseProductSelect" style="display:block;font-weight:800;margin-bottom:6px">Add Product from Pending Purchase</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="bbPurchaseProductSelect" style="flex:1;min-width:190px"><option value="">Select a purchase first</option></select><button type="button" class="btn" onclick="bbPurchaseAddProduct()">+ Add Product</button></div>
+        <div class="helper">Select one product at a time. Receive Now defaults to its remaining quantity; reduce it for partial receipt.</div>
+      </div>
       <div class="purchase-summary">
         <div class="box"><small>Purchase</small><strong id="purchaseSummaryId">Select Purchase</strong></div>
         <div class="box"><small>Purchased Qty</small><strong id="purchaseSummaryPurchased">0</strong></div>
@@ -1327,7 +1332,8 @@ async function purchaseChanged(){
       purchasedQty:num(x.purchasedQty),
       alreadyReceived:num(x.alreadyReceived),
       remainingQty:num(x.remainingQty),
-      receiveNow:num(x.remainingQty),
+      receiveNow:0,
+      bbAdded:false,
       expiryDate:"",
       unitCost:num(x.unitPrice)
     }));
@@ -1382,6 +1388,26 @@ function purchaseExpiryChanged(index,value){
   syncPurchaseItemsToPreview();
 }
 
+function bbPurchaseAddProduct(){
+  const picker=$("bbPurchaseProductSelect");
+  const index=Number(picker?.value);
+  if(!picker?.value || !Number.isInteger(index) || !purchaseLines[index])return setStatus("Select a pending purchase product first.","warn");
+  const line=purchaseLines[index];
+  if(line.bbAdded || num(line.remainingQty)<=0)return setStatus("This product is already added or has no remaining quantity.","warn");
+  line.bbAdded=true;
+  line.receiveNow=num(line.remainingQty);
+  renderPurchaseReceiving();
+  syncPurchaseItemsToPreview();
+  setStatus(line.productName+" added. Adjust Receive Now for partial receipt and enter expiry date.","success");
+}
+window.bbPurchaseAddProduct=bbPurchaseAddProduct;
+function bbPurchaseRemoveProduct(index){
+  const line=purchaseLines[index];if(!line)return;
+  line.bbAdded=false;line.receiveNow=0;line.expiryDate="";
+  renderPurchaseReceiving();syncPurchaseItemsToPreview();
+}
+window.bbPurchaseRemoveProduct=bbPurchaseRemoveProduct;
+
 function renderPurchaseReceiving(){
   const body=$("purchaseReceiveRows");
   if(!body)return;
@@ -1395,6 +1421,16 @@ function renderPurchaseReceiving(){
   $("purchaseSummaryReceived").textContent=purchaseDetail?num(purchaseDetail.totalReceivedQty).toLocaleString():"0";
   $("purchaseSummaryRemaining").textContent=purchaseDetail?num(purchaseDetail.totalRemainingQty).toLocaleString():"0";
 
+  const picker=$("bbPurchaseProductSelect");
+  if(picker){
+    const available=purchaseLines.map((x,i)=>({x,i})).filter(({x})=>!x.bbAdded&&num(x.remainingQty)>0);
+    picker.innerHTML='<option value="">'+(purchaseDetail?"Select product to receive":"Select a purchase first")+"</option>"+available.map(({x,i})=>'<option value="'+i+'">'+esc(x.productName)+" · Remaining "+num(x.remainingQty).toLocaleString()+"</option>").join("");
+  }
+  const added=purchaseLines.map((x,i)=>({x,i})).filter(({x})=>x.bbAdded);
+  if(!added.length){
+    body.innerHTML='<tr><td colspan="8" class="empty">'+(purchaseDetail?"No products added yet. Use Add Product to receive items.":"Select a Related Purchase No.")+"</td></tr>";
+    return;
+  }
   if(!purchaseLines.length){
     body.innerHTML='<tr><td colspan="8" class="empty">'+
       (p ? "No receivable items found for this Purchase." : "Select a Related Purchase No. to auto-load purchased items.")+
@@ -1402,7 +1438,7 @@ function renderPurchaseReceiving(){
     return;
   }
 
-  body.innerHTML=purchaseLines.map((x,i)=>{
+  body.innerHTML=added.map(({x,i})=>{
     const zero=num(x.remainingQty)<=0.000001;
 
     return `<tr>
@@ -1435,7 +1471,7 @@ function renderPurchaseReceiving(){
         >
         <div id="expiryDisplay${i}" class="helper">${zero?"No remaining":(x.expiryDate?esc(formatDate(x.expiryDate)):"Required")}</div>
       </td>
-      <td class="amount">$${num(x.unitCost).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}</td>
+      <td class="amount">${num(x.unitCost).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}<br><button type="button" class="remove" onclick="bbPurchaseRemoveProduct(${i})">Remove</button></td>
     </tr>`;
   }).join("");
 }
@@ -1444,7 +1480,7 @@ function syncPurchaseItemsToPreview(){
   if(movementType!=="PURCHASE")return;
 
   items=purchaseLines
-    .filter(x=>num(x.receiveNow)>0)
+    .filter(x=>x.bbAdded&&num(x.receiveNow)>0)
     .map(x=>({
       purchaseItemId:x.purchaseItemId,
       productCode:x.productCode,
@@ -1790,7 +1826,7 @@ function validate(d){
     if(!d.items.length)return"Enter Receive Now Qty for at least one Purchase item.";
 
     for(const x of purchaseLines){
-      if(num(x.receiveNow)<=0)continue;
+      if(!x.bbAdded||num(x.receiveNow)<=0)continue;
       if(num(x.receiveNow)>num(x.remainingQty)+0.000001)
         return x.productName+": Receive Now cannot exceed Remaining Qty.";
       if(!clean(x.expiryDate))

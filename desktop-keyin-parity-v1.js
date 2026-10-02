@@ -533,7 +533,7 @@ function availabilityText(product){
   if(t==='CUSTOMER_BORROW_CLEAR'){
     try{return 'Batch '+fmtQty(currentAvailable(product.productCode))}catch(_){return 'Current Batch'}
   }
-  if(t==='BATCH_STOCK'){
+  if(t==='BATCH_STOCK'||t==='STAFF_ALLOWANCE'){
     const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
     return 'Purchased '+fmtQty(p)+(z>EPS?' · Zero-Cost '+fmtQty(z):'');
   }
@@ -692,10 +692,11 @@ function openQtyModal(product){
   $('bbMobileZeroQty').value='';
 
   const batch=movement()==='BATCH_STOCK';
-  $('bbMobileSingleQtyWrap').hidden=batch;
-  $('bbMobilePurchasedQtyWrap').hidden=!batch;
+  const split=batch||movement()==='STAFF_ALLOWANCE';
+  $('bbMobileSingleQtyWrap').hidden=split;
+  $('bbMobilePurchasedQtyWrap').hidden=!split;
 
-  if(batch){
+  if(split){
     const p=purchasedAvailable(product.productCode);
     const z=zeroAvailable(product.productCode);
     $('bbMobilePurchasedAvailable').textContent='Available '+fmtQty(p);
@@ -705,7 +706,7 @@ function openQtyModal(product){
     $('bbMobileZeroQtyWrap').hidden=true;
   }
   overlay.hidden=false;
-  const qtyFocus=batch
+  const qtyFocus=split
     ?($('bbMobilePurchasedQtyWrap').hidden?$('bbMobileZeroQty'):$('bbMobilePurchasedQty'))
     :$('bbMobileQtyInput');
   if(qtyFocus){
@@ -721,8 +722,10 @@ function closeQtyModal(){
 function confirmProductQty(){
   if(!activeProduct)return;
   const batch=movement()==='BATCH_STOCK';
+  const allowance=movement()==='STAFF_ALLOWANCE';
   let qty=0;
-  if(batch){
+  let allowanceSplit=null;
+  if(batch||allowance){
     const pQty=number($('bbMobilePurchasedQty').value);
     const zQty=$('bbMobileZeroQtyWrap').hidden?0:number($('bbMobileZeroQty').value);
     const pAvail=purchasedAvailable(activeProduct.productCode);
@@ -740,8 +743,9 @@ function confirmProductQty(){
       if(typeof setStatus==='function')setStatus('Zero-Cost Qty is greater than Zero-Cost Available '+fmtQty(zAvail)+'.','error');
       return;
     }
-    if($('bbPurchasedOut'))$('bbPurchasedOut').value=String(pQty);
-    if($('bbZeroOut'))$('bbZeroOut').value=String(zQty);
+    if(allowance)allowanceSplit={purchasedQty:pQty,zeroCostQty:zQty};
+    if(batch&&$('bbPurchasedOut'))$('bbPurchasedOut').value=String(pQty);
+    if(batch&&$('bbZeroOut'))$('bbZeroOut').value=String(zQty);
     if($('qty'))$('qty').value=String(qty);
     try{$('bbPurchasedOut')?.dispatchEvent(new Event('input',{bubbles:true}));$('bbZeroOut')?.dispatchEvent(new Event('input',{bubbles:true}))}catch(_){}
   }else{
@@ -772,6 +776,7 @@ function confirmProductQty(){
   let after=before;
   try{after=Array.isArray(items)?items.length:before}catch(_){}
   if(after>before){
+    if(allowanceSplit){try{const line=items.find(x=>clean(x.productCode)===clean(activeProduct.productCode));if(line)Object.assign(line,allowanceSplit)}catch(_){}}
     closeQtyModal();
     activeProduct=null;
     setTimeout(syncAllV2,0);

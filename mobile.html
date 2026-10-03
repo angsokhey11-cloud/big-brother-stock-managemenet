@@ -970,7 +970,7 @@ try{
  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
  let html=await response.text();
  const headClose=html.toLowerCase().indexOf('</head>');if(headClose<0)throw new Error('Stock source is missing </head>.');
- const headInjection='\n<script src="supabase-stock-adapter.js?v=20260912-zero-cost-1"><\/script>\n<style id="bb-stock-mobile-style">'+MOBILE_STYLE+'<\/style>\n';
+ const headInjection='\n<script src="supabase-stock-adapter.js?v=20260912-zero-cost-1"><\/script>\n<style id="bb-stock-mobile-style">'+MOBILE_STYLE+'<\/style>\n<link rel="stylesheet" href="mobile-batch-numbered-v1.css?v=20261003-embedfix1">\n';
  html=html.slice(0,headClose)+headInjection+html.slice(headClose);
  const marker='$("addProductBtn").onclick=addProduct;$("clearBtn").onclick=clearForm;$("refreshBtn").onclick=()=>refreshStockOnly(false);$("saveBtn").onclick=saveMovement;';
  const cutover='// SUPABASE STOCK CUTOVER MOBILE V3\njsonp=window.BBStockAdapter.jsonp;\napiPost=window.BBStockAdapter.apiPost;\ntry{window.BBStockAdapter.clearLegacyCaches();}catch(_){}\nreadCache=()=>null;\nwriteCache=()=>{};\napplyCache=()=>false;\napplySharedReportStockCache=()=>false;\n'+marker;
@@ -979,7 +979,7 @@ try{
  const bodyClose=html.toLowerCase().lastIndexOf('</body>');if(bodyClose<0)throw new Error('Stock source is missing </body>.');
  const scripts='\n<script src="batch-v2-stock-guard.js?v=20260923-stockux1"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script src="customer-borrow-keyin-v1.js?v=20261001-borrowdate1"><\/script>\n<script src="batch-transaction-date-v1.js?v=20261002-1"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n<script>'+MOBILE_UX_V2+'<\/script>\n';
  const prefillScripts='\n<script src="stock-allocation-prefill-v1.js?v=20261003-mobile-prefill1"><\/script>\n<script src="back-sale-prefill-v1.js?v=20261003-mobile-prefill1"><\/script>\n';
- const compactBatchCss='\n<link rel="stylesheet" href="mobile-batch-numbered-v1.css?v=20261003-onerow2">\n';
+ const compactBatchCss='';
  const backSaleEditor='\n<link rel="stylesheet" href="mobile-back-sale-edit-v1.css?v=20261003-edit1">\n<script src="mobile-back-sale-edit-v1.js?v=20261003-edit1"><\/script>\n';
  html=html.slice(0,bodyClose)+scripts+prefillScripts+compactBatchCss+backSaleEditor+html.slice(bodyClose);
  document.open();document.write(html);document.close();

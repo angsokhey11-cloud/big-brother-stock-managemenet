@@ -1,0 +1,107 @@
+/* BIG BROTHER — Mobile Batch Stock compact product editor only.
+   Keep the desktop view and underlying editable quantity handlers unchanged. */
+@media (max-width: 900px) {
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr:not(:has(td.empty)) {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
+    align-items: start !important;
+    column-gap: 10px !important;
+    row-gap: 9px !important;
+    padding: 12px 2px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Product takes the entire first line, never squeeze its name. */
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:first-child {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    border-bottom: 1px solid #e5edf5 !important;
+    padding-bottom: 8px !important;
+    overflow-wrap: anywhere !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:first-child strong {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:first-child .bb-mobile-product-code {
+    font-size: 10px !important;
+    margin-top: 3px !important;
+  }
+
+  /* Out quantity fields share the next line, sized equally. */
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(5),
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(6) {
+    grid-row: 2 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    display: block !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(5) {
+    grid-column: 1 !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(6) {
+    grid-column: 2 !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(5)::before,
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(6)::before {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 5px !important;
+    color: #61758d !important;
+    text-align: left !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(5) input,
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(6) input {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    font-size: 17px !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    padding: 6px !important;
+    display: block !important;
+    margin-bottom: 3px !important;
+  }
+
+  /* Compact total and remove control on the final line. */
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(7) {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    display: block !important;
+    text-align: left !important;
+    align-self: center !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    min-width: 0 !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:nth-child(7)::before {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:last-child {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    width: auto !important;
+    justify-self: end !important;
+    align-self: center !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr > td:last-child .remove {
+    width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 20px !important;
+  }
+}

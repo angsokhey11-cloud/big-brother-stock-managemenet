@@ -1,0 +1,122 @@
+/* Mobile Batch Stock: numbered two-line product editor. Other modes and desktop untouched. */
+@media (max-width:900px) {
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows {
+   counter-reset: bbBatchItem;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr:not(:has(td.empty)) {
+   counter-increment: bbBatchItem;
+   display:grid!important;
+   grid-template-columns:minmax(0,1fr) minmax(0,auto) 32px!important;
+   column-gap:6px!important;
+   row-gap:5px!important;
+   padding:7px 2px!important;
+   align-items:center!important;
+   margin:0!important;
+   min-height:0!important;
+ }
+ /* Name, live batch total and remove sit on the same header line. */
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:first-child {
+   grid-column:1!important;
+   grid-row:1!important;
+   padding:0!important;
+   border:0!important;
+   min-width:0!important;
+   width:auto!important;
+   align-self:center!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:first-child strong {
+   font-size:11px!important;
+   line-height:1.25!important;
+   overflow-wrap:anywhere!important;
+   white-space:normal!important;
+   display:inline!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:first-child strong::before {
+   content:counter(bbBatchItem) ". ";
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows .bb-mobile-product-code,
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(2) {
+   display:none!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(7) {
+   grid-column:2!important;
+   grid-row:1!important;
+   display:block!important;
+   min-width:0!important;
+   width:auto!important;
+   align-self:center!important;
+   padding:0!important;
+   white-space:nowrap!important;
+   font-size:10px!important;
+   font-weight:900!important;
+   color:#173f77!important;
+   text-align:right!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(7)::before {
+   content:"("!important;
+   display:inline!important;
+   font-size:10px!important;
+   margin:0!important;
+   color:inherit!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(7)::after {
+   content:")";
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:last-child {
+   grid-column:3!important;
+   grid-row:1!important;
+   justify-self:end!important;
+   align-self:center!important;
+   display:flex!important;
+   width:32px!important;
+   min-width:32px!important;
+   padding:0!important;
+   margin:0!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:last-child .remove {
+   width:30px!important;
+   height:30px!important;
+   min-height:30px!important;
+   font-size:17px!important;
+   padding:0!important;
+ }
+ /* Only the two editable source quantities occupy line two. */
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(5),
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(6) {
+   grid-row:2!important;
+   grid-column:1 / 3!important;
+   display:block!important;
+   width:calc(50% - 4px)!important;
+   min-width:0!important;
+   text-align:left!important;
+   font-size:0!important; /* Hides repeated btl/other unit beneath the input. */
+   margin:0!important;
+   padding:0!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(5) {
+   justify-self:start!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(6) {
+   justify-self:end!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(5)::before,
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(6)::before {
+   font-size:8px!important;
+   line-height:1.1!important;
+   margin:0 0 3px!important;
+ }
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(5) input,
+ body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows tr>td:nth-child(6) input {
+   display:block!important;
+   box-sizing:border-box!important;
+   width:100%!important;
+   max-width:100%!important;
+   min-width:0!important;
+   height:33px!important;
+   min-height:33px!important;
+   padding:3px 6px!important;
+   margin:0!important;
+   font-size:14px!important;
+   text-align:center!important;
+ }
+}

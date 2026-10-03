@@ -1,6 +1,7 @@
 /* BIG BROTHER — compact single-row Batch Stock, mobile only.
    Shared item fields and save handlers remain untouched. */
-@media (max-width:900px) {
+/* This sheet is loaded only by mobile.html; do not restrict its iframe width. */
+
  body.bb-stock-mobile[data-bb-movement="BATCH_STOCK"] #manualProductPanel #itemRows {
    counter-reset: bbBatchItem;
  }
@@ -129,4 +130,3 @@
    padding:0!important;
    font-size:17px!important;
  }
-}

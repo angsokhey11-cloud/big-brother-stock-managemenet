@@ -678,6 +678,10 @@ function showSaveSuccess(r,d){
 
   clearSaveRequestState();
 
+  if(d?.movementType==="BATCH_STOCK"){
+    try{$("batchLocationSelect").value=""}catch(_){}
+  }
+
   items=[];
   renderItems();
   updatePreview();

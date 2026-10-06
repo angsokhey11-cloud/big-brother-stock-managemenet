@@ -250,11 +250,24 @@ function selectedOpenBatchMobile(){
 function stockRow(code){
   try{return typeof stockFor==='function'?(stockFor(code)||{}):{}}catch(_){return {}}
 }
+function openBatchSourceActive(){
+  try{
+    return movement()==='BATCH_STOCK'&&!!window.BBBatchStockSource?.isOpenBatch?.();
+  }catch(_){
+    return false;
+  }
+}
 function purchasedAvailable(code){
+  if(openBatchSourceActive()){
+    try{return number(window.BBBatchStockSource.purchasedAvailable(code));}catch(_){return 0}
+  }
   const row=stockRow(code);
   return number(row.warehousePurchased!==undefined?row.warehousePurchased:row.warehouseGood);
 }
 function zeroAvailable(code){
+  if(openBatchSourceActive()){
+    try{return number(window.BBBatchStockSource.zeroAvailable(code));}catch(_){return 0}
+  }
   return number(stockRow(code).warehouseZeroCost);
 }
 function physicalAvailable(code){
@@ -535,6 +548,9 @@ function availabilityText(product){
   }
   if(t==='BATCH_STOCK'||t==='STAFF_ALLOWANCE'){
     const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
+    if(t==='BATCH_STOCK'&&openBatchSourceActive()){
+      return 'Batch Purchased '+fmtQty(p)+(z>EPS?' · Batch Zero-Cost '+fmtQty(z):'');
+    }
     return 'Purchased '+fmtQty(p)+(z>EPS?' · Zero-Cost '+fmtQty(z):'');
   }
   if(t==='STOCK_DAMAGE'&&damageMode()==='BATCH'){

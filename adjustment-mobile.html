@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BIG BROTHER — Stock Adjustment Mobile</title>
+<title>BIG BROTHER — Stock Swap Adjustment Mobile</title>
 <style>
 html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-serif}
 .bb-loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -12,7 +12,7 @@ html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-ser
 </style>
 </head>
 <body>
-<div class="bb-loader"><div class="bb-loader-card">Loading Stock Adjustment…<span>Warehouse correction · Mobile workspace</span></div></div>
+<div class="bb-loader"><div class="bb-loader-card">Loading Stock Swap…<span>Balanced Purchased Warehouse reclassification</span></div></div>
 <script>
 (async function(){
 'use strict';
@@ -72,10 +72,10 @@ body.bb-adjust-mobile .line-product{grid-column:1/-1!important;text-align:left!i
 body.bb-adjust-mobile .line-product strong{font-size:9px!important}
 body.bb-adjust-mobile .line-product span{margin-top:2px!important;font-size:7px!important}
 body.bb-adjust-mobile .line-row>div:nth-child(2)::before{content:'Before';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
-body.bb-adjust-mobile .line-row>div:nth-child(3)::before{content:'Type';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
+body.bb-adjust-mobile .line-row>div:nth-child(3)::before{content:'Side';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
 body.bb-adjust-mobile .line-row>div:nth-child(4)::before{content:'Qty';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
 body.bb-adjust-mobile .line-row>div:nth-child(5)::before{content:'After';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
-body.bb-adjust-mobile .line-row>div:nth-child(6)::before{content:'Avg Cost';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
+body.bb-adjust-mobile .line-row>div:nth-child(6)::before{content:'Transfer Cost';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
 body.bb-adjust-mobile .line-row>div:nth-child(7)::before{content:'Value';display:block;color:#7b8da0;font-size:6px;margin-bottom:2px}
 body.bb-adjust-mobile .line-row>div:nth-child(6),body.bb-adjust-mobile .line-row>div:nth-child(7){grid-column:span 2!important}
 body.bb-adjust-mobile .line-row>div:nth-child(8){grid-column:1/-1!important}
@@ -108,27 +108,27 @@ const MOBILE_PATCH=String.raw`
 document.body.classList.add('bb-adjust-mobile');
 const refresh=document.getElementById('refreshBtn');
 if(refresh){refresh.title='Refresh Stock';refresh.setAttribute('aria-label','Refresh Stock')}
-const title=document.querySelector('.title');if(title)title.textContent='⚖️ Stock Adjustment';
-const subtitle=document.querySelector('.subtitle');if(subtitle)subtitle.textContent='Correct Warehouse physical stock with a permanent audit trail.';
-const add=document.getElementById('addBtn');if(add)add.textContent='＋ Add to Adjustment';
+const title=document.querySelector('.title');if(title)title.textContent='🔁 Stock Swap Adjustment';
+const subtitle=document.querySelector('.subtitle');if(subtitle)subtitle.textContent='Swap Purchased Warehouse stock between SKUs. OUT must equal IN.';
+const add=document.getElementById('addBtn');if(add)add.textContent='＋ Add Swap Line';
 const clear=document.getElementById('clearBtn');if(clear)clear.textContent='Clear Draft';
-const save=document.getElementById('saveBtn');if(save)save.textContent='Save Adjustment';
+const save=document.getElementById('saveBtn');if(save)save.textContent='Save Stock Swap';
 })();
 `;
 
 try{
- const response=await fetch('adjustment.html?v=20260915-2',{cache:'no-store'});
- if(!response.ok)throw new Error('Could not load Stock Adjustment source.');
+ const response=await fetch('adjustment.html?v=20261006-stockswap1',{cache:'no-store'});
+ if(!response.ok)throw new Error('Could not load Stock Swap source.');
  let html=await response.text();
  const headClose=html.toLowerCase().indexOf('</head>');
- if(headClose<0)throw new Error('Stock Adjustment source is missing </head>.');
+ if(headClose<0)throw new Error('Stock Swap source is missing </head>.');
  html=html.slice(0,headClose)+'<style id="bbAdjustmentMobileStyle">'+MOBILE_STYLE+'</style>\n'+html.slice(headClose);
  const bodyClose=html.toLowerCase().lastIndexOf('</body>');
- if(bodyClose<0)throw new Error('Stock Adjustment source is missing </body>.');
+ if(bodyClose<0)throw new Error('Stock Swap source is missing </body>.');
  html=html.slice(0,bodyClose)+'<script>'+MOBILE_PATCH+'<\/script>\n'+html.slice(bodyClose);
  document.open();document.write(html);document.close();
 }catch(error){
- document.body.innerHTML='<div class="bb-loader"><div class="bb-loader-card">Stock Adjustment could not load.<span>'+String(error?.message||error)+'</span></div></div>';
+ document.body.innerHTML='<div class="bb-loader"><div class="bb-loader-card">Stock Swap could not load.<span>'+String(error?.message||error)+'</span></div></div>';
 }
 })();
 </script>

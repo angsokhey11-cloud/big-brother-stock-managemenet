@@ -323,12 +323,234 @@ function physicalWarehouseAvailable(
 }
 
 
+function stockSourceMode(){
+  const select=document.getElementById('bbBatchStockSource');
+  return select&&select.value==='OPEN_BATCH'?'OPEN_BATCH':'WAREHOUSE';
+}
+
+function isBatchTransferSource(){
+  return isNewBatchStock()&&stockSourceMode()==='OPEN_BATCH';
+}
+
+function selectedTransferSourceBatch(){
+  if(!isBatchTransferSource())return null;
+  const select=document.getElementById('bbBatchSourceSelect');
+  const index=Number(select?.value);
+  try{
+    return Number.isInteger(index)&&index>=0&&Array.isArray(openBatches)
+      ?(openBatches[index]||null):null;
+  }catch(_){
+    return null;
+  }
+}
+
+function transferSourceItem(code){
+  const batch=selectedTransferSourceBatch();
+  if(!batch)return null;
+  const rows=Array.isArray(batch.items)?batch.items:(Array.isArray(batch.exactItems)?batch.exactItems:[]);
+  return rows.find(row=>s(row.productCode)===s(code))||null;
+}
+
+function purchasedTransferAvailable(code){
+  const row=transferSourceItem(code);
+  return n(row?.purchasedPendingQty!==undefined?row.purchasedPendingQty:row?.purchasedRemainingQty);
+}
+
+function zeroCostTransferAvailable(code){
+  const row=transferSourceItem(code);
+  return n(row?.zeroCostPendingQty!==undefined?row.zeroCostPendingQty:row?.zeroCostRemainingQty);
+}
+
+function batchSourcePurchasedAvailable(code){
+  return isBatchTransferSource()?purchasedTransferAvailable(code):purchasedWarehouseAvailable(code);
+}
+
+function batchSourceZeroAvailable(code){
+  return isBatchTransferSource()?zeroCostTransferAvailable(code):zeroCostWarehouseAvailable(code);
+}
+
+function batchSourcePhysicalAvailable(code){
+  return batchSourcePurchasedAvailable(code)+batchSourceZeroAvailable(code);
+}
+
+function sourceBatchProductPool(){
+  const batch=selectedTransferSourceBatch();
+  if(!batch)return [];
+  const rows=Array.isArray(batch.items)?batch.items:(Array.isArray(batch.exactItems)?batch.exactItems:[]);
+  return rows.filter(row=>s(row.productCode)&&batchRemaining(row)>EPS).map(row=>{
+    const master=(Array.isArray(products)?products:[]).find(p=>s(p.productCode)===s(row.productCode))||{};
+    return {
+      ...master,
+      productCode:s(row.productCode),
+      productName:s(row.productName)||s(master.productName)||s(row.productCode),
+      unit:s(row.unit)||s(master.unit),
+      batchRemaining:batchRemaining(row),
+      purchasedBatchRemaining:n(row.purchasedPendingQty!==undefined?row.purchasedPendingQty:row.purchasedRemainingQty),
+      zeroCostBatchRemaining:n(row.zeroCostPendingQty!==undefined?row.zeroCostPendingQty:row.zeroCostRemainingQty)
+    };
+  });
+}
+
+function fillTransferSourceBatches(preferredId=''){
+  const select=document.getElementById('bbBatchSourceSelect');
+  if(!select)return;
+  let currentId=preferredId;
+  if(!currentId){
+    const current=Number(select.value);
+    try{
+      if(Number.isInteger(current)&&current>=0&&openBatches[current])currentId=s(openBatches[current].batchId);
+    }catch(_){}
+  }
+  let rows=[];
+  try{rows=Array.isArray(openBatches)?openBatches:[]}catch(_){}
+  select.innerHTML='<option value="">Select Source Open Batch</option>'+
+    rows.map((batch,index)=>'<option value="'+index+'">'+h(
+      s(batch.batchId)+' · '+s(batch.locationName||batch.locationCode||'-')+' · '+s(batch.salesmanName||'-')+
+      ' · Remaining '+fmtQty(batch.totalRemainingQty!==undefined?batch.totalRemainingQty:(batch.items||[]).reduce((sum,row)=>sum+batchRemaining(row),0))
+    )+'</option>').join('');
+  if(currentId){
+    const next=rows.findIndex(batch=>s(batch.batchId)===s(currentId));
+    if(next>=0)select.value=String(next);
+  }
+}
+
+function syncTransferTeamRestrictions(){
+  const source=selectedTransferSourceBatch();
+  const salesman=document.getElementById('salesmanSelect');
+  const driver1=document.getElementById('driverSelect');
+  const driver2=document.getElementById('driver2Select');
+  const sourceSales=s(source?.salesmanStaffId);
+  const sourceDrivers=new Set([s(source?.driverStaffId),s(source?.driver2StaffId)].filter(Boolean));
+
+  const sync=(select,list,blocked)=>{
+    if(!select)return;
+    [...select.options].forEach(option=>{
+      if(option.value===''){option.disabled=false;return}
+      const index=Number(option.value);
+      const row=Number.isInteger(index)&&Array.isArray(list)?list[index]:null;
+      option.disabled=!!row&&blocked(s(row.staffId));
+    });
+    const current=Number(select.value);
+    const row=Number.isInteger(current)&&Array.isArray(list)?list[current]:null;
+    if(row&&blocked(s(row.staffId)))select.value='';
+  };
+
+  try{sync(salesman,salesmen,id=>!!sourceSales&&id===sourceSales)}catch(_){}
+  try{sync(driver1,drivers,id=>sourceDrivers.has(id))}catch(_){}
+  try{sync(driver2,drivers,id=>sourceDrivers.has(id))}catch(_){}
+}
+
+function setTransferDefaultLocation(){
+  const source=selectedTransferSourceBatch();
+  if(!source)return;
+  const select=document.getElementById('batchLocationSelect');
+  if(!select)return;
+  try{
+    const index=(Array.isArray(locations)?locations:[]).findIndex(row=>s(row.locationCode)===s(source.locationCode));
+    if(index>=0)select.value=String(index);
+  }catch(_){}
+}
+
+function transferSourceChanged(options={}){
+  const keepLocation=options.keepLocation===true;
+  try{items=[]}catch(_){}
+  try{clearProductSearch()}catch(_){}
+  resetBatchSourceInput();
+  try{window.renderItems()}catch(_){}
+  try{updatePreview()}catch(_){}
+  if(!keepLocation)setTransferDefaultLocation();
+  syncTransferTeamRestrictions();
+  updateBatchSourceAvailability();
+  const source=selectedTransferSourceBatch();
+  if(source){
+    try{setStatus('Source '+s(source.batchId)+' selected · choose a different Salesman / Driver and transfer only its live remaining stock.','success')}catch(_){}
+  }
+}
+
+function installStockSourceControls(){
+  const host=document.getElementById('newBatchFields');
+  const grid=host?.querySelector('.grid');
+  if(!grid||document.getElementById('bbBatchStockSource'))return;
+
+  const sourceField=document.createElement('div');
+  sourceField.className='field bb-stock-source-choice';
+  sourceField.innerHTML='<label>Stock Source</label><select id="bbBatchStockSource"><option value="WAREHOUSE">Warehouse Stock</option><option value="OPEN_BATCH">Open Batch Stock</option></select><div class="helper">Choose where this new Batch receives stock from.</div>';
+
+  const batchField=document.createElement('div');
+  batchField.className='field bb-open-batch-source';
+  batchField.hidden=true;
+  batchField.innerHTML='<label>Source Open Batch</label><select id="bbBatchSourceSelect"><option value="">Select Source Open Batch</option></select><div class="helper">Only live remaining stock from this Batch can be transferred.</div>';
+
+  grid.insertBefore(batchField,grid.firstChild);
+  grid.insertBefore(sourceField,grid.firstChild);
+
+  const style=document.createElement('style');
+  style.textContent='.bb-stock-source-choice select,.bb-open-batch-source select{font-weight:800}.bb-open-batch-source[hidden]{display:none!important}';
+  document.head.appendChild(style);
+
+  document.getElementById('bbBatchStockSource').addEventListener('change',()=>{
+    const open=stockSourceMode()==='OPEN_BATCH';
+    batchField.hidden=!open;
+    fillTransferSourceBatches();
+    transferSourceChanged();
+    if(!open)syncTransferTeamRestrictions();
+  });
+  document.getElementById('bbBatchSourceSelect').addEventListener('change',()=>transferSourceChanged());
+  fillTransferSourceBatches();
+}
+
+function syncStockSourceControls(){
+  installStockSourceControls();
+  const batchField=document.querySelector('.bb-open-batch-source');
+  if(batchField)batchField.hidden=!isBatchTransferSource();
+  fillTransferSourceBatches();
+  syncTransferTeamRestrictions();
+}
+
+window.BBBatchStockSource={
+  isOpenBatch:()=>isBatchTransferSource(),
+  sourceBatch:()=>selectedTransferSourceBatch(),
+  sourceBatchId:()=>s(selectedTransferSourceBatch()?.batchId),
+  purchasedAvailable:code=>batchSourcePurchasedAvailable(code),
+  zeroAvailable:code=>batchSourceZeroAvailable(code),
+  physicalAvailable:code=>batchSourcePhysicalAvailable(code),
+  refresh:()=>{syncStockSourceControls();updateBatchSourceAvailability()},
+  setWarehouse:()=>{
+    installStockSourceControls();
+    const mode=document.getElementById('bbBatchStockSource');
+    if(mode)mode.value='WAREHOUSE';
+    syncStockSourceControls();
+    transferSourceChanged({keepLocation:true});
+    return true;
+  },
+  setOpenBatch:(batchId)=>{
+    installStockSourceControls();
+    fillTransferSourceBatches(batchId);
+    const mode=document.getElementById('bbBatchStockSource');
+    if(mode)mode.value='OPEN_BATCH';
+    const select=document.getElementById('bbBatchSourceSelect');
+    let index=-1;
+    try{index=(Array.isArray(openBatches)?openBatches:[]).findIndex(batch=>s(batch.batchId)===s(batchId))}catch(_){}
+    if(index<0)return false;
+    select.value=String(index);
+    const field=document.querySelector('.bb-open-batch-source');
+    if(field)field.hidden=false;
+    transferSourceChanged();
+    return true;
+  }
+};
+
+
 
 /* ============================================================
    BATCH REFERENCE CATALOGUE
    ============================================================ */
 
 window.manualProductPool = function(){
+
+  if(isBatchTransferSource()){
+    return sourceBatchProductPool();
+  }
 
   if(
     !isBatchReferenceMove()
@@ -508,7 +730,9 @@ window.availableLabel = function(){
     isNewBatchStock()
   ){
 
-    return 'Total Warehouse Available';
+    return isBatchTransferSource()
+      ? 'Total Source Batch Available'
+      : 'Total Warehouse Available';
 
   }
 
@@ -1109,7 +1333,7 @@ function updateBatchSourceAvailability(){
   const zeroAvailable =
     product
       ?
-      zeroCostWarehouseAvailable(
+      batchSourceZeroAvailable(
         product.productCode
       )
       :
@@ -1175,7 +1399,7 @@ function updateBatchSourceAvailability(){
 
   purchasedField.value =
     fmtQty(
-      purchasedWarehouseAvailable(
+      batchSourcePurchasedAvailable(
         product.productCode
       )
     );
@@ -1274,7 +1498,9 @@ function(){
     ){
 
       label.textContent =
-        'Total Warehouse Available';
+        isBatchTransferSource()
+          ? 'Total Source Batch Available'
+          : 'Total Warehouse Available';
 
     }
 
@@ -1287,7 +1513,7 @@ function(){
         product
           ?
           fmtQty(
-            physicalWarehouseAvailable(
+            batchSourcePhysicalAvailable(
               product.productCode
             )
           )
@@ -1410,13 +1636,13 @@ function addZeroCostBatchProduct(){
 
 
   const purchasedAvailable =
-    purchasedWarehouseAvailable(
+    batchSourcePurchasedAvailable(
       product.productCode
     );
 
 
   const zeroAvailable =
-    zeroCostWarehouseAvailable(
+    batchSourceZeroAvailable(
       product.productCode
     );
 
@@ -2149,9 +2375,7 @@ function(){
 
     <span class="badge">
 
-      Warehouse
-      →
-      Batch
+      ${isBatchTransferSource()?'Source Batch → New Batch':'Warehouse → Batch'}
 
     </span>
 
@@ -2191,7 +2415,7 @@ function(){
 
 window.bbBatchEditQty=function(index,field,input){
  if(!isNewBatchStock()||!items[index])return;
- const row=items[index],value=Number(input.value),available=field==='purchasedQty'?purchasedWarehouseAvailable(row.productCode):zeroCostWarehouseAvailable(row.productCode);
+ const row=items[index],value=Number(input.value),available=field==='purchasedQty'?batchSourcePurchasedAvailable(row.productCode):batchSourceZeroAvailable(row.productCode);
  if(!Number.isFinite(value)||value<0){input.setCustomValidity('Enter a nonnegative quantity.');return}
  if(value>available+EPS){input.setCustomValidity('Available '+fmtQty(available));input.style.borderColor='#d33';return}
  input.setCustomValidity('');input.style.borderColor='#aac5e5';row[field]=value;row.qty=n(row.purchasedQty)+n(row.zeroCostQty);
@@ -2280,6 +2504,16 @@ function(){
   payload.inventoryAllocationRule =
     'ZERO_COST_FIRST_ON_SALE';
 
+  payload.stockSource =
+    isBatchTransferSource()
+      ? 'OPEN_BATCH'
+      : 'WAREHOUSE';
+
+  payload.sourceBatchId =
+    isBatchTransferSource()
+      ? s(selectedTransferSourceBatch()?.batchId)
+      : '';
+
 
   return payload;
 
@@ -2294,6 +2528,7 @@ function(){
 function syncMode(){
 
   installBatchFields();
+  syncStockSourceControls();
 
 
   const batchMode =
@@ -2341,7 +2576,9 @@ function syncMode(){
     ){
 
       help.textContent =
-        'Each Batch keeps Purchased Qty and Zero-Cost Qty separately.';
+        isBatchTransferSource()
+          ? 'Transfer keeps Purchased Qty and Zero-Cost Qty separate. Warehouse stock is unchanged.'
+          : 'Each Batch keeps Purchased Qty and Zero-Cost Qty separately.';
 
     }
 
@@ -2606,6 +2843,7 @@ function(
 function wire(){
 
   installBatchFields();
+  installStockSourceControls();
 
 
   const addButton =
@@ -2787,6 +3025,7 @@ function wire(){
       ()=>setTimeout(
         ()=>{
 
+          fillTransferSourceBatches();
           updateBatchSourceAvailability();
 
           syncMode();

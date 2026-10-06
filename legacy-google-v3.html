@@ -349,15 +349,23 @@ function buildSaveFingerprint(data){
     flow:clean(data?.flow),
     movementType:clean(data?.movementType),
     damageSource:clean(data?.damageSource),
+    stockSource:clean(data?.stockSource),
+    sourceBatchId:clean(data?.sourceBatchId),
     batchId:clean(data?.batchId),
     referenceNo:clean(data?.referenceNo),
     warehouseLocationCode:clean(data?.warehouseLocationCode),
+    locationCode:clean(data?.locationCode),
     inventoryControllerStaffId:clean(data?.inventoryControllerStaffId),
+    salesmanStaffId:clean(data?.salesmanStaffId),
+    driverStaffId:clean(data?.driverStaffId),
+    driver2StaffId:clean(data?.driver2StaffId),
     clientId:clean(data?.clientId),
     staffId:clean(data?.staffId),
     items:(data?.items||[]).map(item=>({
       productCode:clean(item.productCode),
       qty:num(item.qty),
+      purchasedQty:num(item.purchasedQty),
+      zeroCostQty:num(item.zeroCostQty),
       expiryDate:clean(item.expiryDate),
       purchaseItemId:clean(item.purchaseItemId)
     }))

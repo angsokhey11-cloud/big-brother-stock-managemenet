@@ -978,7 +978,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 `;
 
 try{
- const response=await fetch('legacy-google-v3.html?v=20261006-batchtransfer3',{cache:'no-store'});
+ const response=await fetch('legacy-google-v3.html?v=20261006-batchlocationrequired1',{cache:'no-store'});
  if(!response.ok)throw new Error('Could not load Stock Key-In source.');
  let html=await response.text();
  const headClose=html.toLowerCase().indexOf('</head>');if(headClose<0)throw new Error('Stock source is missing </head>.');
@@ -989,7 +989,7 @@ try{
  if(!html.includes(marker))throw new Error('Stock mobile cutover marker was not found.');
  html=html.replace(marker,cutover).replace('<title>BIG BROTHER — Stock In-Out V3.0 Fast Reference Bootstrap</title>','<title>BIG BROTHER — Stock Key-In Mobile</title>').replaceAll('Stock Database','Supabase Stock Database').replaceAll('Purchase Database','Supabase Purchase Database');
  const bodyClose=html.toLowerCase().lastIndexOf('</body>');if(bodyClose<0)throw new Error('Stock source is missing </body>.');
- const scripts='\n<script src="batch-v2-stock-guard.js?v=20261006-batchtransfer3"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script src="customer-borrow-keyin-v1.js?v=20261001-borrowdate1"><\/script>\n<script src="batch-transaction-date-v1.js?v=20261002-1"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n<script>'+MOBILE_UX_V2+'<\/script>\n';
+ const scripts='\n<script src="batch-v2-stock-guard.js?v=20261006-batchlocationrequired1"><\/script>\n<script src="batch-incentive-mode-v1.js?v=20260918-1"><\/script>\n<script src="back-sale-live-remaining.js?v=20260912-live-remaining-1"><\/script>\n<script src="damaged-clearance-keyin.js?v=20260911-3"><\/script>\n<script src="damaged-exchange-receive-keyin.js?v=20260910-3"><\/script>\n<script src="customer-borrow-keyin-v1.js?v=20261001-borrowdate1"><\/script>\n<script src="batch-transaction-date-v1.js?v=20261002-1"><\/script>\n<script>'+MOBILE_PATCH+'<\/script>\n<script>'+MOBILE_UX_V2+'<\/script>\n';
  const prefillScripts='\n<script src="stock-allocation-prefill-v1.js?v=20261006-batchtransfer3"><\/script>\n<script src="batch-transfer-prefill-v1.js?v=20261006-batchtransfer3"><\/script>\n<script src="back-sale-prefill-v1.js?v=20261003-damagevisibility1"><\/script>\n';
  const compactBatchCss='';
  const backSaleEditor='\n<link rel="stylesheet" href="mobile-back-sale-edit-v1.css?v=20261003-edit1">\n<script src="mobile-back-sale-edit-v1.js?v=20261003-edit1"><\/script>\n';

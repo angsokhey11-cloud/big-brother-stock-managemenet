@@ -335,7 +335,8 @@ function isBatchTransferSource(){
 function selectedTransferSourceBatch(){
   if(!isBatchTransferSource())return null;
   const select=document.getElementById('bbBatchSourceSelect');
-  const index=Number(select?.value);
+  if(!select||select.value==='')return null;
+  const index=Number(select.value);
   try{
     return Number.isInteger(index)&&index>=0&&Array.isArray(openBatches)
       ?(openBatches[index]||null):null;
@@ -395,7 +396,7 @@ function fillTransferSourceBatches(preferredId=''){
   const select=document.getElementById('bbBatchSourceSelect');
   if(!select)return;
   let currentId=preferredId;
-  if(!currentId){
+  if(!currentId&&select.value!==''){
     const current=Number(select.value);
     try{
       if(Number.isInteger(current)&&current>=0&&openBatches[current])currentId=s(openBatches[current].batchId);

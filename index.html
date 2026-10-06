@@ -43,7 +43,7 @@ ${marker}`;
     if(bodyClose<0)throw new Error('Stock Management source is missing </body>.');
     const view=String(new URLSearchParams(location.search).get('view')||'keyin').toLowerCase();
 
-    let pageScripts='<scr'+'ipt src="batch-v2-stock-guard.js?v=20261006-batchtransfer2sfer1"></scr'+'ipt>\n';
+    let pageScripts='<scr'+'ipt src="batch-v2-stock-guard.js?v=20261006-batchtransfer3"></scr'+'ipt>\n';
     if(view==='keyin'){
       pageScripts+='<scr'+'ipt src="batch-incentive-mode-v1.js?v=20260918-1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="back-sale-live-remaining.js?v=20260912-live-remaining-1"></scr'+'ipt>\n';
@@ -52,7 +52,8 @@ ${marker}`;
       pageScripts+='<scr'+'ipt src="customer-borrow-keyin-v1.js?v=20261001-borrowdate1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="batch-transaction-date-v1.js?v=20261002-1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="desktop-keyin-parity-v1.js?v=20261002-allowance-add-fix1"></scr'+'ipt>\n';
-      pageScripts+='<scr'+'ipt src="stock-allocation-prefill-v1.js?v=20261006-batchtransfer2syntaxfix1"></scr'+'ipt>\n';\n      pageScripts+='<scr'+'ipt src="batch-transfer-prefill-v1.js?v=20261006-batchtransfer1"></scr'+'ipt>\\n';
+      pageScripts+='<scr'+'ipt src="stock-allocation-prefill-v1.js?v=20261006-batchtransfer3"></scr'+'ipt>\n';
+      pageScripts+='<scr'+'ipt src="batch-transfer-prefill-v1.js?v=20261006-batchtransfer3"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="back-sale-prefill-v1.js?v=20261003-damagevisibility1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="back-sale-desktop-edit-v1.js?v=20261003-editable-qty1"></scr'+'ipt>\n';
     }

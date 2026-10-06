@@ -1847,7 +1847,11 @@ function validate(d){
   }
 
   if(movementType==="RECEIVE_FROM_CLIENT"&&!d.clientName)return"Client is required.";
-  if(movementType==="BATCH_STOCK"){if(!d.salesmanStaffId)return"Salesman is required.";if(!d.driverStaffId)return"Driver is required.";if(!d.locationCode)return"Batch Location is required."}
+  if(movementType==="BATCH_STOCK"){
+    if(!d.salesmanStaffId)return"Salesman is required.";
+    if(!d.driverStaffId)return"Driver is required.";
+    if(!clean($("batchLocationSelect")?.value)||!d.locationCode)return"Batch Location is required. Select the location before saving.";
+  }
   if((movementType==="BACK_SALE"||(movementType==="STOCK_DAMAGE"&&damageSource==="BATCH"))&&!d.batchId)return"Open Batch is required.";
   if(movementType==="STAFF_ALLOWANCE"&&!d.staffName)return"Staff is required.";
   return"";
@@ -1862,10 +1866,14 @@ async function saveMovement(){
   const err=validate(d);
 
   if(err){
-    return setStatus(
+    setStatus(
       err,
       "error"
     );
+    if(movementType==="BATCH_STOCK"&&/Batch Location is required/i.test(err)){
+      try{$("batchLocationSelect")?.focus()}catch(_){}
+    }
+    return;
   }
 
   d=attachSaveRequestId(d);
@@ -1964,7 +1972,7 @@ function clearForm(){
   purchaseLines=[];
 
   ["referenceNo","note","qty","unitCost"].forEach(id=>$(id).value="");
-  ["purchaseSelect","receiveClient","salesmanSelect","driverSelect","driver2Select","batchSelect","staffAllowanceSelect"].forEach(id=>$(id).value="");
+  ["purchaseSelect","receiveClient","salesmanSelect","driverSelect","driver2Select","batchLocationSelect","batchSelect","staffAllowanceSelect"].forEach(id=>$(id).value="");
   clearProductSearch();
 
   $("purchaseClientName").value="";

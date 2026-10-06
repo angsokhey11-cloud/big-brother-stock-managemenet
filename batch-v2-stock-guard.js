@@ -442,14 +442,8 @@ function syncTransferTeamRestrictions(){
 }
 
 function setTransferDefaultLocation(){
-  const source=selectedTransferSourceBatch();
-  if(!source)return;
   const select=document.getElementById('batchLocationSelect');
-  if(!select)return;
-  try{
-    const index=(Array.isArray(locations)?locations:[]).findIndex(row=>s(row.locationCode)===s(source.locationCode));
-    if(index>=0)select.value=String(index);
-  }catch(_){}
+  if(select)select.value='';
 }
 
 function transferSourceChanged(options={}){

@@ -1536,7 +1536,7 @@ function fillBatchSelect(){
     $("batchSelect").value=current;
   }
 }
-function pick(list,id){const i=Number($(id).value);return Number.isInteger(i)&&i>=0&&list[i]?list[i]:null}
+function pick(list,id){const raw=clean($(id)?.value);if(raw==="")return null;const i=Number(raw);return Number.isInteger(i)&&i>=0&&list[i]?list[i]:null}
 function selectedBatch(){return pick(openBatches,"batchSelect")}
 function stockFor(code){return stockSnapshot.find(x=>clean(x.productCode)===clean(code))||{warehouseGood:0,warehousePurchased:0,warehouseZeroCost:0,warehousePhysical:0,batchPending:0,batchPurchased:0,batchZeroCost:0,batchPhysical:0,damaged:0,totalGood:0}}
 function isSimpleBatchReferenceMovement(){

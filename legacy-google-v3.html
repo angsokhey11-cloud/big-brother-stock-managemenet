@@ -2297,6 +2297,8 @@ document.addEventListener('click',event=>{
       throw Error(item.productCode+': quantity exceeds reported damage awaiting return. Refresh and check physical quantity.');
     }
     await saveMovement();
+    // Re-query the pending-only batch list after any warehouse receipt.
+    lastPendingBatchOptionsAt=0;
     refreshLater();
    }catch(e){setStatus(e.message||String(e),'error')}
    finally{byId('saveBtn').disabled=false}

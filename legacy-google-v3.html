@@ -2108,29 +2108,75 @@ const byId=id=>document.getElementById(id);
 let pending=new Map(),loadedFor='',busy=false,active=false;
 const addedWarehousePendingIds=new Set();
 let lastPendingBatchOptionsAt=0;
+let pendingBatchRows=[],showingDamageOnly=false,damageSelectedBatchId='';
+const niceDate=value=>{
+ const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(!m)return '-';
+ const month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m[2])-1];
+ return month?m[3]+'-'+month+'-'+m[1]:'-';
+};
+function renderDamageBatchOptions(preferredId=''){
+ if(!mode())return;
+ const el=byId('batchSelect');
+ if(!el)return;
+ const selectedId=preferredId||damageSelectedBatchId||batch()?.batchId||'';
+ // Preserve indices used by selectedBatch() and stock save. Never change their meaning.
+ for(const row of pendingBatchRows){
+  if(openBatches.some(b=>b.batchId===row.batchId))continue;
+  openBatches.push(row);addedWarehousePendingIds.add(row.batchId);
+ }
+ el.innerHTML='<option value="">Select Batch with Pending Damage</option>'+
+  pendingBatchRows.map(row=>{
+   const index=openBatches.findIndex(b=>b.batchId===row.batchId);
+   if(index<0)return '';
+   return '<option value="'+index+'">'+htmlEscape(row.batchId+' · '+niceDate(row.batchDate)+' · '+
+    (row.salesmanName||'-')+' · '+(row.locationName||row.locationCode||'-')+
+    ' · Pending '+(Number(row.reportedDamageQty)||0).toLocaleString('en-US')+' PCS')+'</option>';
+  }).join('');
+ const i=openBatches.findIndex(b=>b.batchId===selectedId);
+ if(i>=0&&pendingBatchRows.some(b=>b.batchId===selectedId)){
+  el.value=String(i);damageSelectedBatchId=selectedId;
+ }else{el.value='';damageSelectedBatchId=''}
+ el.disabled=!pendingBatchRows.length;
+}
+const originalFillBatchSelect=fillBatchSelect;
+window.fillBatchSelect=function(){
+ originalFillBatchSelect();
+ if(mode()&&showingDamageOnly)renderDamageBatchOptions(damageSelectedBatchId);
+};
 async function syncPendingBatchOptions(){
  if(!mode()){
+  const previouslyShowing=showingDamageOnly;
+  const oldId=batch()?.batchId||'';
+  showingDamageOnly=false;pendingBatchRows=[];damageSelectedBatchId='';lastPendingBatchOptionsAt=0;
   if(addedWarehousePendingIds.size){
-   const oldId=batch()?.batchId||'';
    openBatches=openBatches.filter(x=>!addedWarehousePendingIds.has(x.batchId));
    addedWarehousePendingIds.clear();
+  }
+  if(previouslyShowing){
    fillBatchSelect();
    const oldIndex=openBatches.findIndex(x=>x.batchId===oldId);
    byId('batchSelect').value=oldIndex>=0?String(oldIndex):'';
+   byId('batchSelect').disabled=false;
   }
   return;
  }
- if(Date.now()-lastPendingBatchOptionsAt<5000)return;
- const oldId=batch()?.batchId||'';
+ if(showingDamageOnly&&Date.now()-lastPendingBatchOptionsAt<5000){
+  renderDamageBatchOptions();
+  return;
+ }
+ const oldId=damageSelectedBatchId||batch()?.batchId||'';
  const result=await window.BBStockAdapter.rpc('bb_warehouse_pending_batch_damage');
  if(!mode())return;
- for(const b of result.batches||[]){
-  if(openBatches.some(x=>x.batchId===b.batchId))continue;
-  openBatches.push(b);addedWarehousePendingIds.add(b.batchId);
+ const rows=Array.isArray(result.batches)?result.batches:[];
+ const pendingIds=new Set(rows.map(b=>b.batchId));
+ if(addedWarehousePendingIds.size){
+  openBatches=openBatches.filter(x=>!addedWarehousePendingIds.has(x.batchId)||pendingIds.has(x.batchId));
+  for(const id of [...addedWarehousePendingIds])if(!pendingIds.has(id))addedWarehousePendingIds.delete(id);
  }
- fillBatchSelect();
- const oldIndex=openBatches.findIndex(x=>x.batchId===oldId);
- byId('batchSelect').value=oldIndex>=0?String(oldIndex):'';
+ pendingBatchRows=rows;
+ showingDamageOnly=true;
+ renderDamageBatchOptions(oldId);
  lastPendingBatchOptionsAt=Date.now();
 }
 const htmlEscape=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2163,9 +2209,18 @@ function resetBatchItems(){try{items=[];renderItems();updatePreview()}catch(_){}
 async function refresh(){
  holder.hidden=!mode();active=mode();
  if(!active){pending.clear();loadedFor='';await syncPendingBatchOptions();return}
- try{await syncPendingBatchOptions()}catch(e){error('Could not load warehouse pending batches: '+(e.message||e))}
+ try{await syncPendingBatchOptions()}catch(e){
+  pending.clear();loadedFor='';showingDamageOnly=true;pendingBatchRows=[];
+  byId('batchSelect').innerHTML='<option value="">Cannot load pending damage — Refresh to retry</option>';
+  byId('batchSelect').disabled=true;
+  error('Could not load warehouse pending batches: '+(e.message||e));
+  byId('bb-reported-damage-lines').innerHTML='';
+  return;
+ }
  const selected=batch(),id=selected?.batchId||'';
- if(!id){loadedFor='';pending.clear();error('Select the salesman batch to see reported damage awaiting return.');byId('bb-reported-damage-lines').innerHTML='';return}
+ if(!id){loadedFor='';pending.clear();resetBatchItems();error(pendingBatchRows.length?
+  pendingBatchRows.length+' batch(es) awaiting warehouse damage receipt. Select a batch to view pending products.':
+  'No batch damage awaiting warehouse receipt. Refresh after a salesman submits Report Damage.');byId('bb-reported-damage-lines').innerHTML='';return}
  if(busy)return;
  if(id!==loadedFor)resetBatchItems();
  busy=true;pending.clear();loadedFor='';error('Loading reported damage for '+id+'…');
@@ -2175,12 +2230,18 @@ async function refresh(){
  loadedFor=id;
  const rows=Array.isArray(report.items)?report.items:[];
  for(const line of rows)pending.set(String(line.productCode||''),num(line.currentDamageQty));
- error(rows.length?'Reported damage awaiting return · '+(report.salesmanName||'')+' · '+(report.locationName||''):'No reported damage is awaiting warehouse return for this batch. The salesman must submit Report Damage first.');
+ const metadata=pendingBatchRows.find(b=>b.batchId===id)||selected;
+ const totalPending=rows.reduce((sum,line)=>sum+num(line.currentDamageQty),0);
+ error(rows.length?'Batch '+id+' · '+niceDate(metadata?.batchDate)+' · '+(report.salesmanName||metadata?.salesmanName||'')+
+  ' · '+(report.locationName||metadata?.locationName||'')+' · '+rows.length+' product(s) · '+totalPending.toLocaleString('en-US')+' PCS pending':
+  'No reported damage is awaiting warehouse return for this batch. The salesman must submit Report Damage first.');
  byId('bb-reported-damage-lines').innerHTML=rows.map(line=>{
   const code=String(line.productCode||'');
   const left=num(line.currentDamageQty);
   return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 68px 80px;gap:8px;align-items:center;margin-top:9px;padding:8px;background:#fff;border:1px solid #d5e4f2;border-radius:8px;font-size:11px">'+
-   '<strong>'+htmlEscape(line.productName||code)+'</strong>'+
+   '<strong>'+htmlEscape(line.productName||code)+
+    '<small style="display:block;font-size:10px;color:#587087;font-weight:500;margin-top:3px">Reported '+num(line.reportedQty).toLocaleString('en-US')+
+    ' · Received '+num(line.receivedQty).toLocaleString('en-US')+' · Pending '+left.toLocaleString('en-US')+'</small></strong>'+
    '<span style="text-align:right;color:#b57522;font-weight:bold">'+left+'</span>'+
    '<button type="button" data-bb-receive-code="'+htmlEscape(code)+'" style="border:0;border-radius:7px;background:#17457a;color:white;padding:8px 4px;font-weight:bold;font-size:10px">Select</button></div>';
  }).join('');
@@ -2242,7 +2303,7 @@ document.addEventListener('click',event=>{
   })();
  }
 },true);
-byId('batchSelect')?.addEventListener('change',refreshLater);
+byId('batchSelect')?.addEventListener('change',()=>{if(mode())damageSelectedBatchId=batch()?.batchId||'';refreshLater()});
 byId('damageBatchBtn')?.addEventListener('click',refreshLater);
 byId('damageWarehouseBtn')?.addEventListener('click',refreshLater);
 byId('movementCategorySelect')?.addEventListener('change',refreshLater);

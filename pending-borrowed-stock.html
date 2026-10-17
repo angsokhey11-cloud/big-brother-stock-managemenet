@@ -87,6 +87,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clean=s=>String(s??'').trim();
 const qty=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:4});
+const timeText=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'-':d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Phnom_Penh'}).replace(/ /g,'-')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Phnom_Penh'})};
 let borrows=[];
 let loading=false;
 function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch(_){return null}}
@@ -136,7 +137,7 @@ function showSummary(){
  const total=rows.reduce((s,g)=>s+g.total,0);
  $('receiptTitle').textContent='BIG BROTHER — Borrowed Stock Summary';
  $('receiptSubtitle').textContent='Customer balances across your selected locations';
- $('receiptBody').innerHTML='<p>Pending balances as of '+esc(new Date().toLocaleString('en-GB'))+' · '+esc($('location').selectedOptions[0]?.text||'Assigned locations')+'</p>'+
+ $('receiptBody').innerHTML='<p>Pending balances as of '+esc(timeText(Date.now()))+' · '+esc($('location').selectedOptions[0]?.text||'Assigned locations')+'</p>'+
  '<div class="summary-totals"><span>Customer / location groups: <strong>'+rows.length+'</strong></span><span>Borrow receipts: <strong>'+selected.length+'</strong></span><span>Pending units: <strong>'+qty(total)+'</strong></span></div>'+
  (rows.length?rows.map((g,index)=>'<section class="summary-group summary-compact-line"><strong>'+(index+1)+'. '+esc(g.name)+'</strong> <span class="mini"> · '+esc(g.location)+'</span><span class="summary-inline-products"> — '+
  [...g.items.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>esc(i.name)+' ['+qty(i.total)+']').join(', ')+
@@ -167,7 +168,7 @@ function review(id){
 function close(){$('overlay').hidden=true;document.body.style.overflow='';}
 async function load(){
  if(loading)return;loading=true;$('refresh').disabled=true;$('status').textContent='';
- try{const data=await rpc();borrows=Array.isArray(data.borrows)?data.borrows:[];filterOptions();render();$('updated').textContent='Last update: '+new Date(data.generatedAt||Date.now()).toLocaleString('en-GB');}
+ try{const data=await rpc();borrows=Array.isArray(data.borrows)?data.borrows:[];filterOptions();render();$('updated').textContent='Last update: '+timeText(data.generatedAt||Date.now());}
  catch(e){$('status').textContent=e.message||String(e);$('updated').textContent='Could not load current balances.';}
  finally{loading=false;$('refresh').disabled=false;}
 }

@@ -88,6 +88,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const clean=s=>String(s??'').trim();
 const qty=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:4});
 const timeText=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'-':d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Phnom_Penh'}).replace(/ /g,'-')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Phnom_Penh'})};
+const borrowDate=value=>{const raw=String(value??'').trim(),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})(?=$|T|\s)/),mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return !raw?'—':m&&+m[2]>=1&&+m[2]<=12&&+m[3]>=1&&+m[3]<=31?m[3]+'-'+mons[+m[2]-1]+'-'+m[1]:raw};
 let borrows=[];
 let loading=false;
 function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch(_){return null}}
@@ -150,19 +151,19 @@ function render(){
  $('sReceipts').textContent=selected.length;
  $('sPending').textContent=qty(selected.reduce((sum,b)=>sum+Number(b.outstandingQty||0),0));
  $('sLines').textContent=selected.reduce((sum,b)=>sum+(b.items||[]).filter(i=>Number(i.outstandingQty)>0.000001).length,0);
- $('records').innerHTML=selected.length?selected.map(b=>'<article class="record"><div class="recordtop"><div><h2>'+esc(b.customerName||'Unknown customer')+' <span class="tag">'+esc(b.status||'OPEN')+'</span></h2><div class="mini">'+esc(b.borrowId)+' · '+esc(b.borrowDate)+' · '+esc(b.locationName||b.locationCode)+' · '+esc(b.salespersonName)+'</div></div><button class="btn secondary" data-receipt="'+esc(b.borrowId)+'">Review Receipt</button></div><div class="numbers"><span>Borrowed <strong>'+qty(b.borrowedQty)+'</strong></span><span>Cleared <strong>'+qty(b.clearedQty)+'</strong></span><span>Pending <strong class="pending">'+qty(b.outstandingQty)+'</strong></span></div>'+table((b.items||[]).filter(i=>Number(i.outstandingQty)>0.000001))+'</article>').join(''):'<div class="empty">No matching pending borrowed stock.</div>';
+ $('records').innerHTML=selected.length?selected.map(b=>'<article class="record"><div class="recordtop"><div><h2>'+esc(b.customerName||'Unknown customer')+' <span class="tag">'+esc(b.status||'OPEN')+'</span></h2><div class="mini">'+esc(b.borrowId)+' · '+esc(borrowDate(b.borrowDate))+' · '+esc(b.locationName||b.locationCode)+' · '+esc(b.salespersonName)+'</div></div><button class="btn secondary" data-receipt="'+esc(b.borrowId)+'">Review Receipt</button></div><div class="numbers"><span>Borrowed <strong>'+qty(b.borrowedQty)+'</strong></span><span>Cleared <strong>'+qty(b.clearedQty)+'</strong></span><span>Pending <strong class="pending">'+qty(b.outstandingQty)+'</strong></span></div>'+table((b.items||[]).filter(i=>Number(i.outstandingQty)>0.000001))+'</article>').join(''):'<div class="empty">No matching pending borrowed stock.</div>';
 }
 function review(id){
  const b=borrows.find(b=>b.borrowId===id);if(!b)return;
  $('receiptTitle').textContent='BIG BROTHER — Borrow Receipt';
- $('receiptSubtitle').textContent='Borrow Date: '+(b.borrowDate||'—')+' · '+(b.borrowId||'');
+ $('receiptSubtitle').textContent='Borrow Date: '+borrowDate(b.borrowDate)+' · '+(b.borrowId||'');
  const compactField=(label,value)=>'<div class="borrow-field"><b>'+esc(label)+'</b><span>'+esc(value||'—')+'</span></div>';
  const header='<div class="borrow-compact">'+
  '<div class="borrow-pair">'+compactField('Customer',b.customerName)+compactField('Location',b.locationName||b.locationCode)+'</div>'+
  '<div class="borrow-pair">'+compactField('Salesperson',b.salespersonName)+compactField('Batch ID',b.originalBatchId)+'</div>'+
  (b.note?'<div class="borrow-meta"><strong>Notes:</strong> '+esc(b.note)+'</div>':'')+
  '</div>';
- $('receiptBody').innerHTML=header+'<h3>Original borrow items and current balances</h3>'+table(b.items||[])+'<h3>Clearance receipt history</h3>'+((b.clearances||[]).length?b.clearances.map(c=>'<div class="clearance"><h3>'+esc(c.clearanceId)+' · '+esc(c.clearDate)+'</h3><p>Source batch: '+esc(c.sourceBatchId||'—')+' · Controller: '+esc(c.controllerName||'—')+' · Total cleared: '+qty(c.totalQty)+'</p><div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Returned QTY</th><th class="num">Purchased</th><th class="num">Zero cost</th></tr></thead><tbody>'+(c.items||[]).map(i=>{const p=(b.items||[]).find(x=>x.productCode===i.productCode);return '<tr><td>'+esc(p?.productName||i.productCode)+'</td><td class="num">'+qty(i.qty)+'</td><td class="num">'+qty(i.purchasedQty)+'</td><td class="num">'+qty(i.zeroCostQty)+'</td></tr>';}).join('')+'</tbody></table></div><p>'+esc(c.note||'')+'</p></div>').join(''):'<p>No clearance receipts yet.</p>');
+ $('receiptBody').innerHTML=header+'<h3>Original borrow items and current balances</h3>'+table(b.items||[])+'<h3>Clearance receipt history</h3>'+((b.clearances||[]).length?b.clearances.map(c=>'<div class="clearance"><h3>'+esc(c.clearanceId)+' · '+esc(borrowDate(c.clearDate))+'</h3><p>Source batch: '+esc(c.sourceBatchId||'—')+' · Controller: '+esc(c.controllerName||'—')+' · Total cleared: '+qty(c.totalQty)+'</p><div class="tablewrap"><table><thead><tr><th>Product</th><th class="num">Returned QTY</th><th class="num">Purchased</th><th class="num">Zero cost</th></tr></thead><tbody>'+(c.items||[]).map(i=>{const p=(b.items||[]).find(x=>x.productCode===i.productCode);return '<tr><td>'+esc(p?.productName||i.productCode)+'</td><td class="num">'+qty(i.qty)+'</td><td class="num">'+qty(i.purchasedQty)+'</td><td class="num">'+qty(i.zeroCostQty)+'</td></tr>';}).join('')+'</tbody></table></div><p>'+esc(c.note||'')+'</p></div>').join(''):'<p>No clearance receipts yet.</p>');
  $('overlay').hidden=false;document.body.style.overflow='hidden';
 }
 function close(){$('overlay').hidden=true;document.body.style.overflow='';}

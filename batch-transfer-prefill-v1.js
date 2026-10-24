@@ -177,9 +177,7 @@ function init(){
     }
   };
 
-  setInterval(()=>{
-    if(!document.hidden&&$('batchTransferPrefill')&&!$('newBatchFields')?.hidden)refresh(true);
-  },15000);
+  // Manual Refresh only: no 15-second batch transfer polling.
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);

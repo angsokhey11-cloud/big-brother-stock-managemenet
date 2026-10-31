@@ -74,7 +74,20 @@ function enhance(){
     try{updatePreview()}catch(_){}
    });
   }
-  if(box.dataset.batchId!==batchId){box.dataset.batchId=batchId;item.bbSourceChoice='';delete item.purchasedQty;delete item.zeroCostQty;item.bbSourceSelected=false;box.querySelector('.bb-bs-source').value='';box.querySelector('.bb-bs-p').value='';box.querySelector('.bb-bs-z').value='';}
+  if(item.bbSourceBatchId!==batchId){
+   item.bbSourceBatchId=batchId;
+   item.bbSourceChoice='';
+   delete item.purchasedQty;delete item.zeroCostQty;
+   item.bbSourceSelected=false;
+  }
+  // DOM rows are routinely rebuilt after Qty edits. Preserve the source choice
+  // on the underlying item, not on a temporary row DOM node.
+  if(box.dataset.batchId!==batchId){
+   box.dataset.batchId=batchId;
+   box.querySelector('.bb-bs-source').value=item.bbSourceChoice||'';
+   box.querySelector('.bb-bs-p').value=Number.isFinite(item.purchasedQty)?String(item.purchasedQty):'';
+   box.querySelector('.bb-bs-z').value=Number.isFinite(item.zeroCostQty)?String(item.zeroCostQty):'';
+  }
   box.querySelector('.bb-bs-source-info').textContent='Batch Source · Purchased '+balance(item.productCode,'p')+' · Zero-Cost '+balance(item.productCode,'z');
   if(item.bbSourceChoice&&selectedSource(box)!==item.bbSourceChoice)box.querySelector('.bb-bs-source').value=item.bbSourceChoice;
   syncItem(row,item);

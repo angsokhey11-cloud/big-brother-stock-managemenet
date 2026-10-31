@@ -8,7 +8,7 @@ const EPS=0.000001;
 const el=id=>document.getElementById(id),num=x=>Number(x)||0,clean=x=>String(x??'').trim();
 const active=()=>{try{return movementType==='BACK_SALE'&&Array.isArray(items)}catch(_){return false}};
 const getBatch=()=>{try{return typeof selectedBatch==='function'?selectedBatch():null}catch(_){return null}};
-const currentBatchId=()=>clean(el('batchSelect')?.value||getBatch()?.batchId);
+const currentBatchId=()=>clean(getBatch()?.batchId); // Stock Key-in dropdown value is a list index, NOT Batch ID.
 const batchItem=code=>(getBatch()?.items||[]).find(i=>clean(i.productCode)===clean(code))||null;
 const balance=(code,key)=>{
  const item=batchItem(code);

@@ -34,6 +34,23 @@ function decorate(){
    note.textContent='Source balances unavailable — source selection disabled';
    cells[3].append(note);return;
   }
+  const soleSource=(pa>0&&za<=0)?'purchasedQty':(za>0&&pa<=0)?'zeroCostQty':null;
+  if(soleSource){
+   // Keep the normal Back Sale quantity editor: one source requires no choice.
+   const sync=()=>{
+    const field=cells[3].querySelector('input');
+    const q=field?num(field.value):num(item.qty);
+    item.purchasedQty=soleSource==='purchasedQty'?q:0;
+    item.zeroCostQty=soleSource==='zeroCostQty'?q:0;
+   };
+   sync();
+   if(tr.dataset.bbSingleSourceListener!=='1'){
+    tr.dataset.bbSingleSourceListener='1';
+    cells[3].addEventListener('input',sync);
+    cells[3].addEventListener('change',sync);
+   }
+   return;
+  }
   const quantity=num(item.qty);
   const p=item.purchasedQty!==undefined?num(item.purchasedQty):Math.min(quantity,pa);
   const z=item.zeroCostQty!==undefined?num(item.zeroCostQty):Math.max(0,quantity-p);

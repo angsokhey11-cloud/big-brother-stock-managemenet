@@ -993,8 +993,8 @@ try{
  const prefillScripts='\n<script src="stock-allocation-prefill-v1.js?v=20261006-batchtransfer3"><\/script>\n<script src="batch-transfer-prefill-v1.js?v=20261006-batchtransfer3"><\/script>\n<script src="back-sale-prefill-v1.js?v=20261003-damagevisibility1"><\/script>\n';
  const compactBatchCss='';
  const backSaleEditor='\n<link rel="stylesheet" href="mobile-back-sale-edit-v1.css?v=20261003-edit1">\n<script src="mobile-back-sale-edit-v1.js?v=20261003-edit1"><\/script>\n';
- const backSaleEditor='\n<link rel="stylesheet" href="mobile-back-sale-edit-v1.css?v=20261101-source-select1">\n<script src="back-sale-source-selector-v1.js?v=20261003-edit1"><\/script>\n';
- html=html.slice(0,bodyClose)+scripts+prefillScripts+compactBatchCss+backSaleEditor+html.slice(bodyClose);
+ const sourceSelectorScript='\n<script src="back-sale-source-selector-v1.js?v=20261101-source-select1"><\/script>\n';
+ html=html.slice(0,bodyClose)+scripts+prefillScripts+compactBatchCss+backSaleEditor+sourceSelectorScript+html.slice(bodyClose);
  document.open();document.write(html);document.close();
 }catch(error){
  console.error(error);document.body.innerHTML='<div class="bb-loader"><div class="bb-loader-card">Could not open Stock Key-In<span>'+String(error?.message||error)+'</span></div></div>';

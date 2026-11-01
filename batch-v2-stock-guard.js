@@ -2434,6 +2434,20 @@ function(){
       );
 
 
+  if(typeof movementType!=='undefined' && movementType==='BACK_SALE'){
+    payload.items=items.map(item=>({
+      productCode:String(item.productCode||''),
+      productName:String(item.productName||''),
+      unit:String(item.unit||''),
+      qty:Number(item.qty||0),
+      unitCost:Number(item.unitCost||0),
+      ...(item.purchasedQty!==undefined || item.zeroCostQty!==undefined
+        ? {purchasedQty:Number(item.purchasedQty||0),zeroCostQty:Number(item.zeroCostQty||0)}
+        : {})
+    }));
+    return payload;
+  }
+
   if(
     !isNewBatchStock()
   ){

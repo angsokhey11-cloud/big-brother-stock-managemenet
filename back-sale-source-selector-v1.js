@@ -68,5 +68,22 @@ function init(){
  ['movementCategorySelect','batchSelect','flowInBtn'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>setTimeout(decorate,0)));
  decorate();
 }
+// Prevent a Back Sale from silently reverting to the legacy automatic allocation.
+const priorValidate=window.validate;
+if(typeof priorValidate==='function'){
+ window.validate=function(payload){
+  const error=priorValidate.apply(this,arguments);
+  if(error)return error;
+  if(payload?.movementType!=='BACK_SALE')return error;
+  for(const line of payload.items||[]){
+   const p=Number(line.purchasedQty),z=Number(line.zeroCostQty),qty=Number(line.qty);
+   if(line.purchasedQty===undefined||line.zeroCostQty===undefined||
+      !Number.isFinite(p)||!Number.isFinite(z)||p<0||z<0||
+      p+z<=0||Math.abs(p+z-qty)>0.000001)
+     return String(line.productName||line.productCode||'Product')+': select valid Purchased and Zero-Cost Back Sale quantities.';
+  }
+  return error;
+ };
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

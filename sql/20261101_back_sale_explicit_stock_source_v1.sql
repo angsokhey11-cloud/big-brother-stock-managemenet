@@ -1708,4 +1708,4 @@ begin
 
 end;
 
-$function$
+$function$;

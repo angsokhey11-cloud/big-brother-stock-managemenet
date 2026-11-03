@@ -12,7 +12,7 @@ html,body{margin:0;min-height:100%;background:#eef3f8;font-family:Arial,sans-ser
 <script>
 (async function(){
   try{
-    const response=await fetch('legacy-google-v3.html?v=20261103-damage-source1',{cache:'default'});
+    const response=await fetch('legacy-google-v3.html?v=20261103-damage-clear-source1',{cache:'default'});
     if(!response.ok)throw new Error('Could not load Stock Management source.');
     let html=await response.text();
 
@@ -51,7 +51,7 @@ ${marker}`;
       pageScripts+='<scr'+'ipt src="damaged-exchange-receive-keyin.js?v=20260910-3"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="customer-borrow-keyin-v1.js?v=20261001-borrowdate1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="batch-transaction-date-v1.js?v=20261002-1"></scr'+'ipt>\n';
-      pageScripts+='<scr'+'ipt src="desktop-keyin-parity-v1.js?v=20261103-damage-source1"></scr'+'ipt>\n';
+      pageScripts+='<scr'+'ipt src="desktop-keyin-parity-v1.js?v=20261103-damage-clear-source1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="stock-allocation-prefill-v1.js?v=20261024-manual-refresh1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="batch-transfer-prefill-v1.js?v=20261024-manual-refresh1"></scr'+'ipt>\n';
       pageScripts+='<scr'+'ipt src="back-sale-prefill-v1.js?v=20261024-manual-refresh1"></scr'+'ipt>\n';

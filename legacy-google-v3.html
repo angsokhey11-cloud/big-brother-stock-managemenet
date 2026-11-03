@@ -1745,7 +1745,7 @@ window.removeProduct=removeProduct;
 function renderItems(){
   if(!items.length){$("itemRows").innerHTML='<tr><td colspan="7" class="empty">No products added yet.</td></tr>';updatePreview();return}
   $("itemRows").innerHTML=items.map((x,i)=>`<tr>
-    <td><strong>${esc(x.productName)}</strong></td><td>${esc(x.productCode)}</td><td>${x.availableBefore===null?"Not checked":num(x.availableBefore).toLocaleString()}</td>
+    <td><strong>${esc(x.productName)}</strong>${x.purchasedQty!==undefined?'<div style="font-size:11px;color:#55718e">Purchased '+num(x.purchasedQty).toLocaleString()+' · Zero-Cost '+num(x.zeroCostQty).toLocaleString()+'</div>':''}</td><td>${esc(x.productCode)}</td><td>${x.availableBefore===null?"Not checked":num(x.availableBefore).toLocaleString()}</td>
     <td class="amount"><strong>${num(x.qty).toLocaleString()}</strong> ${esc(x.unit)}</td>
     <td class="amount">${x.unitCost?"$"+num(x.unitCost).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4}):"-"}</td>
     <td><span class="badge">${esc(movementLabel())}</span></td><td><button class="remove" onclick="removeProduct(${i})">Remove</button></td></tr>`).join("");
@@ -1783,7 +1783,7 @@ function buildPayload(){
     inventoryControllerStaffId:controller?.staffId||"",inventoryControllerName:controller?.staffName||"",
     referenceNo:clean($("referenceNo").value),relatedPurchaseNo:"",
     relatedInvoiceNo:"",note:clean($("note").value),
-    items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost),...(movementType==='STAFF_ALLOWANCE'&&x.purchasedQty!==undefined?{purchasedQty:num(x.purchasedQty),zeroCostQty:num(x.zeroCostQty)}:{})}))};
+    items:items.map(x=>({productCode:x.productCode,productName:x.productName,unit:x.unit,qty:num(x.qty),unitCost:num(x.unitCost),...(((movementType==='STAFF_ALLOWANCE')||(movementType==='STOCK_DAMAGE'&&damageSource==='WAREHOUSE'))&&x.purchasedQty!==undefined?{purchasedQty:num(x.purchasedQty),zeroCostQty:num(x.zeroCostQty)}:{})}))};
 
   if(movementType==="PURCHASE"){
     const summary=selectedPurchaseSummary();

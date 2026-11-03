@@ -532,9 +532,8 @@ function mobilePool(){
   }else if(t==='STAFF_ALLOWANCE'){
     rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
   }else if(t==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE'){
-    rows=rows.filter(p=>{
-      try{return number(currentAvailable(p.productCode))>EPS}catch(_){return purchasedAvailable(p.productCode)>EPS}
-    });
+    // Exact source selection: include zero-cost-only warehouse SKUs.
+    rows=rows.filter(p=>physicalAvailable(p.productCode)>EPS);
   }
   let existing=new Set();
   try{existing=new Set((Array.isArray(items)?items:[]).map(x=>clean(x.productCode)))}catch(_){}
@@ -547,6 +546,9 @@ function availabilityText(product){
   if(t==='CUSTOMER_BORROW')return 'Borrow into Batch';
   if(t==='CUSTOMER_BORROW_CLEAR'){
     try{return 'Batch '+fmtQty(currentAvailable(product.productCode))}catch(_){return 'Current Batch'}
+  }
+  if(t==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE'){
+    return 'Purchased '+fmtQty(purchasedAvailable(product.productCode))+' · Zero-Cost '+fmtQty(zeroAvailable(product.productCode));
   }
   if(t==='BATCH_STOCK'||t==='STAFF_ALLOWANCE'){
     const p=purchasedAvailable(product.productCode),z=zeroAvailable(product.productCode);
@@ -710,7 +712,8 @@ function openQtyModal(product){
   $('bbMobileZeroQty').value='';
 
   const batch=movement()==='BATCH_STOCK';
-  const split=batch||movement()==='STAFF_ALLOWANCE';
+  const warehouseDamage=movement()==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE';
+  const split=batch||movement()==='STAFF_ALLOWANCE'||warehouseDamage;
   $('bbMobileSingleQtyWrap').hidden=split;
   $('bbMobilePurchasedQtyWrap').hidden=!split;
 
@@ -719,7 +722,7 @@ function openQtyModal(product){
     const z=zeroAvailable(product.productCode);
     $('bbMobilePurchasedAvailable').textContent='Available '+fmtQty(p);
     $('bbMobileZeroAvailable').textContent='Available '+fmtQty(z);
-    $('bbMobileZeroQtyWrap').hidden=!(z>EPS);
+    $('bbMobileZeroQtyWrap').hidden=!(z>EPS)&&!warehouseDamage;
   }else{
     $('bbMobileZeroQtyWrap').hidden=true;
   }
@@ -741,9 +744,10 @@ function confirmProductQty(){
   if(!activeProduct)return;
   const batch=movement()==='BATCH_STOCK';
   const allowance=movement()==='STAFF_ALLOWANCE';
+  const warehouseDamage=movement()==='STOCK_DAMAGE'&&damageMode()==='WAREHOUSE';
   let qty=0;
   let allowanceSplit=null;
-  if(batch||allowance){
+  if(batch||allowance||warehouseDamage){
     const pQty=number($('bbMobilePurchasedQty').value);
     const zQty=$('bbMobileZeroQtyWrap').hidden?0:number($('bbMobileZeroQty').value);
     const pAvail=purchasedAvailable(activeProduct.productCode);
@@ -761,7 +765,7 @@ function confirmProductQty(){
       if(typeof setStatus==='function')setStatus('Zero-Cost Qty is greater than Zero-Cost Available '+fmtQty(zAvail)+'.','error');
       return;
     }
-    if(allowance)allowanceSplit={purchasedQty:pQty,zeroCostQty:zQty};
+    if(allowance||warehouseDamage)allowanceSplit={purchasedQty:pQty,zeroCostQty:zQty};
     if(batch&&$('bbPurchasedOut'))$('bbPurchasedOut').value=String(pQty);
     if(batch&&$('bbZeroOut'))$('bbZeroOut').value=String(zQty);
     if($('qty'))$('qty').value=String(qty);
@@ -782,13 +786,13 @@ function confirmProductQty(){
     if($('qty'))$('qty').value=String(qty);
   }
 
-  // Staff allowance uses explicit inventory buckets. Bypass legacy single-qty add
-  // so zero-cost-only withdrawals are not blocked by purchased-stock validation.
-  if(allowance){
+  // Both Staff Allowance and Warehouse Damage use explicit physical warehouse sources.
+  // Bypass the legacy single-qty Add Product validation (Purchased-only).
+  if(allowance||warehouseDamage){
     try{
       if(!Array.isArray(items))throw Error('Stock items are unavailable.');
       if(items.some(x=>clean(x.productCode)===clean(activeProduct.productCode))){
-        setStatus('This product is already in Staff Allowance.','error');return;
+        setStatus('This product is already in the selected stock movement.','error');return;
       }
       const line={
         productCode:activeProduct.productCode,
@@ -806,9 +810,9 @@ function confirmProductQty(){
       if(typeof updatePreview==='function')updatePreview();
       closeQtyModal();
       activeProduct=null;
-      if(typeof setStatus==='function')setStatus('Staff Allowance product added.','success');
+      if(typeof setStatus==='function')setStatus(warehouseDamage?'Warehouse Damage source selected.':'Staff Allowance product added.','success');
       setTimeout(syncAllV2,0);
-    }catch(error){if(typeof setStatus==='function')setStatus(clean(error?.message)||'Could not add allowance product.','error');}
+    }catch(error){if(typeof setStatus==='function')setStatus(clean(error?.message)||'Could not add stock product.','error');}
     return;
   }
 

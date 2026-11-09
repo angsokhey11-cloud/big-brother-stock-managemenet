@@ -51,17 +51,25 @@ function pendingUi(){
   if(p)el.querySelector('.bb-carry-pending-text').textContent=
     'Previous transfer request '+p.id+' has not been confirmed on this device. Check its result before starting a different transfer.';
 }
+function batchDateLabel(value){
+  const raw=str(value);
+  const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return raw||'Date unavailable';
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month=months[Number(m[2])-1];
+  return month?(m[3]+'-'+month+'-'+m[1]):raw;
+}
 function selectOptions(){
   const src=$('bbCarrySource'),dst=$('bbCarryTarget');
   const oldSource=src.value,oldTarget=dst.value;
   src.innerHTML='<option value="">Select old Source Batch</option>'+
     batches.map(b=>'<option value="'+esc(b.batchId)+'">'+esc(
-      b.batchId+' · '+(b.locationName||b.locationCode||'-')+' · '+(b.salesmanName||'-')+' · '+num(b.totalRemainingQty)+' remaining'
+      b.batchId+' · '+batchDateLabel(b.batchDate)+' · '+(b.locationName||b.locationCode||'-')+' · '+(b.salesmanName||'-')+' · '+num(b.totalRemainingQty)+' remaining'
     )+'</option>').join('');
   if(batches.some(b=>b.batchId===oldSource))src.value=oldSource;
   dst.innerHTML='<option value="">Select current Destination Batch</option>'+
     batches.filter(b=>b.batchId!==src.value).map(b=>'<option value="'+esc(b.batchId)+'">'+esc(
-      b.batchId+' · '+(b.locationName||b.locationCode||'-')+' · '+(b.salesmanName||'-')+' · '+num(b.totalRemainingQty)+' remaining'
+      b.batchId+' · '+batchDateLabel(b.batchDate)+' · '+(b.locationName||b.locationCode||'-')+' · '+(b.salesmanName||'-')+' · '+num(b.totalRemainingQty)+' remaining'
     )+'</option>').join('');
   if(batches.some(b=>b.batchId===oldTarget&&b.batchId!==src.value))dst.value=oldTarget;
 }

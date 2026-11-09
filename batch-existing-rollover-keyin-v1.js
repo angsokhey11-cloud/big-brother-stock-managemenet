@@ -256,7 +256,8 @@ function makeUi(){
     '#bbCarryModeWrap select{width:100%;min-height:40px;padding:8px;border:1px solid #afc6df;border-radius:8px;background:white;font-size:13px;font-weight:750}'+
     '#newBatchFields.bb-carry-mode > :not(#bbCarryModeWrap):not(#bbCarryPanel){display:none!important}'+
     'body.bb-existing-transfer-active .page > .card:has(#manualProductPanel),'+
-    'body.bb-existing-transfer-active .page > .card:has(#saveBtn){display:none!important}'+
+    'body.bb-existing-transfer-active .page > .card:has(#saveBtn),'+
+    'body.bb-existing-transfer-active .actions:has(#saveBtn){display:none!important}'+
     '#bbCarryPanel[hidden],#bbCarryPending[hidden],#bbCarryReceipt[hidden]{display:none!important}'+
     '#bbCarryPanel{border:1px solid #bfdbd1;padding:13px;border-radius:11px;background:#f8fcfa}'+
     '#bbCarryPanel h3{margin:0 0 5px;color:#174b39;font-size:16px}'+

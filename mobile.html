@@ -1029,7 +1029,7 @@ try{
  const compactBatchCss='';
  const backSaleEditor='\n<link rel="stylesheet" href="mobile-back-sale-edit-v1.css?v=20261003-edit1">\n<script src="mobile-back-sale-edit-v1.js?v=20261003-edit1"><\/script>\n';
  const sourceSelectorScript='\n<script src="back-sale-source-selector-v1.js?v=20261101-single-source2"><\/script>\n';
- const carryForwardScript='\n<script src="batch-existing-rollover-keyin-v1.js?v=20261109-batchdate2"><\/script>\n';
+ const carryForwardScript='\n<script src="batch-existing-rollover-keyin-v1.js?v=20261109-hide-empty-zero3"><\/script>\n';
  html=html.slice(0,bodyClose)+scripts+prefillScripts+compactBatchCss+backSaleEditor+sourceSelectorScript+carryForwardScript+html.slice(bodyClose);
  document.open();document.write(html);document.close();
 }catch(error){

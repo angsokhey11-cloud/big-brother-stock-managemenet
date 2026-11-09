@@ -98,7 +98,7 @@ function renderLines(){
   host.innerHTML=sourceItems.map((x,i)=>{
     const code=str(x.productCode),max=physical(x),p=purchased(x),z=zero(x);
     return '<div class="bb-carry-item"><div class="bb-carry-desc"><strong>'+(i+1)+'. '+esc(x.productName||code)+'</strong>'+
-      '<small>'+esc(code)+' · Available '+max+' '+esc(x.unit||'PCS')+'<span class="bb-carry-source-split"> · Purchased '+p+' / Zero-Cost '+z+'</span></small></div>'+
+      '<small>'+esc(code)+' · Available '+max+' '+esc(x.unit||'PCS')+'<span class="bb-carry-source-split"> · Purchased '+p+(z>EPS?' / Zero-Cost '+z:'')+'</span></small></div>'+
       '<label>Transfer Qty<input class="bb-carry-qty" inputmode="decimal" type="number" min="0" step="any" max="'+max+
       '" data-code="'+esc(code)+'" value="'+num(selected[code])+'"></label></div>';
   }).join('');
@@ -125,7 +125,7 @@ function preview(){
   }
   const left=Math.max(0,num(source?.totalRemainingQty)-total);
   box.textContent=source
-    ?'Selected '+products+' products · '+total+' units (Purchased '+p+', Zero-Cost '+z+')\n'+
+    ?'Selected '+products+' products · '+total+' units (Purchased '+p+(z>EPS?', Zero-Cost '+z:'')+')\n'+
       'Old Batch remaining after transfer: '+left+' units\n'+
       (dest?'Destination '+dest.batchId+': '+num(dest.totalRemainingQty)+' → '+(num(dest.totalRemainingQty)+total)+' units':'Select a destination Open Batch.')+
       (left<=EPS&&total>0?'\n✓ Old Batch will be ready for normal Close Batch checks.':'')+

@@ -167,7 +167,6 @@ async function checkPending(){
       receipt(d);
       pendingWrite(null);
       status('Previous transfer confirmed in stock ledger. Safe to continue.');
-      await rpc('bb_stock_revision'); // no writes: forces a current authentication/connection check
       setButtons(false);
       await refresh();
     }else{

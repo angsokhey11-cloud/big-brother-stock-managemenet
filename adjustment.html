@@ -104,6 +104,7 @@ button{cursor:pointer}
           <div class="summary dec"><small>Total Swap OUT</small><strong id="sumDecrease">0</strong></div>
           <div class="summary"><small>Qty Balance</small><strong id="sumNet">Need OUT + IN</strong></div>
         </div>
+        <div id="valueBalance" class="side-note" style="margin-top:9px">Inventory value: Add Swap OUT products to calculate the weighted transfer cost.</div>
 
         <div class="success" id="successPanel"><strong id="successTitle">Stock Swap saved.</strong><span id="successText"></span></div>
         <div class="save-actions"><button id="clearBtn" class="btn" type="button">Clear Preview</button><button id="saveBtn" class="btn primary" type="button" disabled>Save Stock Swap</button></div>
@@ -113,9 +114,9 @@ button{cursor:pointer}
     <aside>
       <div class="card">
         <div class="section-title"><span>Safety Rules</span></div>
-        <div class="side-note"><strong>Purchased Warehouse only.</strong><br>Stock Swap reclassifies Purchased stock between SKUs in the same Warehouse. Batch Stock and damaged stock are untouched.</div>
+        <div class="side-note"><strong>Purchased Warehouse only.</strong><br>Stock Swap supports many different OUT and IN SKUs in one Warehouse. Batch Stock and damaged stock are untouched.</div>
         <div class="side-note" style="margin-top:8px"><strong>Balanced quantity only.</strong><br>Total Swap OUT must equal Total Swap IN. One-sided stock additions or removals are rejected by both the screen and Supabase.</div>
-        <div class="side-note" style="margin-top:8px"><strong>Value protected.</strong><br>The cost removed from Swap OUT is carried into Swap IN. Zero-Cost stock is never touched, so Stock Swap cannot create $0 Purchased inventory.</div>
+        <div class="side-note" style="margin-top:8px"><strong>Value protected.</strong><br>Each OUT product keeps its own average cost. A weighted transfer cost is assigned to the IN products, with the final cents balanced. Zero-Cost stock is untouched.</div>
       </div>
 
       <div class="card">
@@ -190,8 +191,9 @@ function swapTotals(){
   const outs=lines.filter(x=>x.direction==='OUT'),ins=lines.filter(x=>x.direction==='IN');
   const outQty=outs.reduce((s,x)=>s+num(x.qty),0),inQty=ins.reduce((s,x)=>s+num(x.qty),0);
   const outValue=outs.reduce((s,x)=>s+(num(x.qty)*num(x.averageCost)),0);
+  const bookedOutValue=outs.reduce((s,x)=>s+(Math.round((num(x.qty)*num(x.averageCost)+Number.EPSILON)*100)/100),0);
   const transferCost=outQty>EPS?outValue/outQty:0;
-  return {outQty,inQty,outValue,transferCost,balanced:outQty>EPS&&inQty>EPS&&Math.abs(outQty-inQty)<=EPS};
+  return {outQty,inQty,outValue,bookedOutValue,transferCost,balanced:outQty>EPS&&inQty>EPS&&Math.abs(outQty-inQty)<=EPS};
 }
 function setDirection(next){direction=next;$('increaseBtn').classList.toggle('active',direction==='IN');$('decreaseBtn').classList.toggle('active',direction==='OUT');updateCalc()}
 function updateCalc(){
@@ -212,10 +214,6 @@ function addLine(){
   if(direction==='OUT'){
     if(q>before+EPS){setStatus('Swap OUT blocked: '+selected.productName+' has only '+qty(before)+' Purchased Warehouse stock. Zero-Cost stock is protected.','error');return}
     if(!(cost>0)){setStatus('Swap OUT blocked: '+selected.productName+' has no valid Purchased inventory cost.','error');return}
-    const existingOut=lines.find(x=>x.direction==='OUT');
-    if(existingOut&&Math.abs(num(existingOut.averageCost)-cost)>0.0001){
-      setStatus('Swap OUT products have different inventory costs. Save them as separate Stock Swap transactions to protect inventory value.','error');return
-    }
   }
   const after=direction==='IN'?before+q:before-q;
   lines.push({productCode:selected.productCode,productName:selected.productName,unit:selected.unit,beforeQty:before,direction,qty:q,afterQty:after,averageCost:cost});
@@ -227,14 +225,26 @@ function removeLine(code){lines=lines.filter(x=>x.productCode!==code);renderLine
 window.bbRemoveAdjustmentLine=removeLine;
 function renderLines(){
   const box=$('lines'),totals=swapTotals();
+  let remainingIn=totals.inQty,bookedIn=0;
   box.innerHTML=lines.length?lines.map(x=>{
     const lineCost=x.direction==='OUT'?num(x.averageCost):num(totals.transferCost);
-    const value=(x.direction==='IN'?1:-1)*num(x.qty)*lineCost;
+    let value=0;
+    if(x.direction==='OUT'){
+      value=-Math.round((num(x.qty)*lineCost+Number.EPSILON)*100)/100;
+    }else{
+      remainingIn-=num(x.qty);
+      value=Math.abs(remainingIn)<=EPS ? Math.round((totals.bookedOutValue-bookedIn)*100)/100
+        : Math.round((num(x.qty)*totals.outValue/totals.inQty+Number.EPSILON)*100)/100;
+      bookedIn+=value;
+    }
     return '<div class="line-row"><div class="line-product"><strong>'+esc(x.productName||x.productCode)+'</strong><span>'+esc(x.productCode)+(x.unit?' · '+esc(x.unit):'')+'</span></div><div class="num">'+qty(x.beforeQty)+'</div><div style="text-align:right"><span class="pill '+(x.direction==='IN'?'increase':'decrease')+'">'+(x.direction==='IN'?'+ Swap IN':'− Swap OUT')+'</span></div><div class="num '+(x.direction==='IN'?'good':'bad')+'">'+(x.direction==='IN'?'+':'−')+qty(x.qty)+'</div><div class="num">'+qty(x.afterQty)+'</div><div class="num">'+(lineCost>0?money(lineCost):'Pending OUT')+'</div><div class="num '+(value>0?'good':value<0?'bad':'')+'">'+(lineCost>0?money(value):'—')+'</div><div style="text-align:right"><button class="remove" type="button" onclick="bbRemoveAdjustmentLine(\''+esc(x.productCode)+'\')">Remove</button></div></div>';
   }).join(''):'<div class="empty">Add at least one Swap OUT product and one Swap IN product.</div>';
   $('sumProducts').textContent=String(lines.length);
   $('sumIncrease').textContent=qty(totals.inQty);
   $('sumDecrease').textContent=qty(totals.outQty);
+  $('valueBalance').textContent=totals.outQty>EPS
+    ?'Inventory value: OUT '+money(totals.bookedOutValue)+'  →  IN '+money(totals.bookedOutValue)+' · Difference $0.00 (weighted IN cost '+money(totals.transferCost)+'/unit)'
+    :'Inventory value: Add Swap OUT products to calculate the weighted transfer cost.';
   if(totals.balanced){
     $('sumNet').textContent='Balanced ✓';
     $('sumNet').style.color='var(--green)';
@@ -265,7 +275,7 @@ async function save(){
   if(!reasonCode){setStatus('Swap Reason is required.','warn');$('reason').focus();return}
   if(reasonCode==='OTHER'&&!note){setStatus('Note is required when Adjustment Reason is Other.','warn');$('note').focus();return}
   const controller=(snapshot.staff||[]).find(x=>x.staffId===controllerId);
-  const message='Save this Stock Swap?\n\nSwap OUT: '+qty(totals.outQty)+'\nSwap IN: '+qty(totals.inQty)+'\nTransfer Cost: '+money(totals.transferCost)+' per unit\n\nNet Warehouse Qty change: 0\nInventory Value change: $0.00\nZero-Cost stock: untouched';
+  const message='Save this Stock Swap?\n\nSwap OUT: '+qty(totals.outQty)+'\nSwap IN: '+qty(totals.inQty)+'\nWeighted IN Cost: '+money(totals.transferCost)+' per unit\nTransfer Value: '+money(totals.bookedOutValue)\n\nNet Warehouse Qty change: 0\nInventory Value change: $0.00\nZero-Cost stock: untouched';
   if(!window.confirm(message))return;
   $('saveBtn').disabled=true;$('refreshBtn').disabled=true;setStatus('Saving balanced Stock Swap to Supabase...');
   try{

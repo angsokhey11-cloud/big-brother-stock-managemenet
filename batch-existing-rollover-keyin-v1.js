@@ -25,6 +25,22 @@ function isOpen(b){return str(b?.status).toUpperCase()==='OPEN'}
 function physical(x){return num(x?.pendingQty??x?.remainingQty)}
 function purchased(x){return num(x?.purchasedPendingQty??x?.purchasedRemainingQty)}
 function zero(x){return num(x?.zeroCostPendingQty??x?.zeroCostRemainingQty)}
+// Keep the two inventory sources explicit. Never silently turn Zero-Cost into Purchased.
+function splitFor(code,item){
+  const value=selected[str(code)];
+  if(value&&typeof value==='object')return {
+    purchasedQty:num(value.purchasedQty),zeroCostQty:num(value.zeroCostQty)
+  };
+  // Backward-compatible in-memory drafts from the previous Purchased-first screen.
+  const oldQty=num(value);
+  return {purchasedQty:Math.min(oldQty,purchased(item)),
+    zeroCostQty:Math.max(0,oldQty-purchased(item))};
+}
+function splitError(item,parts){
+  return parts.purchasedQty>purchased(item)+EPS ||
+    parts.zeroCostQty>zero(item)+EPS ||
+    parts.purchasedQty+parts.zeroCostQty>physical(item)+EPS;
+}
 function sourceBatch(){return batches.find(b=>b.batchId===$('bbCarrySource')?.value)||null}
 function targetBatch(){return batches.find(b=>b.batchId===$('bbCarryTarget')?.value)||null}
 function lineItems(b){return Array.isArray(b?.items)?b.items:(Array.isArray(b?.exactItems)?b.exactItems:[])}
@@ -79,7 +95,11 @@ function listSource(){
   const next={};
   for(const x of sourceItems){
     const code=str(x.productCode);
-    if(Object.prototype.hasOwnProperty.call(selected,code))next[code]=Math.min(num(selected[code]),physical(x));
+    if(Object.prototype.hasOwnProperty.call(selected,code)){
+      const parts=splitFor(code,x);
+      next[code]={purchasedQty:Math.min(parts.purchasedQty,purchased(x)),
+        zeroCostQty:Math.min(parts.zeroCostQty,zero(x))};
+    }
   }
   selected=next;
   renderLines();
@@ -96,17 +116,24 @@ function renderLines(){
     preview();return;
   }
   host.innerHTML=sourceItems.map((x,i)=>{
-    const code=str(x.productCode),max=physical(x),p=purchased(x),z=zero(x);
+    const code=str(x.productCode),max=physical(x),p=purchased(x),z=zero(x),part=splitFor(code,x);
     return '<div class="bb-carry-item"><div class="bb-carry-desc"><strong>'+(i+1)+'. '+esc(x.productName||code)+'</strong>'+
-      '<small>'+esc(code)+' · Available '+max+' '+esc(x.unit||'PCS')+'<span class="bb-carry-source-split"> · Purchased '+p+(z>EPS?' / Zero-Cost '+z:'')+'</span></small></div>'+
-      '<label>Transfer Qty<input class="bb-carry-qty" inputmode="decimal" type="number" min="0" step="any" max="'+max+
-      '" data-code="'+esc(code)+'" value="'+num(selected[code])+'"></label></div>';
+      '<small>'+esc(code)+' · Available '+max+' '+esc(x.unit||'PCS')+
+      '<span class="bb-carry-source-split"> · Purchased '+p+' / Zero-Cost '+z+'</span></small></div>'+
+      '<label>Purchased Qty<input class="bb-carry-qty bb-carry-purchased" inputmode="decimal" type="number" min="0" step="any" max="'+p+
+      '" data-code="'+esc(code)+'" data-source="purchasedQty" value="'+part.purchasedQty+'"'+(p<=EPS?' disabled':'')+'></label>'+
+      '<label>Zero-Cost Qty<input class="bb-carry-qty bb-carry-zero" inputmode="decimal" type="number" min="0" step="any" max="'+z+
+      '" data-code="'+esc(code)+'" data-source="zeroCostQty" value="'+part.zeroCostQty+'"'+(z<=EPS?' disabled':'')+'></label></div>';
   }).join('');
   host.querySelectorAll('.bb-carry-qty').forEach(input=>input.addEventListener('input',()=>{
-    selected[input.dataset.code]=num(input.value);
-    const source=sourceItems.find(x=>str(x.productCode)===input.dataset.code);
-    const good=num(input.value)<=physical(source)+EPS&&Number(input.value)>=0;
-    input.dataset.invalid=good?'0':'1';
+    const code=input.dataset.code,source=sourceItems.find(x=>str(x.productCode)===code);
+    if(!source)return;
+    const parts=splitFor(code,source);
+    parts[input.dataset.source]=num(input.value);
+    selected[code]=parts;
+    for(const field of host.querySelectorAll('.bb-carry-qty')){
+      if(field.dataset.code===code)field.dataset.invalid=splitError(source,parts)?'1':'0';
+    }
     preview();
   }));
   preview();
@@ -116,20 +143,20 @@ function preview(){
   if(!box)return;
   let total=0,p=0,z=0,products=0,invalid=false;
   for(const x of sourceItems){
-    const q=num(selected[str(x.productCode)]);
+    const parts=splitFor(x.productCode,x),q=parts.purchasedQty+parts.zeroCostQty;
     if(!(q>EPS))continue;
     total+=q;products++;
-    p+=Math.min(q,purchased(x));
-    z+=Math.max(0,q-purchased(x));
-    if(q>physical(x)+EPS||q>purchased(x)+zero(x)+EPS)invalid=true;
+    p+=parts.purchasedQty;
+    z+=parts.zeroCostQty;
+    if(splitError(x,parts))invalid=true;
   }
   const left=Math.max(0,num(source?.totalRemainingQty)-total);
   box.textContent=source
-    ?'Selected '+products+' products · '+total+' units (Purchased '+p+(z>EPS?', Zero-Cost '+z:'')+')\n'+
+    ?'Selected '+products+' products · '+total+' units (Purchased '+p+', Zero-Cost '+z+')\n'+
       'Old Batch remaining after transfer: '+left+' units\n'+
       (dest?'Destination '+dest.batchId+': '+num(dest.totalRemainingQty)+' → '+(num(dest.totalRemainingQty)+total)+' units':'Select a destination Open Batch.')+
       (left<=EPS&&total>0?'\n✓ Old Batch will be ready for normal Close Batch checks.':'')+
-      (invalid?'\n⚠ Selected Qty exceeds the source stock.':'')
+      (invalid?'\n⚠ Purchased or Zero-Cost Qty exceeds the available source.':'')
     :'Waiting for Source Batch.';
   box.dataset.error=invalid?'1':'0';
 }
@@ -149,7 +176,9 @@ async function refresh(){
 function fillAll(){
   if(!sourceBatch())return status('Choose your old Source Batch first.',true);
   selected={};
-  for(const x of sourceItems)selected[str(x.productCode)]=physical(x);
+  for(const x of sourceItems)selected[str(x.productCode)]={
+    purchasedQty:purchased(x),zeroCostQty:zero(x)
+  };
   renderLines();
 }
 function clear(){
@@ -161,7 +190,9 @@ function receipt(result){
   if(!box)return;
   box.hidden=false;
   box.textContent='✓ Saved: '+str(result.sourceBatchId)+' → '+str(result.targetBatchId)+
-    '\nMoved '+num(result.transferQty)+' units. Movement '+str(result.movementId)+'.'+
+    '\nMoved '+num(result.transferQty)+' units (Purchased '+
+    (result.lines||[]).reduce((a,x)=>a+num(x.purchasedQty),0)+', Zero-Cost '+
+    (result.lines||[]).reduce((a,x)=>a+num(x.zeroCostQty),0)+'). Movement '+str(result.movementId)+'.'+
     (result.sourceCleared?'\nOld Batch has no remaining stock. Use Stock Report → Close Batch after checking outstanding damage.':
       '\nOld Batch still has '+num(result.sourceRemainingQty)+' units.');
 }
@@ -190,14 +221,18 @@ async function save(){
   if(source.batchId===dest.batchId)return status('Source and Destination must be different.',true);
   const items=[],split=[];let qty=0,invalid=false;
   for(const x of sourceItems){
-    const q=num(selected[str(x.productCode)]);if(!(q>EPS))continue;
-    if(q>physical(x)+EPS||q>purchased(x)+zero(x)+EPS)invalid=true;
-    items.push({productCode:str(x.productCode),qty:q});
-    split.push((x.productName||x.productCode)+': '+q);
+    const parts=splitFor(x.productCode,x);
+    const q=parts.purchasedQty+parts.zeroCostQty;
+    if(!(q>EPS))continue;
+    if(splitError(x,parts))invalid=true;
+    items.push({productCode:str(x.productCode),qty:q,
+      purchasedQty:parts.purchasedQty,zeroCostQty:parts.zeroCostQty});
+    split.push((x.productName||x.productCode)+': '+q+
+      ' (Purchased '+parts.purchasedQty+', Zero-Cost '+parts.zeroCostQty+')');
     qty+=q;
   }
   if(!items.length)return status('Enter Qty or choose Transfer All Remaining.',true);
-  if(invalid)return status('Some Qty exceeds current Source stock. Please correct before Save.',true);
+  if(invalid)return status('Purchased or Zero-Cost Qty exceeds current Source stock. Please correct before Save.',true);
   const activityDate=str($('activityDate')?.value);
   if(!activityDate)return status('Choose Transaction Date above.',true);
   const signature=JSON.stringify({sourceBatchId:source.batchId,targetBatchId:dest.batchId,activityDate,items});
@@ -269,19 +304,21 @@ function makeUi(){
     '.bb-carry-toolbar button,.bb-carry-submit,#bbCarryCheckPending{min-height:38px;border:1px solid #aac1d6;border-radius:8px;padding:8px 12px;background:#fff;color:#17457a;font-weight:850;cursor:pointer}'+
     '.bb-carry-submit{background:#17694b;border-color:#17694b;color:#fff;width:100%;font-size:13px;margin-top:12px}'+
     '.bb-carry-submit:disabled,.bb-carry-toolbar button:disabled{opacity:.55;cursor:wait}'+
-    '.bb-carry-item{display:grid;grid-template-columns:minmax(0,1fr) 130px;align-items:center;gap:12px;padding:10px 8px;border-top:1px solid #e2eaf0}'+
+    '.bb-carry-item{display:grid;grid-template-columns:minmax(0,1fr) 128px 128px;align-items:center;gap:12px;padding:10px 8px;border-top:1px solid #e2eaf0}'+
     '.bb-carry-desc{min-width:0}.bb-carry-desc strong{display:block;font-size:12px;color:#284b66}'+
     '.bb-carry-desc small{display:block;margin-top:3px;font-size:10px;color:#60768c;line-height:1.4}'+
     '.bb-carry-item label{font-size:10px;color:#536b84;font-weight:800}'+
     '.bb-carry-item input{display:block;width:100%;box-sizing:border-box;min-height:38px;margin-top:4px;padding:8px;border:1px solid #b7cadc;border-radius:8px;font-size:13px;text-align:right;background:white}'+
     '.bb-carry-item input[data-invalid="1"]{border-color:#bd3a39;background:#fff4f4}'+
+    '.bb-carry-item input:disabled{background:#f0f3f6;color:#8da0b0;opacity:.75}'+
+    '.bb-carry-item .bb-carry-zero:not(:disabled){border-color:#91b8a5;background:#f7fff9}'+
     '#bbCarryPreview,#bbCarryStatus,#bbCarryPending,#bbCarryReceipt{white-space:pre-line;line-height:1.5;font-size:11px;padding:10px 11px;border-radius:9px;margin-top:10px}'+
     '#bbCarryPreview{background:#eaf7f1;color:#20593e;border:1px solid #cce5d7}'+
     '#bbCarryStatus{background:#edf4fa;color:#244b72;border:1px solid #d4e3f0}'+
     '#bbCarryStatus[data-error="1"],#bbCarryPreview[data-error="1"]{background:#fff2ee;color:#9b2d26;border-color:#e8c8c0}'+
     '#bbCarryPending{background:#fff5e8;color:#7b5527;border:1px solid #ecd5ad}'+
     '#bbCarryReceipt{background:#e9f9ee;color:#1d6544;border:1px solid #bee4c7}'+
-    '@media(max-width:650px){.bb-carry-pickers{grid-template-columns:1fr}.bb-carry-item{grid-template-columns:minmax(0,1fr) 85px;gap:6px;padding:8px 2px}.bb-carry-desc strong{font-size:10px}.bb-carry-desc small{font-size:8px}.bb-carry-toolbar{display:grid;grid-template-columns:1fr 1fr}.bb-carry-toolbar button{font-size:10px;padding:7px 5px}#bbCarryPanel{padding:9px}.bb-carry-item input{font-size:11px}}';
+    '@media(max-width:650px){.bb-carry-pickers{grid-template-columns:1fr}.bb-carry-item{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px 2px}.bb-carry-desc{grid-column:1/-1}.bb-carry-desc strong{font-size:11px}.bb-carry-desc small{font-size:9px}.bb-carry-toolbar{display:grid;grid-template-columns:1fr 1fr}.bb-carry-toolbar button{font-size:10px;padding:7px 5px}#bbCarryPanel{padding:9px}.bb-carry-item input{font-size:12px}}';
   document.head.appendChild(style);
   const chooser=document.createElement('div');
   chooser.id='bbCarryModeWrap';
@@ -292,7 +329,7 @@ function makeUi(){
   const panel=document.createElement('div');
   panel.id='bbCarryPanel';panel.hidden=true;
   panel.innerHTML='<h3>Batch → Existing Batch Stock Transfer</h3>'+
-    '<div class="bb-carry-hint">Real Stock Key-In movement. Choose the old batch and the current batch receiving its pending stock. Purchased and Zero-Cost stay separate; no warehouse return.</div>'+
+    '<div class="bb-carry-hint">Real Stock Key-In movement. Choose the old and destination batch. Enter Purchased Qty and/or Zero-Cost Qty separately for each product. Their values stay separate; no warehouse return.</div>'+
     '<div class="bb-carry-pickers"><label>Old Source Batch<select id="bbCarrySource"><option value="">Select old Source Batch</option></select></label>'+
     '<label>Current Destination Batch<select id="bbCarryTarget"><option value="">Select current Destination Batch</option></select></label></div>'+
     '<div class="bb-carry-toolbar"><button type="button" id="bbCarryRefresh">↻ Refresh Live Batches</button>'+

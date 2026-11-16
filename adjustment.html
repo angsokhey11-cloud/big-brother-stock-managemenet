@@ -243,7 +243,9 @@ function renderLines(){
   $('sumIncrease').textContent=qty(totals.inQty);
   $('sumDecrease').textContent=qty(totals.outQty);
   $('valueBalance').textContent=totals.outQty>EPS
-    ?'Inventory value: OUT '+money(totals.bookedOutValue)+'  →  IN '+money(totals.bookedOutValue)+' · Difference $0.00 (weighted IN cost '+money(totals.transferCost)+'/unit)'
+    ?(totals.balanced
+      ?'Value balanced: OUT '+money(totals.bookedOutValue)+'  →  IN '+money(totals.bookedOutValue)+' · Difference $0.00 (weighted IN cost '+money(totals.transferCost)+'/unit)'
+      :'OUT value '+money(totals.bookedOutValue)+' · Projected IN cost '+money(totals.transferCost)+'/unit · Complete Qty Balance to carry full value.')
     :'Inventory value: Add Swap OUT products to calculate the weighted transfer cost.';
   if(totals.balanced){
     $('sumNet').textContent='Balanced ✓';
@@ -275,7 +277,7 @@ async function save(){
   if(!reasonCode){setStatus('Swap Reason is required.','warn');$('reason').focus();return}
   if(reasonCode==='OTHER'&&!note){setStatus('Note is required when Adjustment Reason is Other.','warn');$('note').focus();return}
   const controller=(snapshot.staff||[]).find(x=>x.staffId===controllerId);
-  const message='Save this Stock Swap?\n\nSwap OUT: '+qty(totals.outQty)+'\nSwap IN: '+qty(totals.inQty)+'\nWeighted IN Cost: '+money(totals.transferCost)+' per unit\nTransfer Value: '+money(totals.bookedOutValue)\n\nNet Warehouse Qty change: 0\nInventory Value change: $0.00\nZero-Cost stock: untouched';
+  const message='Save this Stock Swap?\n\nSwap OUT: '+qty(totals.outQty)+'\nSwap IN: '+qty(totals.inQty)+'\nWeighted IN Cost: '+money(totals.transferCost)+' per unit\nTransfer Value: '+money(totals.bookedOutValue)+'\n\nNet Warehouse Qty change: 0\nInventory Value change: $0.00\nZero-Cost stock: untouched';
   if(!window.confirm(message))return;
   $('saveBtn').disabled=true;$('refreshBtn').disabled=true;setStatus('Saving balanced Stock Swap to Supabase...');
   try{

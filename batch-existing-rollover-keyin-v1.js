@@ -343,7 +343,7 @@ function makeUi(){
     '<div id="bbCarryReceipt" hidden></div>';
   host.appendChild(panel);
   $('bbCarryMode').addEventListener('change',applyMode);
-  $('bbCarrySource').addEventListener('change',()=>{selectOptions();listSource()});
+  $('bbCarrySource').addEventListener('change',()=>{selected={};selectOptions();listSource()});
   $('bbCarryTarget').addEventListener('change',preview);
   $('bbCarryRefresh').addEventListener('click',refresh);
   $('bbCarryFillAll').addEventListener('click',fillAll);

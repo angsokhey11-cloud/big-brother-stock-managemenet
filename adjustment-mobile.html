@@ -117,7 +117,7 @@ const save=document.getElementById('saveBtn');if(save)save.textContent='Save Sto
 `;
 
 try{
- const response=await fetch('adjustment.html?v=20261006-stockswap1',{cache:'no-store'});
+ const response=await fetch('adjustment.html?v=20261116-many-to-many-v3',{cache:'no-store'});
  if(!response.ok)throw new Error('Could not load Stock Swap source.');
  let html=await response.text();
  const headClose=html.toLowerCase().indexOf('</head>');
